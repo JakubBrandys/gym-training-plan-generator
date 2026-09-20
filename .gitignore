@@ -1,0 +1,17 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Node (in case anything is ever installed at repo root)
+node_modules/
+
+# backend/ and frontend/ each carry their own .gitignore for their own
+# build artifacts, dependency caches, and env files.
