@@ -2,6 +2,7 @@
 project: gym-training-plan-generator
 researched_at: 2026-09-20
 recommended_platform: Fly.io
+database_platform: Supabase
 runner_up: Render
 context_type: mvp
 tech_stack:
@@ -12,9 +13,11 @@ tech_stack:
 
 ## Recommendation
 
-**Deploy on Fly.io.**
+**Deploy on Fly.io. Database on Supabase.**
 
 Fly.io is the only researched platform that clears all five agent-friendly criteria while natively supporting the persistent, long-running NestJS process your PRD's live-progress AI pipeline requires (FR-006, and the NFR that imposes no fixed maximum wait time) — no architectural redesign needed, unlike Render (requires the paid always-on tier to avoid spin-down killing the WebSocket) or Railway (requires an async job-queue redesign around its 5-minute HTTP timeout). It's also the cheapest of the three survivors and matches the `deployment_target` already recorded in `context/foundation/tech-stack.md`, so this research confirms rather than overturns the earlier stack decision.
+
+**Database update (post-research decision):** Postgres is hosted on **Supabase** rather than Fly's managed Postgres — cheaper for this workload, and the account is already being set up. This is a database-hosting choice made independently of the compute-platform recommendation above: Fly.io was recommended for what it does for the NestJS *process* (persistent connections, WebSockets), which holds regardless of where Postgres lives. The tradeoff is deliberate cross-vendor hosting (app on Fly, DB on Supabase) instead of Fly's co-located Postgres — see the new risk-register rows below for what that costs.
 
 ## Platform Comparison
 
@@ -67,7 +70,7 @@ Six months in, the bill has crept from $8/month to $40/month and nobody noticed 
 ## Operational Story
 
 - **Preview deploys**: Fly has no native PR-preview-URL feature (unlike Vercel/Netlify). Implement via a GitHub Actions workflow that runs `fly deploy --app pr-<number>` to spin up an ephemeral app per PR and `fly apps destroy` on close — a documented community pattern, not a platform-native one.
-- **Secrets**: `fly secrets set KEY=value` stores values encrypted per-app and injects them as env vars at runtime; `fly secrets list` shows names only, never values. Rotation: `fly secrets set` again followed by `fly deploy` to pick up the new value.
+- **Secrets**: `fly secrets set KEY=value` stores values encrypted per-app and injects them as env vars at runtime; `fly secrets list` shows names only, never values. Rotation: `fly secrets set` again followed by `fly deploy` to pick up the new value. `DATABASE_URL` is a manually-set secret pointing at Supabase (no `fly postgres attach` auto-injection, since the DB isn't Fly-managed) — rotate by changing the DB password in the Supabase dashboard first, then `fly secrets set DATABASE_URL=<new-connection-string>`.
 - **Rollback**: `fly releases` lists deploy history; revert by re-deploying a prior release image. Typical time-to-revert is a few minutes (image pull + restart). Caveat: database migrations do **not** auto-roll-back with an app rollback — a schema change tied to a bad release must be reverted manually and separately.
 - **Approval**: routine `fly deploy` on merge (already the recorded CI flow) and read-only `fly logs`/`fly status` may run unattended. Rotating the primary Postgres credential, changing the Postgres plan/tier (cost impact), and destroying an app or volume (irreversible data loss) require explicit human approval.
 - **Logs**: `fly logs --app <name>` for live tail from the CLI; agent-native access should go through the official Fly MCP server (`github.com/superfly/flymcp`) for structured, typed access rather than parsing CLI text output.
@@ -83,13 +86,20 @@ Six months in, the bill has crept from $8/month to $40/month and nobody noticed 
 | WebSocket session pinned to wrong machine/region if scaled | Unknown unknowns | L (single-region MVP) | M | Stay single-machine/single-region until a real multi-region need arises; document the affinity requirement before scaling. |
 | Health checks report "healthy" while the pipeline is wedged | Unknown unknowns | M | M | Implement an application-level liveness check that reflects actual pipeline progress, not just process-up status. |
 | DB migrations don't auto-rollback with an app rollback | Research finding | M | H | Pair every schema migration with a written manual rollback script before deploying it. |
+| Fly app and Supabase DB aren't co-located (cross-vendor hop) | Research finding | M | L | Pick a Supabase project region matching/neighboring the Fly app's region to minimize added latency. |
+| Supabase's default direct-connection string is IPv6-only, may not resolve from Fly's egress | Research finding | M | M | Use the Supavisor session pooler string (port 5432, IPv4-compatible) as `DIRECT_URL` for migrations instead of the raw direct-connection string; keep `DATABASE_URL` on the transaction pooler (port 6543) for runtime. |
+| Supabase free-tier projects pause after ~1 week of inactivity | Research finding | H (pre-launch), L (post-launch) | H (app can't reach DB until manually unpaused) | Move to a paid Supabase tier before real traffic; until then, expect to manually un-pause after idle periods. |
+| Fly's Postgres backup/restore tooling (`fly postgres`/`fly mpg`) no longer applies | Research finding | M | M | Rely on Supabase's own backup/PITR (tier-dependent) for DB recovery instead of Fly CLI commands. |
 
 ## Getting Started
 
 1. Install flyctl (`curl -L https://fly.io/install.sh | sh`) and run `fly auth login`.
 2. From `backend/`, use the NestJS-specific Dockerfile pattern from `github.com/fly-apps/fly-nestjs` instead of accepting `fly launch`'s auto-generated one — this avoids the documented "nest: not found" build failure.
 3. Run `fly launch --no-deploy` from `backend/` to generate `fly.toml` without deploying yet; review the generated app name, region, and VM size before proceeding.
-4. Provision Postgres (confirm current command name — Fly's managed Postgres product has been renamed/updated recently, verify `fly postgres create` vs. a newer `fly mpg create` against current `flyctl help` output) and attach it so the connection string lands as a secret automatically.
+4. Create a Supabase project (dashboard, or `supabase projects create` after `supabase login`). Pick a region matching/neighboring the Fly app's region to keep latency down. Prisma needs **two** connection strings, not one:
+   - `DATABASE_URL` — the Supavisor **transaction pooler** string (port 6543), used by the app at runtime via `@prisma/adapter-pg`.
+   - `DIRECT_URL` — the **session pooler** string (port 5432) or the raw direct-connection string, used only by the Prisma CLI for migrations (`prisma migrate`/`prisma db push` hold session-level locks that the transaction pooler doesn't support). If the raw direct string (IPv6-only unless the IPv4 add-on is purchased) isn't reachable from Fly's egress, use the session pooler string instead — never the transaction pooler for this one.
+   Wire both up with `fly secrets set DATABASE_URL=<pooler-string> DIRECT_URL=<direct-or-session-pooler-string>` (there's no `fly postgres attach`-style auto-injection since the DB isn't Fly-managed).
 5. `fly secrets set` for any additional secrets (AI model provider API keys, etc.).
 6. `fly deploy` to ship the first release; verify with `fly status` and `fly logs`.
 

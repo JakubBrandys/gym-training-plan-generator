@@ -2,6 +2,9 @@
 /dist
 /node_modules
 
+# generated Prisma client (regenerated via `npm run prisma:generate`)
+/src/generated
+
 # Logs
 logs
 *.log
