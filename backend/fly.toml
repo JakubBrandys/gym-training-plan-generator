@@ -1,0 +1,29 @@
+# Hand-authored (no Fly account existed yet to run `fly launch` interactively).
+
+app = "gym-training-plan-generator-api"
+# fra = Frankfurt, closest active region to Poland after Fly retired 17
+# regions (incl. waw/Warsaw) in its Sept 2025 region consolidation.
+primary_region = "fra"
+
+[build]
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_start_machines = true
+  # Fly's default is to autostop idle machines to zero. That would silently
+  # reintroduce the connection-drop failure Fly was chosen to avoid (FR-006,
+  # no-fixed-max-wait live-progress WebSocket) — keep at least one machine up.
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

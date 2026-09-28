@@ -1,6 +1,7 @@
 # compiled output
 /dist
 /node_modules
+*.tsbuildinfo
 
 # generated Prisma client (regenerated via `npm run prisma:generate`)
 /src/generated

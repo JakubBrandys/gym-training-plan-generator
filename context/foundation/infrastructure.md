@@ -3,6 +3,7 @@ project: gym-training-plan-generator
 researched_at: 2026-09-20
 recommended_platform: Fly.io
 database_platform: Supabase
+frontend_platform: Cloudflare Workers (static assets)
 runner_up: Render
 context_type: mvp
 tech_stack:
@@ -18,6 +19,8 @@ tech_stack:
 Fly.io is the only researched platform that clears all five agent-friendly criteria while natively supporting the persistent, long-running NestJS process your PRD's live-progress AI pipeline requires (FR-006, and the NFR that imposes no fixed maximum wait time) — no architectural redesign needed, unlike Render (requires the paid always-on tier to avoid spin-down killing the WebSocket) or Railway (requires an async job-queue redesign around its 5-minute HTTP timeout). It's also the cheapest of the three survivors and matches the `deployment_target` already recorded in `context/foundation/tech-stack.md`, so this research confirms rather than overturns the earlier stack decision.
 
 **Database update (post-research decision):** Postgres is hosted on **Supabase** rather than Fly's managed Postgres — cheaper for this workload, and the account is already being set up. This is a database-hosting choice made independently of the compute-platform recommendation above: Fly.io was recommended for what it does for the NestJS *process* (persistent connections, WebSockets), which holds regardless of where Postgres lives. The tradeoff is deliberate cross-vendor hosting (app on Fly, DB on Supabase) instead of Fly's co-located Postgres — see the new risk-register rows below for what that costs.
+
+**Frontend hosting (post-research decision):** the React SPA deploys to **Cloudflare Workers, using its static-assets feature** — not the Fly app, and not Cloudflare Pages. Infra-research above dropped Cloudflare Workers *for the backend* because NestJS itself can't run there (bundle-size limits, no native Node runtime); none of that applies to a static frontend build, which is just files served from Cloudflare's edge with no Node runtime involved. Pages (the older static-site product) would also work and remains fully supported, but Cloudflare has put it in maintenance mode as of 2026 — all new investment goes to Workers static assets, which is now the recommended path for new static sites and can do everything Pages did (unlimited free static requests, `not_found_handling: "single-page-application"` for client-side routing, `wrangler versions upload` for per-branch preview URLs) plus the option to add real Worker logic later without migrating platforms. Consequence: frontend and backend are on different origins by design, so the NestJS app needs CORS enabled for the deployed Worker's origin — see `backend/src/main.ts`.
 
 ## Platform Comparison
 
@@ -74,6 +77,7 @@ Six months in, the bill has crept from $8/month to $40/month and nobody noticed 
 - **Rollback**: `fly releases` lists deploy history; revert by re-deploying a prior release image. Typical time-to-revert is a few minutes (image pull + restart). Caveat: database migrations do **not** auto-roll-back with an app rollback — a schema change tied to a bad release must be reverted manually and separately.
 - **Approval**: routine `fly deploy` on merge (already the recorded CI flow) and read-only `fly logs`/`fly status` may run unattended. Rotating the primary Postgres credential, changing the Postgres plan/tier (cost impact), and destroying an app or volume (irreversible data loss) require explicit human approval.
 - **Logs**: `fly logs --app <name>` for live tail from the CLI; agent-native access should go through the official Fly MCP server (`github.com/superfly/flymcp`) for structured, typed access rather than parsing CLI text output.
+- **Cloudflare Workers static assets (frontend)**: there's no server-side secret store to configure here — `VITE_*` values are baked into the static bundle at `npm run build` time (before `wrangler deploy` ever runs), so they're supplied as regular CI env vars, not Cloudflare secrets. They're public by design once bundled (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_URL`); never build `SUPABASE_SECRET_KEY` into this bundle. Preview deploys: `wrangler versions upload` (instead of `wrangler deploy`) uploads a version without shifting production traffic and returns its own preview URL — use this for branches/PRs instead of the live `wrangler deploy`. Rollback: `wrangler deployments list` + `wrangler rollback [<version-id>]` to a prior version.
 
 ## Risk Register
 
@@ -90,6 +94,9 @@ Six months in, the bill has crept from $8/month to $40/month and nobody noticed 
 | Supabase's default direct-connection string is IPv6-only, may not resolve from Fly's egress | Research finding | M | M | Use the Supavisor session pooler string (port 5432, IPv4-compatible) as `DIRECT_URL` for migrations instead of the raw direct-connection string; keep `DATABASE_URL` on the transaction pooler (port 6543) for runtime. |
 | Supabase free-tier projects pause after ~1 week of inactivity | Research finding | H (pre-launch), L (post-launch) | H (app can't reach DB until manually unpaused) | Move to a paid Supabase tier before real traffic; until then, expect to manually un-pause after idle periods. |
 | Fly's Postgres backup/restore tooling (`fly postgres`/`fly mpg`) no longer applies | Research finding | M | M | Rely on Supabase's own backup/PITR (tier-dependent) for DB recovery instead of Fly CLI commands. |
+| CORS misconfiguration between Worker origin and Fly API | Research finding | M | M | `FRONTEND_URL` drives `enableCors` in `main.ts`; keep it in sync with the actual `*.workers.dev`/custom domain URL, including preview-version origins if those need API access. |
+| Backend-only secrets accidentally baked into the frontend build | Research finding | L | H (secret exposed in public client bundle) | Only `VITE_`-prefixed public values go into the frontend build env; `SUPABASE_SECRET_KEY` etc. only ever go in Fly secrets — there's no Cloudflare-side secret store involved since this Worker has no server code, only static assets. |
+| Fly's default autostop-on-idle would silently reintroduce the connection-drop failure Fly was chosen to avoid | Research finding | H (if left at defaults) | H (breaks FR-006 live-progress WebSocket) | `fly.toml` explicitly sets `min_machines_running = 1` and `auto_stop_machines = "off"`. |
 
 ## Getting Started
 
@@ -102,6 +109,12 @@ Six months in, the bill has crept from $8/month to $40/month and nobody noticed 
    Wire both up with `fly secrets set DATABASE_URL=<pooler-string> DIRECT_URL=<direct-or-session-pooler-string>` (there's no `fly postgres attach`-style auto-injection since the DB isn't Fly-managed).
 5. `fly secrets set` for any additional secrets (AI model provider API keys, etc.).
 6. `fly deploy` to ship the first release; verify with `fly status` and `fly logs`.
+7. Install Wrangler (`npm install -g wrangler` or use `npx wrangler`) and run `wrangler login`. `frontend/wrangler.jsonc` already declares the Worker (`name`, `assets.directory`, `assets.not_found_handling: "single-page-application"` for client-side routing) — no dashboard project-creation step needed, `wrangler deploy` creates it on first run.
+8. Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_URL` (the Fly app's `https://<app>.fly.dev` URL) as env vars for the `npm run build` step — they get baked into the static bundle at build time, before `wrangler deploy` runs; there's no separate Cloudflare secret store for a static-assets-only Worker.
+9. `npm run build` then `wrangler deploy` from `frontend/` to ship the first frontend release, to a `*.workers.dev` subdomain by default.
+10. Set `FRONTEND_URL` as a Fly secret (`fly secrets set FRONTEND_URL=https://<name>.<subdomain>.workers.dev`) and redeploy the backend so CORS allows the deployed Worker's origin.
+
+See `context/deployment/deploy-plan.md` for the full runbook (manual account-creation gates, GitHub Actions secrets, verification steps).
 
 ## Out of Scope
 
