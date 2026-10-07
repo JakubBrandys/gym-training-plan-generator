@@ -1,7 +1,7 @@
 ---
 change_id: exercise-catalog-seed
 title: Seed a minimal curated exercise catalog with images
-status: implementing
+status: implemented
 created: 2026-10-04
 updated: 2026-10-07
 archived_at: null

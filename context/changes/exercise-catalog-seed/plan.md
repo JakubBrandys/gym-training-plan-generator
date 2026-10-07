@@ -373,7 +373,7 @@ None material. `findAll` returns ~32 rows (≤ ~150 at the PRD's eventual size),
 
 - [x] 3.6 In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey` — 1e36657
 - [x] 3.7 The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance — 1e36657
-- [ ] 3.8 With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 32 rows
+- [x] 3.8 With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 32 rows
 - [x] 3.9 Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE` — 1e36657
 - [x] 3.10 Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file — 1e36657
 
@@ -389,4 +389,4 @@ None material. `findAll` returns ~32 rows (≤ ~150 at the PRD's eventual size),
 #### Manual
 
 - [x] 4.5 `cd backend && npm run start:dev` boots without dependency-injection errors (confirms `ExercisesModule` wiring) and `GET /health` returns 200 — d7fddcf
-- [ ] 4.6 After the push deploys the frontend, `curl -sI https://<worker-url>/exercises/barbell-squat.jpg` returns 200 with `content-type: image/jpeg`
+- [x] 4.6 After the push deploys the frontend, `curl -sI https://<worker-url>/exercises/barbell-squat.jpg` returns 200 with `content-type: image/jpeg`
