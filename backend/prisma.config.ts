@@ -5,6 +5,8 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    // Prisma 7 never seeds automatically; run via `npm run prisma:seed`.
+    seed: 'tsx prisma/seed.ts',
   },
   datasource: {
     // Prisma CLI (migrate/db push/studio) needs a non-pooled connection —

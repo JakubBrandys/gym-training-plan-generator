@@ -122,3 +122,7 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Exercise catalog
+
+The curated exercise catalog (the `Exercise` table) is loaded from `prisma/seed-data/exercises.json` with `npm run prisma:seed`. Images live in `frontend/public/exercises/`. See [`prisma/seed-data/README.md`](prisma/seed-data/README.md) for provenance, how to add an exercise and how to run the seed.

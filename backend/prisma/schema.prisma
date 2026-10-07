@@ -7,3 +7,19 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum ExerciseLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
+}
+
+model Exercise {
+  slug           String        @id
+  name           String
+  primaryMuscles String[]
+  equipment      String
+  level          ExerciseLevel
+  category       String
+  imageKey       String
+}

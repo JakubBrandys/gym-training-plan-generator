@@ -1,0 +1,354 @@
+[
+  {
+    "slug": "barbell-squat",
+    "name": "Barbell Squat",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "equipment": "barbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/barbell-squat.jpg"
+  },
+  {
+    "slug": "leg-press",
+    "name": "Leg Press",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "equipment": "machine",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/leg-press.jpg"
+  },
+  {
+    "slug": "dumbbell-lunges",
+    "name": "Dumbbell Lunges",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/dumbbell-lunges.jpg"
+  },
+  {
+    "slug": "leg-extensions",
+    "name": "Leg Extensions",
+    "primaryMuscles": [
+      "quadriceps"
+    ],
+    "equipment": "machine",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/leg-extensions.jpg"
+  },
+  {
+    "slug": "romanian-deadlift",
+    "name": "Romanian Deadlift",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "equipment": "barbell",
+    "level": "intermediate",
+    "category": "strength",
+    "imageKey": "exercises/romanian-deadlift.jpg"
+  },
+  {
+    "slug": "lying-leg-curls",
+    "name": "Lying Leg Curls",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "equipment": "machine",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/lying-leg-curls.jpg"
+  },
+  {
+    "slug": "seated-leg-curl",
+    "name": "Seated Leg Curl",
+    "primaryMuscles": [
+      "hamstrings"
+    ],
+    "equipment": "machine",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/seated-leg-curl.jpg"
+  },
+  {
+    "slug": "barbell-hip-thrust",
+    "name": "Barbell Hip Thrust",
+    "primaryMuscles": [
+      "glutes"
+    ],
+    "equipment": "barbell",
+    "level": "intermediate",
+    "category": "powerlifting",
+    "imageKey": "exercises/barbell-hip-thrust.jpg"
+  },
+  {
+    "slug": "single-leg-glute-bridge",
+    "name": "Single Leg Glute Bridge",
+    "primaryMuscles": [
+      "glutes"
+    ],
+    "equipment": "body only",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/single-leg-glute-bridge.jpg"
+  },
+  {
+    "slug": "standing-calf-raises",
+    "name": "Standing Calf Raises",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "equipment": "machine",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/standing-calf-raises.jpg"
+  },
+  {
+    "slug": "seated-calf-raise",
+    "name": "Seated Calf Raise",
+    "primaryMuscles": [
+      "calves"
+    ],
+    "equipment": "machine",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/seated-calf-raise.jpg"
+  },
+  {
+    "slug": "incline-dumbbell-press",
+    "name": "Incline Dumbbell Press",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/incline-dumbbell-press.jpg"
+  },
+  {
+    "slug": "dumbbell-flyes",
+    "name": "Dumbbell Flyes",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/dumbbell-flyes.jpg"
+  },
+  {
+    "slug": "pushups",
+    "name": "Pushups",
+    "primaryMuscles": [
+      "chest"
+    ],
+    "equipment": "body only",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/pushups.jpg"
+  },
+  {
+    "slug": "pullups",
+    "name": "Pullups",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "equipment": "body only",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/pullups.jpg"
+  },
+  {
+    "slug": "wide-grip-lat-pulldown",
+    "name": "Wide-Grip Lat Pulldown",
+    "primaryMuscles": [
+      "lats"
+    ],
+    "equipment": "cable",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/wide-grip-lat-pulldown.jpg"
+  },
+  {
+    "slug": "bent-over-barbell-row",
+    "name": "Bent Over Barbell Row",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "equipment": "barbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/bent-over-barbell-row.jpg"
+  },
+  {
+    "slug": "seated-cable-rows",
+    "name": "Seated Cable Rows",
+    "primaryMuscles": [
+      "middle back"
+    ],
+    "equipment": "cable",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/seated-cable-rows.jpg"
+  },
+  {
+    "slug": "barbell-deadlift",
+    "name": "Barbell Deadlift",
+    "primaryMuscles": [
+      "lower back"
+    ],
+    "equipment": "barbell",
+    "level": "intermediate",
+    "category": "strength",
+    "imageKey": "exercises/barbell-deadlift.jpg"
+  },
+  {
+    "slug": "standing-military-press",
+    "name": "Standing Military Press",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "equipment": "barbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/standing-military-press.jpg"
+  },
+  {
+    "slug": "dumbbell-shoulder-press",
+    "name": "Dumbbell Shoulder Press",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "equipment": "dumbbell",
+    "level": "intermediate",
+    "category": "strength",
+    "imageKey": "exercises/dumbbell-shoulder-press.jpg"
+  },
+  {
+    "slug": "side-lateral-raise",
+    "name": "Side Lateral Raise",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/side-lateral-raise.jpg"
+  },
+  {
+    "slug": "face-pull",
+    "name": "Face Pull",
+    "primaryMuscles": [
+      "shoulders"
+    ],
+    "equipment": "cable",
+    "level": "intermediate",
+    "category": "strength",
+    "imageKey": "exercises/face-pull.jpg"
+  },
+  {
+    "slug": "barbell-curl",
+    "name": "Barbell Curl",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "equipment": "barbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/barbell-curl.jpg"
+  },
+  {
+    "slug": "dumbbell-bicep-curl",
+    "name": "Dumbbell Bicep Curl",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/dumbbell-bicep-curl.jpg"
+  },
+  {
+    "slug": "hammer-curls",
+    "name": "Hammer Curls",
+    "primaryMuscles": [
+      "biceps"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/hammer-curls.jpg"
+  },
+  {
+    "slug": "triceps-pushdown",
+    "name": "Triceps Pushdown",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "equipment": "cable",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/triceps-pushdown.jpg"
+  },
+  {
+    "slug": "dips-triceps-version",
+    "name": "Dips - Triceps Version",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "equipment": "body only",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/dips-triceps-version.jpg"
+  },
+  {
+    "slug": "seated-triceps-press",
+    "name": "Seated Triceps Press",
+    "primaryMuscles": [
+      "triceps"
+    ],
+    "equipment": "dumbbell",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/seated-triceps-press.jpg"
+  },
+  {
+    "slug": "crunches",
+    "name": "Crunches",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "equipment": "body only",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/crunches.jpg"
+  },
+  {
+    "slug": "plank",
+    "name": "Plank",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "equipment": "body only",
+    "level": "beginner",
+    "category": "strength",
+    "imageKey": "exercises/plank.jpg"
+  },
+  {
+    "slug": "hanging-leg-raise",
+    "name": "Hanging Leg Raise",
+    "primaryMuscles": [
+      "abdominals"
+    ],
+    "equipment": "body only",
+    "level": "expert",
+    "category": "strength",
+    "imageKey": "exercises/hanging-leg-raise.jpg"
+  }
+]
