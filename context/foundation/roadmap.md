@@ -3,7 +3,7 @@ project: Gym Training Plan Generator
 version: 1
 status: draft
 created: 2026-10-03
-updated: 2026-10-04
+updated: 2026-10-07
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -42,7 +42,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 
 | ID   | Change ID                | Outcome (user can …)                                                                  | Prerequisites | PRD refs                      | Status   |
 | ---- | ------------------------ | ------------------------------------------------------------------------------------- | ------------- | ----------------------------- | -------- |
-| F-01 | exercise-catalog-seed    | (foundation) a minimal curated exercise catalog with images exists and can be queried | —             | FR-011, US-01                 | in-progress |
+| F-01 | exercise-catalog-seed    | (foundation) a minimal curated exercise catalog with images exists and can be queried | —             | FR-011, US-01                 | done     |
 | S-01 | sign-up-and-login        | sign up, log in, and be redirected to sign-in when hitting a gated route              | —             | FR-001, US-01                 | ready    |
 | S-02 | first-plan-generation    | submit the plan form and receive an AI-generated 8-week plan from the catalog         | S-01, F-01    | FR-004, FR-005, US-01         | proposed |
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | proposed |
@@ -87,7 +87,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Where do the exercise images come from (self-made, licensed, generated)? — Owner: user. Block: no (the seed can start with a few exercises and grow).
 - **Risk:** Sequenced first because the north star cannot be verified against a fixed exercise set without it; kept to a minimal seed so it does not become a full catalog-curation project ahead of the slice that consumes it.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -212,3 +212,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 (Empty on first generation. `/10x-archive` appends entries here.)
+
+- **F-01: (foundation) a small curated set of exercises, each with an image, exists in the data store and can be queried by the plan generator; it is not the full catalog.** — Archived 2026-10-07 → `context/archive/2026-10-04-exercise-catalog-seed/`. Lesson: —.
