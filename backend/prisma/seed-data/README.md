@@ -43,3 +43,25 @@ One image per exercise, a JPEG at `frontend/public/exercises/<slug>.jpg` (about 
 3. Add the exercise's image as `frontend/public/exercises/<slug>.jpg` (JPEG, same style as the existing ones).
 4. Run the seed-data spec from `backend/`: `npx vitest run test/exercise-seed-data.spec.ts`. It checks that every record is well-formed, that its image exists and is a JPEG, and that no image lacks a record.
 5. Run the seed.
+
+## Running the seed
+
+```bash
+cd backend && npm run prisma:seed
+```
+
+- Prisma 7 never seeds automatically, and CI and app boot never run it: seeding is always a deliberate step.
+- It is safe to re-run. Rows are upserted by `slug` in one transaction, so a failure never leaves a half-seeded catalog.
+- Run it after every change to `exercises.json`.
+- It checks that every record's image exists before touching the database, and exits non-zero naming the missing file if one does not.
+- It targets `DIRECT_URL` from `backend/.env`. There is a single Supabase database, so this writes to the shared (production) catalog.
+
+### Removing an exercise
+
+Deleting a record from `exercises.json` does **not** delete it from the database; saved plans will reference slugs, so removal is a deliberate step. The seed logs a `WARN` for every table row that is not in `exercises.json`. To clear one, run in the Supabase SQL editor:
+
+```sql
+delete from "Exercise" where slug = '<slug>';
+```
+
+After that, the image file in `frontend/public/exercises/` can be deleted.

@@ -350,32 +350,32 @@ None material. `findAll` returns ~32 rows (≤ ~150 at the PRD's eventual size),
 
 #### Automated
 
-- [x] 2.1 Seed-data spec passes: `cd backend && npx vitest run test/exercise-seed-data.spec.ts`
-- [x] 2.2 Full unit suite passes: `cd backend && npm test`
-- [x] 2.3 Linting passes: `cd backend && npm run lint`
-- [x] 2.4 Frontend still builds with the images in `public/`: `cd frontend && npm run build`
+- [x] 2.1 Seed-data spec passes: `cd backend && npx vitest run test/exercise-seed-data.spec.ts` — ae79b9b
+- [x] 2.2 Full unit suite passes: `cd backend && npm test` — ae79b9b
+- [x] 2.3 Linting passes: `cd backend && npm run lint` — ae79b9b
+- [x] 2.4 Frontend still builds with the images in `public/`: `cd frontend && npm run build` — ae79b9b
 
 #### Manual
 
-- [x] 2.5 Skim the rows in `exercises.json` (name, muscles, equipment, level) — the final list matches intent; swap or add exercises now, not after seeding
-- [x] 2.6 Open a handful of images across muscle groups: each depicts its named exercise; `cd frontend && npm run dev` serves `http://localhost:5173/exercises/barbell-squat.jpg` as an image
+- [x] 2.5 Skim the rows in `exercises.json` (name, muscles, equipment, level) — the final list matches intent; swap or add exercises now, not after seeding — ae79b9b
+- [x] 2.6 Open a handful of images across muscle groups: each depicts its named exercise; `cd frontend && npm run dev` serves `http://localhost:5173/exercises/barbell-squat.jpg` as an image — ae79b9b
 
 ### Phase 3: Seed script and runbook
 
 #### Automated
 
-- [ ] 3.1 Seed script has no type errors (baseline already has one unrelated error, `test/app.e2e-spec.ts` TS2307): `cd backend && npx tsc --noEmit 2>&1 | grep -c '^prisma/'` prints 0
-- [ ] 3.2 First seed run exits 0 and logs 32 seeded / catalog total 32: `cd backend && npm run prisma:seed`
-- [ ] 3.3 Second run is idempotent — exits 0, catalog total still 32, no stale-row WARN: `cd backend && npm run prisma:seed`
-- [ ] 3.5 Lint and build still pass (seed is outside both): `cd backend && npm run lint && npm run build`
+- [x] 3.1 Seed script has no type errors (baseline already has one unrelated error, `test/app.e2e-spec.ts` TS2307): `cd backend && npx tsc --noEmit 2>&1 | grep -c '^prisma/'` prints 0
+- [x] 3.2 First seed run exits 0 and logs 32 seeded / catalog total 32: `cd backend && npm run prisma:seed`
+- [x] 3.3 Second run is idempotent — exits 0, catalog total still 32, no stale-row WARN: `cd backend && npm run prisma:seed`
+- [x] 3.5 Lint and build still pass (seed is outside both): `cd backend && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 3.6 In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
-- [ ] 3.7 The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance
+- [x] 3.6 In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
+- [x] 3.7 The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance
 - [ ] 3.8 With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 32 rows
-- [ ] 3.9 Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE`
-- [ ] 3.10 Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file
+- [x] 3.9 Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE`
+- [x] 3.10 Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file
 
 ### Phase 4: Catalog query service
 
