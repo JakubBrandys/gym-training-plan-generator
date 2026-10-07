@@ -381,12 +381,12 @@ None material. `findAll` returns ~32 rows (≤ ~150 at the PRD's eventual size),
 
 #### Automated
 
-- [x] 4.1 Service spec passes: `cd backend && npx vitest run src/exercises/exercises.service.spec.ts`
-- [x] 4.2 Full unit suite passes: `cd backend && npm test`
-- [x] 4.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint`
-- [x] 4.4 Build passes: `cd backend && npm run build`
+- [x] 4.1 Service spec passes: `cd backend && npx vitest run src/exercises/exercises.service.spec.ts` — d7fddcf
+- [x] 4.2 Full unit suite passes: `cd backend && npm test` — d7fddcf
+- [x] 4.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint` — d7fddcf
+- [x] 4.4 Build passes: `cd backend && npm run build` — d7fddcf
 
 #### Manual
 
-- [x] 4.5 `cd backend && npm run start:dev` boots without dependency-injection errors (confirms `ExercisesModule` wiring) and `GET /health` returns 200
+- [x] 4.5 `cd backend && npm run start:dev` boots without dependency-injection errors (confirms `ExercisesModule` wiring) and `GET /health` returns 200 — d7fddcf
 - [ ] 4.6 After the push deploys the frontend, `curl -sI https://<worker-url>/exercises/barbell-squat.jpg` returns 200 with `content-type: image/jpeg`
