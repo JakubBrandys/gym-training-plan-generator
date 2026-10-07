@@ -364,29 +364,29 @@ None material. `findAll` returns ~32 rows (≤ ~150 at the PRD's eventual size),
 
 #### Automated
 
-- [x] 3.1 Seed script has no type errors (baseline already has one unrelated error, `test/app.e2e-spec.ts` TS2307): `cd backend && npx tsc --noEmit 2>&1 | grep -c '^prisma/'` prints 0
-- [x] 3.2 First seed run exits 0 and logs 32 seeded / catalog total 32: `cd backend && npm run prisma:seed`
-- [x] 3.3 Second run is idempotent — exits 0, catalog total still 32, no stale-row WARN: `cd backend && npm run prisma:seed`
-- [x] 3.5 Lint and build still pass (seed is outside both): `cd backend && npm run lint && npm run build`
+- [x] 3.1 Seed script has no type errors (baseline already has one unrelated error, `test/app.e2e-spec.ts` TS2307): `cd backend && npx tsc --noEmit 2>&1 | grep -c '^prisma/'` prints 0 — 1e36657
+- [x] 3.2 First seed run exits 0 and logs 32 seeded / catalog total 32: `cd backend && npm run prisma:seed` — 1e36657
+- [x] 3.3 Second run is idempotent — exits 0, catalog total still 32, no stale-row WARN: `cd backend && npm run prisma:seed` — 1e36657
+- [x] 3.5 Lint and build still pass (seed is outside both): `cd backend && npm run lint && npm run build` — 1e36657
 
 #### Manual
 
-- [x] 3.6 In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
-- [x] 3.7 The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance
+- [x] 3.6 In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey` — 1e36657
+- [x] 3.7 The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance — 1e36657
 - [ ] 3.8 With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 32 rows
-- [x] 3.9 Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE`
-- [x] 3.10 Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file
+- [x] 3.9 Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE` — 1e36657
+- [x] 3.10 Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file — 1e36657
 
 ### Phase 4: Catalog query service
 
 #### Automated
 
-- [ ] 4.1 Service spec passes: `cd backend && npx vitest run src/exercises/exercises.service.spec.ts`
-- [ ] 4.2 Full unit suite passes: `cd backend && npm test`
-- [ ] 4.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint`
-- [ ] 4.4 Build passes: `cd backend && npm run build`
+- [x] 4.1 Service spec passes: `cd backend && npx vitest run src/exercises/exercises.service.spec.ts`
+- [x] 4.2 Full unit suite passes: `cd backend && npm test`
+- [x] 4.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint`
+- [x] 4.4 Build passes: `cd backend && npm run build`
 
 #### Manual
 
-- [ ] 4.5 `cd backend && npm run start:dev` boots without dependency-injection errors (confirms `ExercisesModule` wiring) and `GET /health` returns 200
+- [x] 4.5 `cd backend && npm run start:dev` boots without dependency-injection errors (confirms `ExercisesModule` wiring) and `GET /health` returns 200
 - [ ] 4.6 After the push deploys the frontend, `curl -sI https://<worker-url>/exercises/barbell-squat.jpg` returns 200 with `content-type: image/jpeg`
