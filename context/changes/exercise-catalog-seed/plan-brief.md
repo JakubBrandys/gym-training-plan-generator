@@ -12,13 +12,13 @@ Prisma 7 is wired to the hosted Supabase Postgres, but the schema has no models 
 
 ## Desired End State
 
-An `Exercise` table in Supabase holds 33 curated rows; 33 JPEGs live in `frontend/public/exercises/` and are served by the existing Worker; any module importing `ExercisesModule` can call `findAll()`. Re-running the seed is safe, and a spec guarantees every row has a real image.
+An `Exercise` table in Supabase holds 32 curated rows; 32 JPEGs live in `frontend/public/exercises/` and are served by the existing Worker; any module importing `ExercisesModule` can call `findAll()`. Re-running the seed is safe, and a spec guarantees every row has a real image.
 
 ## Key Decisions Made
 
 | Decision | Choice | Why |
 | --- | --- | --- |
-| Seed size | ~30 (33 proposed), 3–5 per major muscle group | A thin menu would distort S-02's plan-quality verdict; ~15 is too few for a 5-day split |
+| Seed size | ~30 (32 proposed), 3–5 per major muscle group | A thin menu would distort S-02's plan-quality verdict; ~15 is too few for a 5-day split |
 | Image source | One-time import from Free Exercise DB (Unlicense) | No authoring cost; license confirmed via the GitHub API; not runtime fetching |
 | Selection method | Explicit hand-picked id list | The dataset's `category` is unreliable (Hip Thrust is tagged `powerlifting`) |
 | Image hosting | Frontend static assets; DB stores a host-agnostic `imageKey` | Free, no new infra; R2 was weighed (`r2.dev` is dev-only, production needs a custom domain or Worker plus an account gate) and stays a later base-URL swap |
@@ -32,7 +32,7 @@ An `Exercise` table in Supabase holds 33 curated rows; 33 JPEGs live in `fronten
 
 ## Scope
 
-**In scope:** `Exercise` model + enum + first migration (RLS enabled); curated `exercises.json` and 33 images; idempotent seed script and runbook; `ExercisesModule`/`ExercisesService` with unit tests; seed-data spec.
+**In scope:** `Exercise` model + enum + first migration (RLS enabled); curated `exercises.json` and 32 images; idempotent seed script and runbook; `ExercisesModule`/`ExercisesService` with unit tests; seed-data spec.
 
 **Out of scope:** HTTP endpoint; full 50–150 catalog; secondary muscles/instructions; R2 or Supabase Storage; seeding in CI or at boot; pruning removed exercises; a dev/test DB or DB-backed tests; validating generated plans against the catalog (S-02); any frontend code.
 
@@ -45,7 +45,7 @@ Metadata lives in `backend/prisma/seed-data/exercises.json`, images in `frontend
 | Phase | What it delivers | Key risk |
 | --- | --- | --- |
 | 1. Data model + migration | `Exercise` table in Supabase, regenerated client | Applying to the shared DB is a production change; forward-only, so undoing means a new migration |
-| 2. Curated data + images | `exercises.json`, 33 JPEGs, provenance README, seed-data spec | Picking the final exercise list; image/name mismatches |
+| 2. Curated data + images | `exercises.json`, 32 JPEGs, provenance README, seed-data spec | Picking the final exercise list; image/name mismatches |
 | 3. Seed script + runbook | Idempotent `npm run prisma:seed`, run twice against the DB | Seed is manual — easy to forget; a bad run writes to the shared DB |
 | 4. Query service | `ExercisesModule`/`Service` + unit tests, wired into `AppModule` | DI wiring (non-global `PrismaModule`) |
 
@@ -62,6 +62,6 @@ Metadata lives in `backend/prisma/seed-data/exercises.json`, images in `frontend
 
 ## Success Criteria (Summary)
 
-- The `Exercise` table holds 33 curated rows, each pointing at a real JPEG that the deployed Worker serves.
+- The `Exercise` table holds 32 curated rows, each pointing at a real JPEG that the deployed Worker serves.
 - `findAll()` gives S-02 the full catalog to constrain the AI and to verify "only from the catalog" against.
 - Re-running the seed changes nothing, and `npm test`, `npm run lint` and `npm run build` pass in `backend/`.

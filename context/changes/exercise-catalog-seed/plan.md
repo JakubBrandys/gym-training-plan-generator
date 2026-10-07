@@ -16,9 +16,9 @@ The catalog is a one-time curated import from the public-domain Free Exercise DB
 
 ## Desired End State
 
-After this plan: the `Exercise` table exists in Supabase and holds ~33 curated rows; 33 JPEG images are committed under `frontend/public/exercises/` and will be served by the Cloudflare Worker; `ExercisesService` (`findAll`) can be injected by any module that imports `ExercisesModule`; re-running the seed is safe; and a spec guarantees every catalog row has a real image file.
+After this plan: the `Exercise` table exists in Supabase and holds ~32 curated rows; 32 JPEG images are committed under `frontend/public/exercises/` and will be served by the Cloudflare Worker; `ExercisesService` (`findAll`) can be injected by any module that imports `ExercisesModule`; re-running the seed is safe; and a spec guarantees every catalog row has a real image file.
 
-Verify: `npm test` (seed-data + service specs), `npm run lint`, `npm run build` pass in `backend/`; `select count(*) from "Exercise"` returns 33; the app boots with `ExercisesModule` wired; after the frontend deploys, `/exercises/<slug>.jpg` returns an image.
+Verify: `npm test` (seed-data + service specs), `npm run lint`, `npm run build` pass in `backend/`; `select count(*) from "Exercise"` returns 32; the app boots with `ExercisesModule` wired; after the frontend deploys, `/exercises/<slug>.jpg` returns an image.
 
 ### Key Discoveries:
 
@@ -55,7 +55,7 @@ Verify: `npm test` (seed-data + service specs), `npm run lint`, `npm run build` 
 Four phases, each ending in something verifiable, with the two production-touching steps (migration, seed) isolated:
 
 1. Schema + first migration, authored with `prisma migrate diff` (no shadow database needed against Supabase); migrations are forward-only, with no rollback script.
-2. Curated data + images: an explicit list of 33 dataset ids imported once into `exercises.json` and `frontend/public/exercises/`, guarded by a spec.
+2. Curated data + images: an explicit list of 32 dataset ids imported once into `exercises.json` and `frontend/public/exercises/`, guarded by a spec.
 3. Idempotent seed script (`tsx`, `migrations.seed`) — upserts by `slug` in one transaction, fails fast on a missing image, run twice to prove idempotency.
 4. `ExercisesModule`/`ExercisesService` with mocked-Prisma unit tests, wired into `AppModule`.
 
@@ -119,7 +119,7 @@ Add the `Exercise` model and `ExerciseLevel` enum, generate the first migration,
 
 ### Overview
 
-Import ~33 exercises once from the Free Exercise DB: write the seed data file, copy one image per exercise into the frontend's static assets, document provenance, and guard it all with a spec.
+Import ~32 exercises once from the Free Exercise DB: write the seed data file, copy one image per exercise into the frontend's static assets, document provenance, and guard it all with a spec.
 
 ### Changes Required:
 
@@ -139,7 +139,7 @@ Starting selection (dataset ids; swap freely during review — every one has two
 | Hamstrings (3) | `Romanian_Deadlift`, `Lying_Leg_Curls`, `Seated_Leg_Curl` |
 | Glutes (2) | `Barbell_Hip_Thrust`, `Single_Leg_Glute_Bridge` |
 | Calves (2) | `Standing_Calf_Raises`, `Seated_Calf_Raise` |
-| Chest (4) | `Barbell_Bench_Press_-_Medium_Grip`, `Incline_Dumbbell_Press`, `Dumbbell_Flyes`, `Pushups` |
+| Chest (3) | `Incline_Dumbbell_Press`, `Dumbbell_Flyes`, `Pushups` |
 | Back (5) | `Pullups`, `Wide-Grip_Lat_Pulldown`, `Bent_Over_Barbell_Row`, `Seated_Cable_Rows`, `Barbell_Deadlift` |
 | Shoulders (4) | `Standing_Military_Press`, `Dumbbell_Shoulder_Press`, `Side_Lateral_Raise`, `Face_Pull` |
 | Biceps (3) | `Barbell_Curl`, `Dumbbell_Bicep_Curl`, `Hammer_Curls` |
@@ -148,7 +148,7 @@ Starting selection (dataset ids; swap freely during review — every one has two
 
 #### 2. Images
 
-**File**: `frontend/public/exercises/<slug>.jpg` (33 files)
+**File**: `frontend/public/exercises/<slug>.jpg` (32 files)
 
 **Intent**: One image per exercise, served by the existing Cloudflare Workers static-assets deployment.
 
@@ -225,15 +225,15 @@ Add an idempotent seed that loads `exercises.json` into the `Exercise` table, wi
 #### Automated Verification:
 
 - Seed script has no type errors (baseline already has one unrelated error, `test/app.e2e-spec.ts` TS2307): `cd backend && npx tsc --noEmit 2>&1 | grep -c '^prisma/'` prints 0
-- First seed run exits 0 and logs 33 seeded / catalog total 33: `cd backend && npm run prisma:seed`
-- Second run is idempotent — exits 0, catalog total still 33, no stale-row WARN: `cd backend && npm run prisma:seed`
+- First seed run exits 0 and logs 32 seeded / catalog total 32: `cd backend && npm run prisma:seed`
+- Second run is idempotent — exits 0, catalog total still 32, no stale-row WARN: `cd backend && npm run prisma:seed`
 - Lint and build still pass (seed is outside both): `cd backend && npm run lint && npm run build`
 
 #### Manual Verification:
 
-- In Supabase, `select count(*) from "Exercise"` returns 33 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
+- In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
 - The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance
-- With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 33 rows
+- With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 32 rows
 - Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE`
 - Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file
 
@@ -304,13 +304,13 @@ Expose the catalog to the rest of the backend through a small injectable service
 
 ### Manual Testing Steps:
 
-1. After Phase 3, in the Supabase table editor confirm 33 rows with sensible `level`, `primaryMuscles`, `imageKey`.
+1. After Phase 3, in the Supabase table editor confirm 32 rows with sensible `level`, `primaryMuscles`, `imageKey`.
 2. After the frontend deploys (merge to `main`): `curl -sI https://<worker-url>/exercises/barbell-squat.jpg` returns `200` with `content-type: image/jpeg`.
 3. Spot-check three or four more image URLs from different muscle groups in a browser.
 
 ## Performance Considerations
 
-None material. `findAll` returns ~33 rows (≤ ~150 at the PRD's eventual size), intended to be fed whole to the AI prompt, so there is no pagination. Images add roughly 1.5–2 MB to the repo and are served free from Cloudflare's edge.
+None material. `findAll` returns ~32 rows (≤ ~150 at the PRD's eventual size), intended to be fed whole to the AI prompt, so there is no pagination. Images add roughly 1.5–2 MB to the repo and are served free from Cloudflare's edge.
 
 ## Migration Notes
 
@@ -335,45 +335,45 @@ None material. `findAll` returns ~33 rows (≤ ~150 at the PRD's eventual size),
 
 #### Automated
 
-- [x] 1.1 Schema validates: `cd backend && npx prisma validate`
-- [x] 1.2 Migration folder and lock file exist and the SQL creates both objects and enables RLS: `grep -l 'CREATE TABLE "Exercise"' backend/prisma/migrations/*_create_exercise/migration.sql`, then `grep -q 'CREATE TYPE "ExerciseLevel"'` and `grep -q 'ENABLE ROW LEVEL SECURITY'` on the same file, plus `backend/prisma/migrations/migration_lock.toml` present
-- [x] 1.4 Migration applies, then reports nothing pending on re-run: `cd backend && npm run prisma:migrate:deploy` twice
-- [x] 1.5 Client regenerates and the project builds: `cd backend && npm run prisma:generate && npm run build`
+- [x] 1.1 Schema validates: `cd backend && npx prisma validate` — 2aa60ec
+- [x] 1.2 Migration folder and lock file exist and the SQL creates both objects and enables RLS: `grep -l 'CREATE TABLE "Exercise"' backend/prisma/migrations/*_create_exercise/migration.sql`, then `grep -q 'CREATE TYPE "ExerciseLevel"'` and `grep -q 'ENABLE ROW LEVEL SECURITY'` on the same file, plus `backend/prisma/migrations/migration_lock.toml` present — 2aa60ec
+- [x] 1.4 Migration applies, then reports nothing pending on re-run: `cd backend && npm run prisma:migrate:deploy` twice — 2aa60ec
+- [x] 1.5 Client regenerates and the project builds: `cd backend && npm run prisma:generate && npm run build` — 2aa60ec
 
 #### Manual
 
-- [x] 1.6 In the Supabase table editor, `Exercise` exists with 0 rows and `_prisma_migrations` lists `<ts>_create_exercise` as finished
-- [x] 1.7 In the Supabase SQL editor, `select relrowsecurity from pg_class where relname = 'Exercise'` returns `true`
-- [x] 1.8 Before applying the migration, the Supabase table editor shows no tables in `public`; if `migrate deploy` still fails with P3005, stop and baseline per the Prisma docs instead of forcing
+- [x] 1.6 In the Supabase table editor, `Exercise` exists with 0 rows and `_prisma_migrations` lists `<ts>_create_exercise` as finished — 2aa60ec
+- [x] 1.7 In the Supabase SQL editor, `select relrowsecurity from pg_class where relname = 'Exercise'` returns `true` — 2aa60ec
+- [x] 1.8 Before applying the migration, the Supabase table editor shows no tables in `public`; if `migrate deploy` still fails with P3005, stop and baseline per the Prisma docs instead of forcing — 2aa60ec
 
 ### Phase 2: Curated catalog data and images
 
 #### Automated
 
-- [ ] 2.1 Seed-data spec passes: `cd backend && npx vitest run test/exercise-seed-data.spec.ts`
-- [ ] 2.2 Full unit suite passes: `cd backend && npm test`
-- [ ] 2.3 Linting passes: `cd backend && npm run lint`
-- [ ] 2.4 Frontend still builds with the images in `public/`: `cd frontend && npm run build`
+- [x] 2.1 Seed-data spec passes: `cd backend && npx vitest run test/exercise-seed-data.spec.ts`
+- [x] 2.2 Full unit suite passes: `cd backend && npm test`
+- [x] 2.3 Linting passes: `cd backend && npm run lint`
+- [x] 2.4 Frontend still builds with the images in `public/`: `cd frontend && npm run build`
 
 #### Manual
 
-- [ ] 2.5 Skim the rows in `exercises.json` (name, muscles, equipment, level) — the final list matches intent; swap or add exercises now, not after seeding
-- [ ] 2.6 Open a handful of images across muscle groups: each depicts its named exercise; `cd frontend && npm run dev` serves `http://localhost:5173/exercises/barbell-squat.jpg` as an image
+- [x] 2.5 Skim the rows in `exercises.json` (name, muscles, equipment, level) — the final list matches intent; swap or add exercises now, not after seeding
+- [x] 2.6 Open a handful of images across muscle groups: each depicts its named exercise; `cd frontend && npm run dev` serves `http://localhost:5173/exercises/barbell-squat.jpg` as an image
 
 ### Phase 3: Seed script and runbook
 
 #### Automated
 
 - [ ] 3.1 Seed script has no type errors (baseline already has one unrelated error, `test/app.e2e-spec.ts` TS2307): `cd backend && npx tsc --noEmit 2>&1 | grep -c '^prisma/'` prints 0
-- [ ] 3.2 First seed run exits 0 and logs 33 seeded / catalog total 33: `cd backend && npm run prisma:seed`
-- [ ] 3.3 Second run is idempotent — exits 0, catalog total still 33, no stale-row WARN: `cd backend && npm run prisma:seed`
+- [ ] 3.2 First seed run exits 0 and logs 32 seeded / catalog total 32: `cd backend && npm run prisma:seed`
+- [ ] 3.3 Second run is idempotent — exits 0, catalog total still 32, no stale-row WARN: `cd backend && npm run prisma:seed`
 - [ ] 3.5 Lint and build still pass (seed is outside both): `cd backend && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 3.6 In Supabase, `select count(*) from "Exercise"` returns 33 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
+- [ ] 3.6 In Supabase, `select count(*) from "Exercise"` returns 32 and a few rows show the expected `level`, `primaryMuscles`, and `imageKey`
 - [ ] 3.7 The READMEs read correctly end to end: run command, add-an-exercise steps, licensing/provenance
-- [ ] 3.8 With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 33 rows
+- [ ] 3.8 With the table seeded, the publishable key cannot read it: a GET on `<supabase-url>/rest/v1/Exercise?limit=1` with the key in the `apikey` header returns `[]` (or an error if the Data API is off) although the table holds 32 rows
 - [ ] 3.9 Stale-row warning and cleanup work: insert a throwaway `Exercise` row with slug `zz-stale-test` in the Supabase SQL editor, run `npm run prisma:seed` and see a WARN naming it (exit 0), then remove it with the README's cleanup `DELETE`
 - [ ] 3.10 Missing-image guard works: temporarily rename one `frontend/public/exercises/*.jpg`, run `npm run prisma:seed`, expect a non-zero exit naming the missing key and no change to the table, then restore the file
 
