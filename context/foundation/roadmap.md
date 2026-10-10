@@ -43,7 +43,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | ID   | Change ID                | Outcome (user can …)                                                                  | Prerequisites | PRD refs                      | Status   |
 | ---- | ------------------------ | ------------------------------------------------------------------------------------- | ------------- | ----------------------------- | -------- |
 | F-01 | exercise-catalog-seed    | (foundation) a minimal curated exercise catalog with images exists and can be queried | —             | FR-011, US-01                 | done     |
-| S-01 | sign-up-and-login        | sign up, log in, and be redirected to sign-in when hitting a gated route              | —             | FR-001, US-01                 | planning |
+| S-01 | sign-up-and-login        | sign up, log in, and be redirected to sign-in when hitting a gated route              | —             | FR-001, US-01                 | in-progress |
 | S-02 | first-plan-generation    | submit the plan form and receive an AI-generated 8-week plan from the catalog         | S-01, F-01    | FR-004, FR-005, US-01         | proposed |
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | proposed |
 | S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | proposed |
@@ -101,7 +101,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Auth is absent in the baseline and gates everything user-facing, so it goes first; the admin/member role split is deferred to `S-06`, the first slice that needs it.
-- **Status:** planning
+- **Status:** in-progress
 
 ### S-02: First plan generation (north star)
 

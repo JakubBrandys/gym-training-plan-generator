@@ -38,7 +38,7 @@ function isSeedExercise(value: unknown): value is SeedExercise {
     e.primaryMuscles.every((m) => typeof m === 'string') &&
     typeof e.equipment === 'string' &&
     typeof e.level === 'string' &&
-    e.level in LEVELS &&
+    Object.hasOwn(LEVELS, e.level) &&
     typeof e.category === 'string' &&
     typeof e.imageKey === 'string'
   );

@@ -70,6 +70,20 @@ $ mau deploy
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
+### Database role and row-level security
+
+Every table has row-level security enabled with no policies, which closes it to the Supabase Data API. The backend therefore relies on a role that owns the tables or bypasses RLS: `DATABASE_URL` and `DIRECT_URL` must both connect as the `postgres.<project-ref>` user (the role that runs migrations) or a role with `BYPASSRLS`. Any other role sees no rows and every insert fails.
+
+To check the Fly app's username without printing the password:
+
+```bash
+$ fly ssh console -C "sh -c 'echo \$DATABASE_URL | cut -d: -f2'"
+```
+
+It should print `//postgres.<project-ref>`.
+
+Prisma cannot express RLS, so every new table needs `ALTER TABLE "<Table>" ENABLE ROW LEVEL SECURITY;` appended to its migration by hand.
+
 ## Observability
 
 In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
