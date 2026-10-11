@@ -33,7 +33,6 @@ export class ProfilesService {
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === 'P2002'
       ) {
-        // A concurrent request created the row first; use it.
         return this.prisma.profile.findUniqueOrThrow({
           where: { id: user.id },
         });

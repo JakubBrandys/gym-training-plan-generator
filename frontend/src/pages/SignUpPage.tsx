@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/useAuth'
+import { authErrorMessage, GENERIC_AUTH_ERROR } from '../auth/auth-errors'
 
 export const SignUpPage = () => {
   const { session, loading } = useAuth()
@@ -24,17 +25,22 @@ export const SignUpPage = () => {
     event.preventDefault()
     setPending(true)
     setError(null)
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-    setPending(false)
-    if (signUpError) {
-      setError(signUpError.message)
-      return
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+      if (signUpError) {
+        setError(authErrorMessage(signUpError))
+        return
+      }
+      if (!data.session) {
+        setConfirmationSent(true)
+        return
+      }
+      navigate('/', { replace: true })
+    } catch {
+      setError(GENERIC_AUTH_ERROR)
+    } finally {
+      setPending(false)
     }
-    if (!data.session) {
-      setConfirmationSent(true)
-      return
-    }
-    navigate('/', { replace: true })
   }
 
   if (confirmationSent) {

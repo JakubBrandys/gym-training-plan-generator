@@ -31,20 +31,16 @@ export const HomePage = () => {
       if (cancelled) return
 
       if (response.status === 403) {
-        // RequireAuth redirects to /sign-in once the session is cleared;
-        // the sign-in page reads the reason from auth state.
         await signOut('blocked')
         return
       }
 
       if (response.status === 401) {
-        // RequireAuth redirects to /sign-in once the session is cleared.
         await signOut()
         return
       }
 
       if (!response.ok) {
-        // 5xx (e.g. 503: auth provider unreachable) is not a bad session.
         setState({ status: 'error' })
         return
       }

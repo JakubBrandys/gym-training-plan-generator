@@ -1,7 +1,5 @@
 import { supabase } from './supabase'
 
-// Reads the current access token right before each call so a refreshed
-// token is always used. Non-2xx responses are returned, not thrown.
 export const apiFetch = async (path: string, init?: RequestInit): Promise<Response> => {
   const {
     data: { session },

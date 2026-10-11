@@ -250,6 +250,10 @@ Replace the Vite template with a routed SPA: a Supabase client, session state, s
 - Home: calls `apiFetch('/me')` on mount and shows the email and role; on 403 signs out and navigates to `/sign-in` with `state: { blocked: true }` (showing the message on Home would be lost, because signing out makes `RequireAuth` redirect immediately); on 401 signs out (which redirects to `/sign-in`); 5xx and network failures show a generic "try again" error and do **not** sign out (a 503 means the auth provider is unreachable, not that the session is bad); includes a sign-out button.
 - The Vite demo content is removed: `App.tsx` contains only routing, unused template assets and CSS are deleted, and the `index.html` title becomes the app name.
 
+**Deviation (2026-10-11, user-approved)**: Routing uses React Router data mode instead of `BrowserRouter` + `App.tsx`: `createBrowserRouter` in `frontend/src/router/router.tsx`, rendered by `RouterProvider` from `react-router/dom` in `main.tsx`; `App.tsx` was deleted. Why: user preference for the data-router API.
+
+**Deviation (2026-10-11, user-approved)**: The "blocked" reason lives in auth state, not router state: `signOut('blocked')` sets `signOutReason` in `AuthProvider` (cleared on the next `SIGNED_IN`), and `SignInPage` reads it; Home no longer navigates on 403. Why: in data mode, `RequireAuth`'s own redirect to `/sign-in` raced and overwrote the `{ blocked: true }` navigation state, so the banner never showed.
+
 ### Success Criteria:
 
 #### Automated Verification:
