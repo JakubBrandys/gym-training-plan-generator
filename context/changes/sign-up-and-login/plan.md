@@ -401,26 +401,26 @@ Each authenticated request adds one indexed primary-key read on `Profile` (a wri
 
 #### Automated
 
-- [x] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint`
-- [x] 3.2 Frontend typechecks and builds: `cd frontend && npm run build`
-- [x] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json`
+- [x] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint` — 79b7adb
+- [x] 3.2 Frontend typechecks and builds: `cd frontend && npm run build` — 79b7adb
+- [x] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json` — 79b7adb
 
 #### Manual
 
-- [x] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in`
-- [x] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase
-- [x] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session
-- [x] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location)
-- [x] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form
-- [x] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully
-- [x] 3.10 The browser console shows no CORS error on the `/me` call
-- [x] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand)
+- [x] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in` — 79b7adb
+- [x] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase — 79b7adb
+- [x] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session — 79b7adb
+- [x] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location) — 79b7adb
+- [x] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form — 79b7adb
+- [x] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully — 79b7adb
+- [x] 3.10 The browser console shows no CORS error on the `/me` call — 79b7adb
+- [x] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand) — 79b7adb
 
 ### Phase 4: Configuration and production verification
 
 #### Automated
 
-- [ ] 4.1 Runbook lists the new secret: `grep -q 'SUPABASE_URL' backend/README.md`
+- [x] 4.1 Runbook lists the new secret: `grep -q 'SUPABASE_URL' backend/README.md`
 
 #### Manual
 
