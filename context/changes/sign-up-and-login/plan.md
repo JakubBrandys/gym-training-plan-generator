@@ -370,57 +370,57 @@ Each authenticated request adds one indexed primary-key read on `Profile` (a wri
 
 #### Automated
 
-- [ ] 1.1 Schema validates: `cd backend && npx prisma validate`
-- [ ] 1.2 Migration SQL creates both objects, enables RLS, and touches nothing else: `grep -q 'CREATE TYPE "ProfileRole"'`, `grep -q 'CREATE TABLE "Profile"'` and `grep -q 'ENABLE ROW LEVEL SECURITY'` on `backend/prisma/migrations/*_create_profile/migration.sql`, and `grep -c 'DROP\|ALTER TABLE "Exercise"'` on the same file prints 0
-- [ ] 1.3 Migration applies, then reports nothing pending on re-run, and the schema matches the DB: `cd backend && npm run prisma:migrate:deploy` twice, then `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` exits 0
-- [ ] 1.4 Client regenerates; tests, lint (now including `prisma/`) and build pass: `cd backend && npm run prisma:generate && npm test && npm run lint && npm run build`
+- [x] 1.1 Schema validates: `cd backend && npx prisma validate` — cca2aa7
+- [x] 1.2 Migration SQL creates both objects, enables RLS, and touches nothing else: `grep -q 'CREATE TYPE "ProfileRole"'`, `grep -q 'CREATE TABLE "Profile"'` and `grep -q 'ENABLE ROW LEVEL SECURITY'` on `backend/prisma/migrations/*_create_profile/migration.sql`, and `grep -c 'DROP\|ALTER TABLE "Exercise"'` on the same file prints 0 — cca2aa7
+- [x] 1.3 Migration applies, then reports nothing pending on re-run, and the schema matches the DB: `cd backend && npm run prisma:migrate:deploy` twice, then `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code` exits 0 — cca2aa7
+- [x] 1.4 Client regenerates; tests, lint (now including `prisma/`) and build pass: `cd backend && npm run prisma:generate && npm test && npm run lint && npm run build` — cca2aa7
 
 #### Manual
 
-- [ ] 1.5 In the Supabase SQL editor, `select relrowsecurity from pg_class where relname = 'Profile'` returns `true` and `_prisma_migrations` lists `<ts>_create_profile` as finished
-- [ ] 1.6 The Fly app's `DATABASE_URL` user is `postgres.<project-ref>`: `fly ssh console -C "sh -c 'echo \$DATABASE_URL | cut -d: -f2'"` prints `//postgres.<project-ref>` (username only, no password); if it differs, stop and resolve before Phase 2
-- [ ] 1.7 `backend/README.md` states the role requirement and the RLS-per-table rule
+- [x] 1.5 In the Supabase SQL editor, `select relrowsecurity from pg_class where relname = 'Profile'` returns `true` and `_prisma_migrations` lists `<ts>_create_profile` as finished — cca2aa7
+- [x] 1.6 The Fly app's `DATABASE_URL` user is `postgres.<project-ref>`: `fly ssh console -C "sh -c 'echo \$DATABASE_URL | cut -d: -f2'"` prints `//postgres.<project-ref>` (username only, no password); if it differs, stop and resolve before Phase 2 — cca2aa7
+- [x] 1.7 `backend/README.md` states the role requirement and the RLS-per-table rule — cca2aa7
 
 ### Phase 2: Backend authentication and GET /me
 
 #### Automated
 
-- [ ] 2.1 Guard and profile specs pass: `cd backend && npx vitest run src/auth/auth.guard.spec.ts src/profiles/profiles.service.spec.ts`
-- [ ] 2.2 Full unit suite passes: `cd backend && npm test`
-- [ ] 2.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint`
-- [ ] 2.4 Build passes: `cd backend && npm run build`
+- [x] 2.1 Guard and profile specs pass: `cd backend && npx vitest run src/auth/auth.guard.spec.ts src/profiles/profiles.service.spec.ts` — 6410e8d
+- [x] 2.2 Full unit suite passes: `cd backend && npm test` — 6410e8d
+- [x] 2.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint` — 6410e8d
+- [x] 2.4 Build passes: `cd backend && npm run build` — 6410e8d
 
 #### Manual
 
-- [ ] 2.5 The project serves asymmetric signing keys: `curl -s "$SUPABASE_URL/auth/v1/.well-known/jwks.json"` returns a `keys` array with at least one key (`kty` `EC` or `RSA`); if it is empty, migrate the project to asymmetric JWT signing keys in the Supabase dashboard (Project Settings → JWT Keys) before continuing
-- [ ] 2.6 With `SUPABASE_URL` in `backend/.env`, `cd backend && npm run start:dev` boots; `curl -i localhost:3000/health` returns 200, `curl -i localhost:3000/me` returns 401, and `curl -i -H 'Authorization: Bearer garbage' localhost:3000/me` returns 401
-- [ ] 2.7 With `SUPABASE_URL` removed from the environment, `npm run start:dev` fails at startup with an error naming `SUPABASE_URL`
-- [ ] 2.8 `backend/.env.example` contains the `SUPABASE_URL` placeholder line (added by hand)
+- [x] 2.5 The project serves asymmetric signing keys: `curl -s "$SUPABASE_URL/auth/v1/.well-known/jwks.json"` returns a `keys` array with at least one key (`kty` `EC` or `RSA`); if it is empty, migrate the project to asymmetric JWT signing keys in the Supabase dashboard (Project Settings → JWT Keys) before continuing — 6410e8d
+- [x] 2.6 With `SUPABASE_URL` in `backend/.env`, `cd backend && npm run start:dev` boots; `curl -i localhost:3000/health` returns 200, `curl -i localhost:3000/me` returns 401, and `curl -i -H 'Authorization: Bearer garbage' localhost:3000/me` returns 401 — 6410e8d
+- [x] 2.7 With `SUPABASE_URL` removed from the environment, `npm run start:dev` fails at startup with an error naming `SUPABASE_URL` — 6410e8d
+- [x] 2.8 `backend/.env.example` contains the `SUPABASE_URL` placeholder line (added by hand) — 6410e8d
 
 ### Phase 3: Frontend sign-up, sign-in and gated home
 
 #### Automated
 
-- [ ] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint`
-- [ ] 3.2 Frontend typechecks and builds: `cd frontend && npm run build`
-- [ ] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json`
+- [x] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint` — 79b7adb
+- [x] 3.2 Frontend typechecks and builds: `cd frontend && npm run build` — 79b7adb
+- [x] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json` — 79b7adb
 
 #### Manual
 
-- [ ] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in`
-- [ ] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase
-- [ ] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session
-- [ ] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location)
-- [ ] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form
-- [ ] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully
-- [ ] 3.10 The browser console shows no CORS error on the `/me` call
-- [ ] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand)
+- [x] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in` — 79b7adb
+- [x] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase — 79b7adb
+- [x] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session — 79b7adb
+- [x] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location) — 79b7adb
+- [x] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form — 79b7adb
+- [x] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully — 79b7adb
+- [x] 3.10 The browser console shows no CORS error on the `/me` call — 79b7adb
+- [x] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand) — 79b7adb
 
 ### Phase 4: Configuration and production verification
 
 #### Automated
 
-- [ ] 4.1 Runbook lists the new secret: `grep -q 'SUPABASE_URL' backend/README.md`
+- [x] 4.1 Runbook lists the new secret: `grep -q 'SUPABASE_URL' backend/README.md`
 
 #### Manual
 

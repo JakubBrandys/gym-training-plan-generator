@@ -70,6 +70,38 @@ $ mau deploy
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
+### Database role and row-level security
+
+Every table has row-level security enabled with no policies, which closes it to the Supabase Data API. The backend therefore relies on a role that owns the tables or bypasses RLS: `DATABASE_URL` and `DIRECT_URL` must both connect as the `postgres.<project-ref>` user (the role that runs migrations) or a role with `BYPASSRLS`. Any other role sees no rows and every insert fails.
+
+To check the Fly app's username without printing the password:
+
+```bash
+$ fly ssh console -C "sh -c 'echo \$DATABASE_URL | cut -d: -f2'"
+```
+
+It should print `//postgres.<project-ref>`.
+
+Prisma cannot express RLS, so every new table needs `ALTER TABLE "<Table>" ENABLE ROW LEVEL SECURITY;` appended to its migration by hand.
+
+### Secrets and auth settings
+
+Fly secrets for `gym-training-plan-generator-api` (the backend refuses to start without `SUPABASE_URL`, so set it before deploying code that needs it):
+
+| Secret | Value |
+| --- | --- |
+| `DATABASE_URL` | Supabase transaction pooler (port 6543), `postgres.<project-ref>` user |
+| `DIRECT_URL` | Supabase session pooler (port 5432), same user — used by migrations |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` — issuer and JWKS source for token verification |
+| `FRONTEND_URL` | Comma-separated CORS origins, no spaces or trailing slashes — the production Worker URL |
+
+Locally these live in `backend/.env` (see `.env.example`), with `FRONTEND_URL=http://localhost:5173`. The frontend's `VITE_*` values are baked in at build time from GitHub Actions secrets, not from Fly or Cloudflare.
+
+Supabase Auth settings (dashboard → Authentication):
+
+- **Email provider**: "Confirm email" is off for v1, so sign-up returns a session immediately. Turn it on (with custom SMTP) before opening sign-up to others.
+- **URL Configuration**: Site URL is the production Worker URL; Redirect URLs include `http://localhost:5173/**`.
+
 ## Observability
 
 In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.

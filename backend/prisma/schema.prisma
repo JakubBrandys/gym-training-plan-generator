@@ -23,3 +23,16 @@ model Exercise {
   category       String
   imageKey       String
 }
+
+enum ProfileRole {
+  MEMBER
+  ADMIN
+}
+
+model Profile {
+  id        String      @id @db.Uuid
+  email     String
+  role      ProfileRole @default(MEMBER)
+  blockedAt DateTime?
+  createdAt DateTime    @default(now())
+}
