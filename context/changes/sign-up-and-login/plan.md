@@ -401,32 +401,32 @@ Each authenticated request adds one indexed primary-key read on `Profile` (a wri
 
 #### Automated
 
-- [x] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint` — 79b7adb
-- [x] 3.2 Frontend typechecks and builds: `cd frontend && npm run build` — 79b7adb
-- [x] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json` — 79b7adb
+- [x] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint` — d96f50d
+- [x] 3.2 Frontend typechecks and builds: `cd frontend && npm run build` — d96f50d
+- [x] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json` — d96f50d
 
 #### Manual
 
-- [x] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in` — 79b7adb
-- [x] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase — 79b7adb
-- [x] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session — 79b7adb
-- [x] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location) — 79b7adb
-- [x] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form — 79b7adb
-- [x] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully — 79b7adb
-- [x] 3.10 The browser console shows no CORS error on the `/me` call — 79b7adb
-- [x] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand) — 79b7adb
+- [x] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in` — d96f50d
+- [x] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase — d96f50d
+- [x] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session — d96f50d
+- [x] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location) — d96f50d
+- [x] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form — d96f50d
+- [x] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully — d96f50d
+- [x] 3.10 The browser console shows no CORS error on the `/me` call — d96f50d
+- [x] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand) — d96f50d
 
 ### Phase 4: Configuration and production verification
 
 #### Automated
 
-- [x] 4.1 Runbook lists the new secret: `grep -q 'SUPABASE_URL' backend/README.md`
+- [x] 4.1 Runbook lists the new secret: `grep -q 'SUPABASE_URL' backend/README.md` — c3ac2ad
 
 #### Manual
 
-- [ ] 4.2 After the merge deploys, the public health check is unaffected: `curl -s -o /dev/null -w '%{http_code}' https://<app>.fly.dev/health` prints 200 (run after merge)
-- [ ] 4.3 After the merge deploys, the API rejects unauthenticated gated calls: `curl -s -o /dev/null -w '%{http_code}' https://<app>.fly.dev/me` prints 401 (run after merge)
-- [ ] 4.4 `fly secrets list` shows `SUPABASE_URL` before the merge, and the backend deploy after the merge reaches a healthy state
-- [ ] 4.5 On the production Worker URL: `/` redirects to `/sign-in`; sign-up with a new email lands on home showing the email; sign-out and sign-in work; a deep link to `/sign-in` loads directly
-- [ ] 4.6 Blocking in production: set `blockedAt` on that profile via SQL, reload home, land on `/sign-in` with the blocked banner; clear it afterwards
-- [ ] 4.7 A `Profile` row exists for the production test user, confirming the runtime role can read and write the RLS-enabled table
+- [x] 4.2 After the merge deploys, the public health check is unaffected: `curl -s -o /dev/null -w '%{http_code}' https://<app>.fly.dev/health` prints 200 (run after merge) — c3ac2ad
+- [x] 4.3 After the merge deploys, the API rejects unauthenticated gated calls: `curl -s -o /dev/null -w '%{http_code}' https://<app>.fly.dev/me` prints 401 (run after merge) — c3ac2ad
+- [x] 4.4 `fly secrets list` shows `SUPABASE_URL` before the merge, and the backend deploy after the merge reaches a healthy state — c3ac2ad
+- [x] 4.5 On the production Worker URL: `/` redirects to `/sign-in`; sign-up with a new email lands on home showing the email; sign-out and sign-in work; a deep link to `/sign-in` loads directly — c3ac2ad
+- [x] 4.6 Blocking in production: set `blockedAt` on that profile via SQL, reload home, land on `/sign-in` with the blocked banner; clear it afterwards — c3ac2ad
+- [x] 4.7 A `Profile` row exists for the production test user, confirming the runtime role can read and write the RLS-enabled table — c3ac2ad

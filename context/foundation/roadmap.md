@@ -173,7 +173,8 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Prerequisites:** S-06
 - **Parallel with:** S-02, S-03, S-04, S-05
 - **Blockers:** —
-- **Unknowns:** —
+- **Unknowns:**
+  - How to stop the sign-in itself, not just API access? S-01 (`sign-up-and-login`) already returns 403 from every gated route when `Profile.blockedAt` is set (holds for live tokens), but Supabase still issues sessions to a blocked user. Options: a Supabase Admin API ban (`auth.admin.updateUserById` with `ban_duration`, needs `SUPABASE_SECRET_KEY`; blocks sign-in and refresh, not already-issued access tokens) or a Supabase Auth Hook reading `blockedAt` (verify it can reject issuance). The block action should set `blockedAt` and apply the chosen Supabase-side block. — Owner: user. Block: no.
 - **Risk:** The guardrail "a blocked user truly loses access" means enforcement must hold for already-issued sessions, not just new sign-ins; that is the one thing to plan carefully.
 - **Status:** proposed
 
