@@ -2,10 +2,21 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth/useAuth'
+import { authErrorMessage, GENERIC_AUTH_ERROR } from '../auth/auth-errors'
 
 type SignInLocationState = {
-  from?: { pathname?: string }
+  from?: { pathname?: string; search?: string; hash?: string }
 } | null
+
+const isProtocolRelative = (path: string) => path.startsWith('//') || path.startsWith('/\\')
+
+const safeReturnPath = (state: SignInLocationState): string => {
+  const pathname = state?.from?.pathname
+  if (!pathname?.startsWith('/') || isProtocolRelative(pathname)) {
+    return '/'
+  }
+  return `${pathname}${state?.from?.search ?? ''}${state?.from?.hash ?? ''}`
+}
 
 export const SignInPage = () => {
   const { session, loading, signOutReason } = useAuth()
@@ -17,15 +28,13 @@ export const SignInPage = () => {
   const [error, setError] = useState<string | null>(null)
 
   const state = location.state as SignInLocationState
-  const from = state?.from?.pathname ?? '/'
+  const from = safeReturnPath(state)
   const blocked = signOutReason === 'blocked'
 
   if (loading) {
     return <p className="status">Loading…</p>
   }
 
-  // Also covers the moment right after a successful sign-in, when the
-  // session arrives via onAuthStateChange before navigate() runs.
   if (session) {
     return <Navigate to={from} replace />
   }
@@ -34,13 +43,18 @@ export const SignInPage = () => {
     event.preventDefault()
     setPending(true)
     setError(null)
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-    setPending(false)
-    if (signInError) {
-      setError(signInError.message)
-      return
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) {
+        setError(authErrorMessage(signInError))
+        return
+      }
+      navigate(from, { replace: true })
+    } catch {
+      setError(GENERIC_AUTH_ERROR)
+    } finally {
+      setPending(false)
     }
-    navigate(from, { replace: true })
   }
 
   return (

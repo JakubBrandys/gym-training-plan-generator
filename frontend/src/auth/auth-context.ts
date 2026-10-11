@@ -1,9 +1,6 @@
 import { createContext } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
-// Why the user was last signed out by the app, shown on the sign-in page.
-// Kept in auth state rather than router state so it survives RequireAuth's
-// own redirect to /sign-in, which would otherwise overwrite it.
 export type SignOutReason = 'blocked'
 
 export type AuthContextValue = {

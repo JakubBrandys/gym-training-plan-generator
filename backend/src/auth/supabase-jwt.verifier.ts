@@ -41,7 +41,6 @@ export class SupabaseJwtVerifier {
       if (TOKEN_ERRORS.some((ErrorType) => e instanceof ErrorType)) {
         throw new UnauthorizedException('Invalid token');
       }
-      // Server-side only: the client gets a generic 503, operators get the cause.
       this.logger.warn(
         `Token verification unavailable: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`,
       );
