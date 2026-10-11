@@ -385,36 +385,36 @@ Each authenticated request adds one indexed primary-key read on `Profile` (a wri
 
 #### Automated
 
-- [x] 2.1 Guard and profile specs pass: `cd backend && npx vitest run src/auth/auth.guard.spec.ts src/profiles/profiles.service.spec.ts`
-- [x] 2.2 Full unit suite passes: `cd backend && npm test`
-- [x] 2.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint`
-- [x] 2.4 Build passes: `cd backend && npm run build`
+- [x] 2.1 Guard and profile specs pass: `cd backend && npx vitest run src/auth/auth.guard.spec.ts src/profiles/profiles.service.spec.ts` — 6410e8d
+- [x] 2.2 Full unit suite passes: `cd backend && npm test` — 6410e8d
+- [x] 2.3 Linting passes, including `no-floating-promises`: `cd backend && npm run lint` — 6410e8d
+- [x] 2.4 Build passes: `cd backend && npm run build` — 6410e8d
 
 #### Manual
 
-- [x] 2.5 The project serves asymmetric signing keys: `curl -s "$SUPABASE_URL/auth/v1/.well-known/jwks.json"` returns a `keys` array with at least one key (`kty` `EC` or `RSA`); if it is empty, migrate the project to asymmetric JWT signing keys in the Supabase dashboard (Project Settings → JWT Keys) before continuing
-- [x] 2.6 With `SUPABASE_URL` in `backend/.env`, `cd backend && npm run start:dev` boots; `curl -i localhost:3000/health` returns 200, `curl -i localhost:3000/me` returns 401, and `curl -i -H 'Authorization: Bearer garbage' localhost:3000/me` returns 401
-- [x] 2.7 With `SUPABASE_URL` removed from the environment, `npm run start:dev` fails at startup with an error naming `SUPABASE_URL`
-- [x] 2.8 `backend/.env.example` contains the `SUPABASE_URL` placeholder line (added by hand)
+- [x] 2.5 The project serves asymmetric signing keys: `curl -s "$SUPABASE_URL/auth/v1/.well-known/jwks.json"` returns a `keys` array with at least one key (`kty` `EC` or `RSA`); if it is empty, migrate the project to asymmetric JWT signing keys in the Supabase dashboard (Project Settings → JWT Keys) before continuing — 6410e8d
+- [x] 2.6 With `SUPABASE_URL` in `backend/.env`, `cd backend && npm run start:dev` boots; `curl -i localhost:3000/health` returns 200, `curl -i localhost:3000/me` returns 401, and `curl -i -H 'Authorization: Bearer garbage' localhost:3000/me` returns 401 — 6410e8d
+- [x] 2.7 With `SUPABASE_URL` removed from the environment, `npm run start:dev` fails at startup with an error naming `SUPABASE_URL` — 6410e8d
+- [x] 2.8 `backend/.env.example` contains the `SUPABASE_URL` placeholder line (added by hand) — 6410e8d
 
 ### Phase 3: Frontend sign-up, sign-in and gated home
 
 #### Automated
 
-- [ ] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint`
-- [ ] 3.2 Frontend typechecks and builds: `cd frontend && npm run build`
-- [ ] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json`
+- [x] 3.1 Frontend lint passes, including `react/rules-of-hooks`: `cd frontend && npm run lint`
+- [x] 3.2 Frontend typechecks and builds: `cd frontend && npm run build`
+- [x] 3.3 No `react-router-dom` import or dependency: `! grep -rq 'react-router-dom' frontend/src frontend/package.json`
 
 #### Manual
 
-- [ ] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in`
-- [ ] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase
-- [ ] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session
-- [ ] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location)
-- [ ] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form
-- [ ] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully
-- [ ] 3.10 The browser console shows no CORS error on the `/me` call
-- [ ] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand)
+- [x] 3.4 With both dev servers running (`backend: npm run start:dev`, `frontend: npm run dev`), opening `http://localhost:5173/` redirects to `/sign-in`
+- [x] 3.5 Sign up with a new email lands on home showing that email and role `MEMBER`; a `Profile` row with that email exists in Supabase
+- [x] 3.6 Sign out returns to `/sign-in`; signing in again lands on home; reloading the page keeps the session
+- [x] 3.7 Opening `/` while signed out, then signing in, returns to `/` (the remembered location)
+- [x] 3.8 Wrong password and an already-registered email each show an inline error and stay on the form
+- [x] 3.9 Set `blockedAt = now()` on that profile in the Supabase SQL editor, reload home: the user is signed out and `/sign-in` shows the "Your account has been blocked" banner; clear `blockedAt` and sign in again successfully
+- [x] 3.10 The browser console shows no CORS error on the `/me` call
+- [x] 3.11 `frontend/.env.example` contains the `VITE_API_URL` placeholder line (added by hand)
 
 ### Phase 4: Configuration and production verification
 
