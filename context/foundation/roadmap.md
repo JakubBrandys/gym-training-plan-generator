@@ -3,7 +3,7 @@ project: Gym Training Plan Generator
 version: 1
 status: draft
 created: 2026-10-03
-updated: 2026-10-11
+updated: 2026-10-14
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -44,7 +44,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | ---- | ------------------------ | ------------------------------------------------------------------------------------- | ------------- | ----------------------------- | -------- |
 | F-01 | exercise-catalog-seed    | (foundation) a minimal curated exercise catalog with images exists and can be queried | —             | FR-011, US-01                 | done     |
 | S-01 | sign-up-and-login        | sign up, log in, and be redirected to sign-in when hitting a gated route              | —             | FR-001, US-01                 | done        |
-| S-02 | first-plan-generation    | submit the plan form and receive an AI-generated 8-week plan from the catalog         | S-01, F-01    | FR-004, FR-005, US-01         | proposed |
+| S-02 | first-plan-generation    | submit the plan form and receive an AI-generated 8-week plan from the catalog         | S-01, F-01    | FR-004, FR-005, US-01         | in-progress |
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | proposed |
 | S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | proposed |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | proposed |
@@ -114,7 +114,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - Which AI provider and models run the draft and review passes? — Owner: user. Block: no (decidable during `/10x-plan`, but it must be settled before implementation).
 - **Risk:** Carries the riskiest assumption — plan quality from the two-pass pipeline — so it is placed as early as its prerequisites allow.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-03: Live generation progress
 
