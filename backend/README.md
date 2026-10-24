@@ -86,7 +86,7 @@ Prisma cannot express RLS, so every new table needs `ALTER TABLE "<Table>" ENABL
 
 ### Secrets and auth settings
 
-Fly secrets for `gym-training-plan-generator-api` (the backend refuses to start without `SUPABASE_URL`, so set it before deploying code that needs it):
+Fly secrets for `gym-training-plan-generator-api` (the backend refuses to start without `SUPABASE_URL`, `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` or `PLAN_REVIEW_MODEL`, so set them before deploying code that needs them):
 
 | Secret | Value |
 | --- | --- |
@@ -94,8 +94,12 @@ Fly secrets for `gym-training-plan-generator-api` (the backend refuses to start 
 | `DIRECT_URL` | Supabase session pooler (port 5432), same user — used by migrations |
 | `SUPABASE_URL` | `https://<project-ref>.supabase.co` — issuer and JWKS source for token verification |
 | `FRONTEND_URL` | Comma-separated CORS origins, no spaces or trailing slashes — the production Worker URL |
+| `OPENAI_API_KEY` | OpenAI API key used by the plan generation pipeline |
+| `PLAN_DRAFT_MODEL` | OpenAI model id for the draft pass, for example `gpt-6-luna` |
+| `PLAN_REVIEW_MODEL` | OpenAI model id for the review pass; set it to a stronger model to upgrade review quality |
+| `PLAN_DAILY_LIMIT` | Optional. Plan generations allowed per user per rolling 24 hours, default `5` |
 
-Locally these live in `backend/.env` (see `.env.example`), with `FRONTEND_URL=http://localhost:5173`. The frontend's `VITE_*` values are baked in at build time from GitHub Actions secrets, not from Fly or Cloudflare.
+Locally these live in `backend/.env` (see `.env.example`), with `FRONTEND_URL=http://localhost:5173`. The e2e spec boots the full app, so `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` and `PLAN_REVIEW_MODEL` must be set to run `npm run test:e2e`. The frontend's `VITE_*` values are baked in at build time from GitHub Actions secrets, not from Fly or Cloudflare.
 
 Supabase Auth settings (dashboard → Authentication):
 

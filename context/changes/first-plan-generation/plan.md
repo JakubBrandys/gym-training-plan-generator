@@ -286,7 +286,7 @@ Document and set the new configuration, deploy, and evaluate plan quality, the r
 
 **Intent**: Make the four new variables discoverable.
 
-**Contract**: add `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL`, `PLAN_REVIEW_MODEL` (example `gpt-5.6-luna`, to be confirmed against the OpenAI model list) and optional `PLAN_DAILY_LIMIT` to the env table in the README. `.env.example` is edited by hand by the user because agent access to `.env*` is denied.
+**Contract**: add `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL`, `PLAN_REVIEW_MODEL` (example `gpt-6-luna`, the id confirmed working on the user's OpenAI account on 2026-10-24) and optional `PLAN_DAILY_LIMIT` to the env table in the README. `.env.example` is edited by hand by the user because agent access to `.env*` is denied.
 
 #### 2. Secrets and deploy
 
@@ -298,7 +298,7 @@ Document and set the new configuration, deploy, and evaluate plan quality, the r
 
 **Intent**: Decide whether the two-pass pipeline produces a believable personalized plan and whether the review model needs upgrading.
 
-**Contract**: run at least three profiles on the deployed stack (the user's own 5 to 5 expert profile, a beginner 2 to 4, an intermediate 3 to 5) and record in `change.md` Notes: time to complete, token cost per job from logs, whether the frequency ramp held, muscle balance, tolerability of exercise repetition with a 32-exercise catalog, and whether the review pass visibly improved the draft. If review quality is poor, upgrading is a config change: set `PLAN_REVIEW_MODEL` to `gpt-5.6-sol`.
+**Contract**: run at least three profiles on the deployed stack (the user's own 5 to 5 expert profile, a beginner 2 to 4, an intermediate 3 to 5) and record in `change.md` Notes: time to complete, token cost per job from logs, whether the frequency ramp held, muscle balance, tolerability of exercise repetition with a 32-exercise catalog, and whether the review pass visibly improved the draft. If review quality is poor, upgrading is a config change: set `PLAN_REVIEW_MODEL` to the stronger model's id from the user's OpenAI model list (likely `gpt-6-sol`; unconfirmed).
 
 ### Success Criteria:
 
@@ -392,29 +392,29 @@ None. No schema change, no migration and no data backfill. Jobs are lost on rest
 
 #### Automated
 
-- [x] 3.1 Linting passes: `cd frontend && npm run lint`
-- [x] 3.2 Type check and production build pass: `cd frontend && npm run build`
+- [x] 3.1 Linting passes: `cd frontend && npm run lint` — 383bc5a
+- [x] 3.2 Type check and production build pass: `cd frontend && npm run build` — 383bc5a
 
 #### Manual
 
-- [x] 3.3 Submitting the form navigates to the job page, shows the stage, then renders the full 8-week plan
-- [x] 3.4 Refreshing the job page mid-generation resumes polling the same job
-- [x] 3.5 A failed job and a bad provider key each show fixed copy with no provider text, and the user can start again
-- [x] 3.6 Starting a second job while one runs, and exceeding the daily limit, show the two limit messages on the form page
-- [x] 3.7 An unknown or expired `jobId` shows the "not found, start again" message
-- [x] 3.8 Form controls have visible labels, the error uses `role="alert"`, and the form is fully keyboard operable
-- [x] 3.9 A blocked user still gets the sign-out banner from Home and from the job page (regression check on the extracted helper)
+- [x] 3.3 Submitting the form navigates to the job page, shows the stage, then renders the full 8-week plan — 383bc5a
+- [x] 3.4 Refreshing the job page mid-generation resumes polling the same job — 383bc5a
+- [x] 3.5 A failed job and a bad provider key each show fixed copy with no provider text, and the user can start again — 383bc5a
+- [x] 3.6 Starting a second job while one runs, and exceeding the daily limit, show the two limit messages on the form page — 383bc5a
+- [x] 3.7 An unknown or expired `jobId` shows the "not found, start again" message — 383bc5a
+- [x] 3.8 Form controls have visible labels, the error uses `role="alert"`, and the form is fully keyboard operable — 383bc5a
+- [x] 3.9 A blocked user still gets the sign-out banner from Home and from the job page (regression check on the extracted helper) — 383bc5a
 
 ### Phase 4: Rollout and quality check
 
 #### Automated
 
-- [ ] 4.1 Full backend gates pass: `cd backend && npm run lint && npm run build && npm test`
-- [ ] 4.2 Full frontend gates pass: `cd frontend && npm run lint && npm run build`
+- [x] 4.1 Full backend gates pass: `cd backend && npm run lint && npm run build && npm test`
+- [x] 4.2 Full frontend gates pass: `cd frontend && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 4.3 Fly secrets for the three required variables exist before the merge (`fly secrets list` shows names) and `README.md` and `.env.example` document all four variables
+- [x] 4.3 Fly secrets for the three required variables exist before the merge (`fly secrets list` shows names) and `README.md` and `.env.example` document all four variables
 - [ ] 4.4 After the merge the backend deploys, `/health` is green and the app does not crash-loop on boot
 - [ ] 4.5 A signed-in user completes the full flow on the deployed frontend and backend and sees a valid 8-week plan
 - [ ] 4.6 The three-profile quality evaluation is recorded in `change.md` Notes with the review-model decision

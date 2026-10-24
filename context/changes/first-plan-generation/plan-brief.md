@@ -19,8 +19,8 @@ A user opens `/plans/new`, submits the form, lands on a job page that shows "Dra
 
 | Decision | Choice | Why (1 sentence) | Source |
 | --- | --- | --- | --- |
-| Provider and models | OpenAI via Vercel AI SDK; `gpt-5.6-luna` for both passes, ids in env, review upgradeable to `gpt-5.6-sol` | Cheap first, upgrade by config if evaluation shows a gain | Plan |
-| Model id naming | Required env vars, no hardcoded default; docs say `gpt-5.6-luna`, press says `gpt-6-luna` | The two sources disagree, so the user confirms the real id | Research / Plan |
+| Provider and models | OpenAI via Vercel AI SDK; `gpt-6-luna` for both passes (confirmed on the user's account), ids in env, review upgradeable by changing `PLAN_REVIEW_MODEL` | Cheap first, upgrade by config if evaluation shows a gain | Plan |
+| Model id naming | Required env vars, no hardcoded default; OpenAI docs said `gpt-5.6-luna`; the user's account accepts `gpt-6-luna` | Sources disagreed, so the real id was confirmed against a live call | Research / Plan |
 | Structured output | `zod` strict-compatible schema plus a backend validator | OpenAI strict mode rejects optionals and bounds, so rules live in code | Research |
 | Transport | `POST` returns 202 and `jobId`; SPA polls `GET`; in-memory jobs keyed to `Profile.id` | Avoids Fly's reported 60 s idle cut and leaves room for S-03 events | Plan |
 | Frequency rule | Ramp: week 1 = current, week 8 = desired, 0 or 1 day per week toward desired | Uses both form fields the way a coach would | Plan |
