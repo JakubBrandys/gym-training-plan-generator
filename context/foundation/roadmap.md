@@ -3,7 +3,7 @@ project: Gym Training Plan Generator
 version: 1
 status: draft
 created: 2026-10-03
-updated: 2026-10-14
+updated: 2026-10-24
 prd_version: 1
 main_goal: speed
 top_blocker: time
