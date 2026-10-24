@@ -1,6 +1,6 @@
 import type { PlanGenerationConfig } from './plan-generation.config.js';
-import { PlanJobStore } from './plan-job.store.js';
-import { DAILY_WINDOW_MS, PlanLimiter } from './plan-limiter.js';
+import { PlanJobStore, STALE_RUNNING_JOB_MS } from './plan-job.store.js';
+import { DAILY_WINDOW_MS, PlanLimiter } from './plan.limiter.js';
 
 const OWNER = 'owner-1';
 const OTHER = 'owner-2';
@@ -23,6 +23,23 @@ describe('PlanLimiter', () => {
   it('allows the first request', () => {
     const limiter = new PlanLimiter(store, buildConfig(2));
     expect(limiter.tryAcquire(OWNER, 0)).toEqual({ allowed: true });
+  });
+
+  it('stops denying with active_job once a running job is stale', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-10-14T10:00:00Z'));
+      const limiter = new PlanLimiter(store, buildConfig(5));
+      store.create(OWNER);
+      expect(limiter.tryAcquire(OWNER, Date.now())).toEqual({
+        allowed: false,
+        reason: 'active_job',
+      });
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
+      expect(limiter.tryAcquire(OWNER, Date.now())).toEqual({ allowed: true });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('denies with active_job while the owner has a running job', () => {

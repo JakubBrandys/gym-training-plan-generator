@@ -1,4 +1,9 @@
-import { PlanJobStore, TERMINAL_JOB_RETENTION_MS } from './plan-job.store.js';
+import {
+  PlanJobStore,
+  PLAN_JOB_TIMEOUT_MS,
+  STALE_RUNNING_JOB_MS,
+  TERMINAL_JOB_RETENTION_MS,
+} from './plan-job.store.js';
 
 const OWNER = 'owner-1';
 const OTHER = 'owner-2';
@@ -105,11 +110,62 @@ describe('PlanJobStore', () => {
       expect(store.get(old.id, OWNER)).toBeUndefined();
     });
 
-    it('never purges a running job however old it is', () => {
+    it('does not reap a running job that is still within the job timeout margin', () => {
       const job = store.create(OWNER);
-      vi.setSystemTime(Date.now() + 10 * TERMINAL_JOB_RETENTION_MS);
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS - 1);
       expect(store.get(job.id, OWNER)).toBe(job);
+      expect(job.status).toBe('running');
       expect(store.hasActive(OWNER)).toBe(true);
+    });
+
+    it('keeps a fresh running job running past the plain job timeout', () => {
+      const job = store.create(OWNER);
+      vi.setSystemTime(Date.now() + PLAN_JOB_TIMEOUT_MS);
+      expect(store.get(job.id, OWNER)?.status).toBe('running');
+    });
+
+    it('fails a stale running job as internal on get', () => {
+      const job = store.create(OWNER);
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
+      const found = store.get(job.id, OWNER);
+      expect(found).toBe(job);
+      expect(job).toMatchObject({
+        status: 'failed',
+        plan: null,
+        stage: null,
+        error: { code: 'internal' },
+      });
+      expect(job.finishedAt).toBeInstanceOf(Date);
+    });
+
+    it('stops counting a stale running job as active', () => {
+      const job = store.create(OWNER);
+      expect(store.hasActive(OWNER)).toBe(true);
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
+      expect(store.hasActive(OWNER)).toBe(false);
+      expect(job.status).toBe('failed');
+    });
+
+    it('fails a stale running job lazily on create', () => {
+      const job = store.create(OWNER);
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
+      store.create(OTHER);
+      expect(job).toMatchObject({
+        status: 'failed',
+        error: { code: 'internal' },
+      });
+    });
+
+    it('does not let a late completion overwrite a reaped job', () => {
+      const job = store.create(OWNER);
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
+      store.hasActive(OWNER);
+      store.complete(job.id, { weeks: [] });
+      expect(job).toMatchObject({
+        status: 'failed',
+        plan: null,
+        error: { code: 'internal' },
+      });
     });
 
     it('measures retention from finishedAt, not createdAt', () => {

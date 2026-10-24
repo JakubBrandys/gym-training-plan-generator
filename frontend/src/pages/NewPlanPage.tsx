@@ -2,13 +2,13 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { handleAuthFailure } from '../lib/auth-failure'
+import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
 import {
   startPlanGeneration,
   type ExperienceLevel,
   type LimitReason,
 } from '../lib/plan-generation'
 
-const GENERIC_PLAN_ERROR = 'Something went wrong, try again'
 const MISSING_GOALS_ERROR = 'Describe your goals to continue'
 
 const LIMIT_MESSAGES: Record<LimitReason, string> = {

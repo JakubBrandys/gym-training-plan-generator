@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { PlanView } from '../components/PlanView'
 import { useAuth } from '../auth/useAuth'
 import { handleAuthFailure } from '../lib/auth-failure'
+import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
 import {
   fetchPlanGeneration,
   type PlanJobErrorCode,
@@ -12,9 +13,10 @@ import {
 
 const POLL_INTERVAL_MS = 3000
 const MAX_CONSECUTIVE_FAILURES = 3
+const MAX_POLLING_MS = 12 * 60 * 1000
 
-const GENERIC_PLAN_ERROR = 'Something went wrong, try again'
 const NOT_FOUND_ERROR = 'This plan could not be found or has expired.'
+const TIMED_OUT_ERROR = 'This is taking longer than expected. Check back later.'
 
 const FAILURE_MESSAGES: Record<PlanJobErrorCode, string> = {
   provider_unavailable: 'The plan service is unavailable right now. Try again later.',
@@ -34,21 +36,36 @@ type JobPageState =
   | { status: 'failed'; code: PlanJobErrorCode }
   | { status: 'not-found' }
   | { status: 'error' }
+  | { status: 'timed-out' }
 
-export const PlanGenerationPage = () => {
-  const { jobId } = useParams()
+type PlanGenerationJobProps = {
+  jobId: string | undefined
+}
+
+const PlanGenerationJob = ({ jobId }: PlanGenerationJobProps) => {
   const { signOut } = useAuth()
   const [polledState, setState] = useState<JobPageState>({ status: 'polling', stage: null })
+  const [attempt, setAttempt] = useState(0)
   const state: JobPageState = jobId ? polledState : { status: 'not-found' }
+
+  const handleRetry = () => {
+    setState({ status: 'polling', stage: null })
+    setAttempt((current) => current + 1)
+  }
 
   useEffect(() => {
     if (!jobId) return
 
     const controller = new AbortController()
+    const startedAt = Date.now()
     let timer: number | undefined
     let consecutiveFailures = 0
 
     const scheduleNextPoll = () => {
+      if (Date.now() - startedAt >= MAX_POLLING_MS) {
+        setState({ status: 'timed-out' })
+        return
+      }
       timer = window.setTimeout(() => void poll(), POLL_INTERVAL_MS)
     }
 
@@ -99,7 +116,7 @@ export const PlanGenerationPage = () => {
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [jobId, signOut])
+  }, [jobId, signOut, attempt])
 
   return (
     <main className="plan-generation">
@@ -125,7 +142,19 @@ export const PlanGenerationPage = () => {
           {GENERIC_PLAN_ERROR}
         </p>
       )}
-      {state.status !== 'polling' && (
+      {state.status === 'timed-out' && (
+        <p className="error" role="alert">
+          {TIMED_OUT_ERROR}
+        </p>
+      )}
+      {(state.status === 'error' || state.status === 'timed-out') && (
+        <p>
+          <button type="button" onClick={handleRetry}>
+            Retry
+          </button>
+        </p>
+      )}
+      {(state.status === 'completed' || state.status === 'failed' || state.status === 'not-found') && (
         <p>
           <Link to="/plans/new">{state.status === 'completed' ? 'Create another plan' : 'Start again'}</Link>
         </p>
@@ -135,4 +164,9 @@ export const PlanGenerationPage = () => {
       </p>
     </main>
   )
+}
+
+export const PlanGenerationPage = () => {
+  const { jobId } = useParams()
+  return <PlanGenerationJob key={jobId} jobId={jobId} />
 }

@@ -9,7 +9,22 @@ const mocks = vi.hoisted(() => {
       return error instanceof FakeNoObjectGeneratedError;
     }
   }
+  class FakeAPICallError extends Error {
+    constructor(
+      message: string,
+      readonly statusCode?: number,
+      readonly requestBodyValues?: unknown,
+      readonly responseBody?: string,
+    ) {
+      super(message);
+      this.name = 'AI_APICallError';
+    }
+    static isInstance(error: unknown): error is FakeAPICallError {
+      return error instanceof FakeAPICallError;
+    }
+  }
   return {
+    FakeAPICallError,
     generateText: vi.fn(),
     objectOutput: vi.fn((options: unknown) => ({ kind: 'object', options })),
     createOpenAI: vi.fn(),
@@ -22,6 +37,7 @@ vi.mock('ai', () => ({
   generateText: mocks.generateText,
   Output: { object: mocks.objectOutput },
   NoObjectGeneratedError: mocks.FakeNoObjectGeneratedError,
+  APICallError: mocks.FakeAPICallError,
 }));
 
 vi.mock('@ai-sdk/openai', () => ({
@@ -139,5 +155,82 @@ describe('PlanModelClient', () => {
 
     expect(error).toBeInstanceOf(PlanModelError);
     expect(error).toMatchObject({ code: 'unavailable' });
+  });
+
+  describe('diagnostics without leaking the prompt', () => {
+    const catchError = async () =>
+      (await buildClient()
+        .generate(request)
+        .catch((caught: unknown) => caught)) as InstanceType<
+        typeof PlanModelError
+      >;
+
+    it('carries the cause name and status code of an API call error', async () => {
+      mocks.generateText.mockRejectedValue(
+        new mocks.FakeAPICallError('quota exceeded', 429),
+      );
+
+      const error = await catchError();
+
+      expect(error).toMatchObject({
+        code: 'unavailable',
+        causeName: 'AI_APICallError',
+        statusCode: 429,
+      });
+    });
+
+    it('leaves the status code absent for errors that are not API call errors', async () => {
+      mocks.generateText.mockRejectedValue(
+        Object.assign(new Error('boom'), { statusCode: 500 }),
+      );
+
+      const error = await catchError();
+
+      expect(error.causeName).toBe('Error');
+      expect(error.statusCode).toBeUndefined();
+    });
+
+    it('leaves both absent for a non-error value', async () => {
+      mocks.generateText.mockRejectedValue('weird');
+
+      const error = await catchError();
+
+      expect(error.causeName).toBeUndefined();
+      expect(error.statusCode).toBeUndefined();
+    });
+
+    it('carries the cause name on invalid_output', async () => {
+      mocks.generateText.mockRejectedValue(
+        new mocks.FakeNoObjectGeneratedError('length'),
+      );
+
+      const error = await catchError();
+
+      expect(error).toMatchObject({
+        code: 'invalid_output',
+        finishReason: 'length',
+        causeName: 'Error',
+      });
+    });
+
+    it('never copies the message, request body or response body', async () => {
+      const secret = 'secret-goals-text-in-body';
+      mocks.generateText.mockRejectedValue(
+        new mocks.FakeAPICallError(
+          `request failed for ${secret}`,
+          400,
+          { prompt: secret },
+          `echo ${secret}`,
+        ),
+      );
+
+      const error = await catchError();
+
+      expect(error.message).toBe('Plan model call failed: unavailable');
+      expect(JSON.stringify(error)).not.toContain(secret);
+      expect(Object.keys(error).sort()).toEqual(
+        ['causeName', 'code', 'finishReason', 'name', 'statusCode'].sort(),
+      );
+    });
   });
 });

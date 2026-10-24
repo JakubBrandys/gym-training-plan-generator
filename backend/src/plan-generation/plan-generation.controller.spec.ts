@@ -9,7 +9,7 @@ import { PlanGenerationController } from './plan-generation.controller.js';
 import { planFormSchema, type PlanForm } from './plan-form.schema.js';
 import type { PlanGenerationConfig } from './plan-generation.config.js';
 import { PlanJobStore } from './plan-job.store.js';
-import { PlanLimiter } from './plan-limiter.js';
+import { PlanLimiter } from './plan.limiter.js';
 import type { PlanPipelineService } from './plan-pipeline.service.js';
 import { ZodValidationPipe } from './zod-validation.pipe.js';
 

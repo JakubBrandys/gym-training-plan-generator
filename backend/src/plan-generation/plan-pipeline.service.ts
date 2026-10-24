@@ -6,6 +6,7 @@ import {
 } from './plan-generation.config.js';
 import type { PlanForm } from './plan-form.schema.js';
 import {
+  PLAN_JOB_TIMEOUT_MS,
   PlanJobStore,
   type PlanJobErrorCode,
   type PlanJobStage,
@@ -17,15 +18,14 @@ import {
   buildReviewPrompt,
   PLAN_SYSTEM_PROMPT,
   type CatalogExercise,
-} from './plan-prompts.js';
+} from './plan.prompts.js';
 import {
   buildGeneratedPlanSchema,
   type GeneratedPlan,
   type PlanResult,
 } from './plan.schema.js';
-import { validateGeneratedPlan } from './plan-validator.js';
+import { validateGeneratedPlan } from './plan.validator.js';
 
-const JOB_TIMEOUT_MS = 10 * 60 * 1000;
 const ATTEMPTS_PER_PASS = 2;
 const SCHEMA_MISMATCH_ISSUE =
   'The previous answer could not be parsed into the required structure. Return a complete plan that matches the required structure exactly.';
@@ -61,7 +61,8 @@ export class PlanPipelineService {
 
   async run(jobId: string, form: PlanForm): Promise<void> {
     try {
-      const catalog = await this.exercises.findAll();
+      const signal = AbortSignal.timeout(PLAN_JOB_TIMEOUT_MS);
+      const catalog = await this.loadCatalog(signal);
       if (catalog.length === 0) {
         throw new PipelineFailure('internal');
       }
@@ -72,7 +73,7 @@ export class PlanPipelineService {
         form,
         schema: buildGeneratedPlanSchema([firstSlug, ...otherSlugs]),
         slugs,
-        signal: AbortSignal.timeout(JOB_TIMEOUT_MS),
+        signal,
       };
 
       const draft = await this.runPass(
@@ -90,6 +91,21 @@ export class PlanPipelineService {
       this.store.complete(jobId, this.toPlanResult(reviewed, catalog));
     } catch (error) {
       this.failJob(jobId, error);
+    }
+  }
+
+  private async loadCatalog(
+    signal: AbortSignal,
+  ): Promise<Awaited<ReturnType<ExercisesService['findAll']>>> {
+    let onAbort: () => void = () => undefined;
+    const aborted = new Promise<never>((_resolve, reject) => {
+      onAbort = () => reject(signal.reason);
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+    try {
+      return await Promise.race([this.exercises.findAll(), aborted]);
+    } finally {
+      signal.removeEventListener('abort', onAbort);
     }
   }
 
@@ -153,7 +169,7 @@ export class PlanPipelineService {
         throw error;
       }
       this.logger.warn(
-        `Job ${context.jobId} stage=${stage} attempt=${attempt} durationMs=${Date.now() - startedAt} modelError=${error.code} finishReason=${error.finishReason}`,
+        `Job ${context.jobId} stage=${stage} attempt=${attempt} durationMs=${Date.now() - startedAt} modelError=${error.code} finishReason=${error.finishReason} causeName=${error.causeName ?? 'none'} statusCode=${error.statusCode ?? 'none'}`,
       );
       if (error.code === 'unavailable') {
         throw new PipelineFailure('provider_unavailable');

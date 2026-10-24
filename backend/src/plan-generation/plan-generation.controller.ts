@@ -12,7 +12,7 @@ import {
 import type { RequestUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { planFormSchema, type PlanForm } from './plan-form.schema.js';
-import { PlanLimiter } from './plan-limiter.js';
+import { PlanLimiter } from './plan.limiter.js';
 import {
   PlanJobStore,
   type PlanJobErrorCode,

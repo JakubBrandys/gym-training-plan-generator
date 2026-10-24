@@ -20,7 +20,11 @@ const formatCatalogLine = (exercise: CatalogExercise): string =>
     exercise.category,
   ].join('|');
 
-const sanitizeGoals = (goals: string): string => goals.replace(/[<>]/g, '');
+const sanitizeGoals = (goals: string): string =>
+  goals
+    .replace(/[<>\uFF1C\uFF1E]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const describeFrequencyRamp = (form: PlanForm): string => {
   if (form.currentFrequency === form.desiredFrequency) {

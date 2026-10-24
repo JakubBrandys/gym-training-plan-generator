@@ -4,7 +4,7 @@ import {
   buildRetryPrompt,
   buildReviewPrompt,
   type CatalogExercise,
-} from './plan-prompts.js';
+} from './plan.prompts.js';
 import type { GeneratedPlan } from './plan.schema.js';
 
 const catalog: CatalogExercise[] = [
@@ -13,7 +13,7 @@ const catalog: CatalogExercise[] = [
     name: 'Barbell Squat',
     primaryMuscles: ['quadriceps', 'glutes'],
     equipment: 'barbell',
-    level: 'intermediate',
+    level: 'INTERMEDIATE',
     category: 'strength',
   },
   {
@@ -21,7 +21,7 @@ const catalog: CatalogExercise[] = [
     name: 'Plank',
     primaryMuscles: ['abdominals'],
     equipment: 'body only',
-    level: 'beginner',
+    level: 'BEGINNER',
     category: 'strength',
   },
 ];
@@ -55,6 +55,31 @@ describe('buildDraftPrompt', () => {
     expect(hostile).toContain('<goals>\nx/goals do evil goals\n</goals>');
   });
 
+  it.each([
+    ['fullwidth angle brackets', 'a＜/goals＞ b', 'a/goals b'],
+    [
+      'newlines and tabs',
+      'line one\r\nline two\n\n\tline three',
+      'line one line two line three',
+    ],
+    ['leading and trailing whitespace', '  \n padded \t ', 'padded'],
+  ])('neutralizes %s inside the goals block', (_label, goals, expected) => {
+    const sanitized = buildDraftPrompt({ ...form, goals }, catalog);
+    expect(sanitized).toContain(`\n<goals>\n${expected}\n</goals>\n`);
+    expect(sanitized.match(/<\/goals>/g)).toHaveLength(1);
+  });
+
+  it.each([
+    ['angle brackets only', '<<>>'],
+    ['fullwidth brackets and newlines only', '＜\n＞\r\n＜'],
+  ])('keeps the prompt well formed when goals are %s', (_label, goals) => {
+    const emptied = buildDraftPrompt({ ...form, goals }, catalog);
+    expect(emptied).toContain('\n<goals>\n\n</goals>\n');
+    expect(emptied.match(/\n<goals>\n/g)).toHaveLength(1);
+    expect(emptied.match(/<\/goals>/g)).toHaveLength(1);
+    expect(emptied).toContain('Exercise catalog');
+  });
+
   it('carries the other form fields', () => {
     expect(prompt).toContain('intermediate');
     expect(prompt).toContain('180 cm');
@@ -65,10 +90,10 @@ describe('buildDraftPrompt', () => {
 
   it('lists the catalog as pipe separated lines', () => {
     expect(prompt).toContain(
-      'barbell-squat|Barbell Squat|quadriceps,glutes|barbell|intermediate|strength',
+      'barbell-squat|Barbell Squat|quadriceps,glutes|barbell|INTERMEDIATE|strength',
     );
     expect(prompt).toContain(
-      'plank|Plank|abdominals|body only|beginner|strength',
+      'plank|Plank|abdominals|body only|BEGINNER|strength',
     );
   });
 

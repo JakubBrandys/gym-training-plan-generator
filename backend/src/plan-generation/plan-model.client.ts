@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { Inject, Injectable } from '@nestjs/common';
-import { generateText, NoObjectGeneratedError, Output } from 'ai';
+import { APICallError, generateText, NoObjectGeneratedError, Output } from 'ai';
 import type { z } from 'zod';
 import {
   PLAN_GENERATION_CONFIG,
@@ -17,6 +17,8 @@ export class PlanModelError extends Error {
   constructor(
     readonly code: PlanModelErrorCode,
     readonly finishReason?: string,
+    readonly causeName?: string,
+    readonly statusCode?: number,
   ) {
     super(`Plan model call failed: ${code}`);
     this.name = 'PlanModelError';
@@ -76,10 +78,20 @@ export class PlanModelClient {
         finishReason: result.finishReason,
       };
     } catch (error) {
+      const causeName = error instanceof Error ? error.name : undefined;
       if (NoObjectGeneratedError.isInstance(error)) {
-        throw new PlanModelError('invalid_output', error.finishReason);
+        throw new PlanModelError(
+          'invalid_output',
+          error.finishReason,
+          causeName,
+        );
       }
-      throw new PlanModelError('unavailable');
+      throw new PlanModelError(
+        'unavailable',
+        undefined,
+        causeName,
+        APICallError.isInstance(error) ? error.statusCode : undefined,
+      );
     }
   }
 }

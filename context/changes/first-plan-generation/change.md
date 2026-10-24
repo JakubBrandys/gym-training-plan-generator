@@ -1,7 +1,7 @@
 ---
 change_id: first-plan-generation
 title: First plan generation
-status: implemented
+status: impl_reviewed
 created: 2026-10-14
 updated: 2026-10-24
 archived_at: null
@@ -17,4 +17,5 @@ archived_at: null
   - Content: sensible per level (beginner light 2-set full-body work, intermediate full body then upper/lower then a five-day split, expert upper/lower with a week 4 deload). Weakness: after the last frequency change the weeks repeat. Beginner and intermediate weeks 6 to 8 are identical apart from plank durations and notes, and the expert's squat is `4 x 5-6` in weeks 1 to 3 and week 6; progression is described in notes more than prescribed. Expert plan used 23 distinct catalog exercises, with Incline Dumbbell Press and Seated Cable Rows in two sessions each week. Only the expert plan has a deload.
   - Review pass: contribution not measurable because the draft is not stored; review output is about the same size as the draft.
   - Decision: keep `gpt-6-luna` for both passes. Week-to-week repetition is a prompt issue (require explicit week-over-week progression), to handle in a follow-up change before reconsidering a stronger `PLAN_REVIEW_MODEL`.
+- 2026-10-24: The daily-limit message ("You have reached today's plan limit. Try again tomorrow.") was seen working on the deployed Cloudflare page, completing the daily-limit half of checks 2.5 and 3.6 (user-reported, not independently logged).
 - 2026-10-24: Plan jobs and the per-user limiter are in memory per machine. Fly app `gym-training-plan-generator-api` has a second machine that is stopped; if it is started, polls can land on the wrong machine (404 for a running job) and the limits can be bypassed. Keep it stopped or run a single machine until jobs and counters move out of memory.

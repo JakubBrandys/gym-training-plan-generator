@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { apiFetch } from '../lib/api'
 import { handleAuthFailure } from '../lib/auth-failure'
+import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
 import { useAuth } from '../auth/useAuth'
 
 type Me = {
@@ -60,7 +61,7 @@ export const HomePage = () => {
       {state.status === 'loading' && <p className="status">Loading…</p>}
       {state.status === 'error' && (
         <p className="error" role="alert">
-          Something went wrong, try again
+          {GENERIC_PLAN_ERROR}
         </p>
       )}
       {state.status === 'ready' && (

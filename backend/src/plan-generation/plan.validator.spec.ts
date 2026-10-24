@@ -1,5 +1,5 @@
 import type { GeneratedPlan } from './plan.schema.js';
-import { validateGeneratedPlan } from './plan-validator.js';
+import { validateGeneratedPlan } from './plan.validator.js';
 
 const CATALOG = [
   'squat',

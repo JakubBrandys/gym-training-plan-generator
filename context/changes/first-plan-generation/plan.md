@@ -22,7 +22,7 @@ Verify: the manual criteria in Phases 2, 3 and 4, plus `cd backend && npm run li
 
 - OpenAI strict structured output rejects `.optional()` and `.nullish()`; optional fields must be `.nullable()` (AI SDK v7 OpenAI provider docs, checked 2026-10-14). The model-facing schema is therefore structure-only (no min/max) and all semantic rules live in a backend validator.
 - `generateText` with `Output.object({ schema })` throws `NoObjectGeneratedError` on invalid output and accepts `timeout`, `maxRetries`, `maxOutputTokens`, `abortSignal` and `providerOptions.openai.reasoningEffort` (AI SDK v7 docs via Context7, checked 2026-10-14). `ai`, `@ai-sdk/openai` and `zod` peer ranges accept zod `^3.25.76 || ^4.1.8` (`npm view`, 2026-10-14).
-- OpenAI's own docs name the cost tier `gpt-5.6-luna` (and `gpt-5.6-sol`); press coverage calls them "GPT-6 Luna/Sol" with `gpt-6-luna`; only `gpt-6-astra` appears under GPT-6 in OpenAI's pricing table (Context7 OpenAI docs and web search, 2026-10-14). Model ids are therefore required env vars with no hardcoded default, and `.env.example` documents `gpt-5.6-luna`. Luna is listed at $0.10 input and $0.60 output per million tokens.
+- OpenAI's own docs name the cost tier `gpt-5.6-luna` (and `gpt-5.6-sol`); press coverage calls them "GPT-6 Luna/Sol" with `gpt-6-luna`; only `gpt-6-astra` appears under GPT-6 in OpenAI's pricing table (Context7 OpenAI docs and web search, 2026-10-14). Model ids are therefore required env vars with no hardcoded default, and the id confirmed working on the user's OpenAI account on 2026-10-24 is `gpt-6-luna` (see the Phase 4 Deviation). Luna is listed at $0.10 input and $0.60 output per million tokens.
 - Boot-time validation of required config is an established lesson from S-01, where production broke twice on a bad `SUPABASE_URL` (`backend/src/auth/jwks.provider.ts:8-34`, `context/archive/2026-10-10-sign-up-and-login/reviews/impl-review.md:26-38`).
 - Never key authorization on email; job ownership and limits key on `Profile.id` (`context/foundation/lessons.md:5-10`).
 - Sign-up is open with unverified email, so per-user limits are evadable with new accounts; the provider-side spend alert is the manual backstop (`context/foundation/infrastructure.md:58, 62, 89`).
@@ -182,6 +182,8 @@ Add the model client, the two-pass pipeline, the in-memory job store, the limite
 
 **Deviation (2026-10-24):** The `daily_limit` half of manual check 2.5 was not run in this phase; it is covered by unit tests and verified on the deployed Cloudflare page (checks 3.6 and 4.5). Verified manually in Phase 2: a real generation completed with 8 weeks, sessions per week 3,3,3,4,4,4,5,5, and all 160 exercises from the catalog; `active_job` returned 429; a bad key failed the job with `provider_unavailable` and no goals in the logs; the backend refuses to boot with a blank `OPENAI_API_KEY`. OpenAI accepted the strict schema including zod's integer bounds, and `gpt-6-luna` worked as the model id.
 
+**Deviation (2026-10-24, impl-review fixes):** `plan-limiter.ts`, `plan-validator.ts` and `plan-prompts.ts` were renamed to `plan.limiter.ts`, `plan.validator.ts` and `plan.prompts.ts` to match the dotted role-suffix style. The pipeline now creates its 10-minute abort signal before loading the catalog and races the catalog load against it; the store fails a `running` job older than 12 minutes (`STALE_RUNNING_JOB_MS`) as `internal`, lazily, with no timers. `PlanModelError` carries `causeName` and `statusCode`, and the model-error warn line logs them. `sanitizeGoals` also strips fullwidth angle brackets and collapses whitespace. `test/plan-generation.e2e-spec.ts` adds an HTTP-level spec for the controller, and the `supertest/types` import in `test/app.e2e-spec.ts` was removed to fix a pre-existing type error.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -251,6 +253,8 @@ Add the form page, the polling job page, a plain plan view and the supporting cl
 
 **Deviation (2026-10-24):** The daily-limit half of manual check 3.6 was not run locally; the `active_job` message was verified. The `daily_limit` message is verified on the deployed Cloudflare page as part of check 4.5.
 
+**Deviation (2026-10-24, impl-review fixes):** `PlanGenerationPage` is now a thin wrapper that keys the inner page by `jobId`. The generic-error state gains a Retry action that restarts polling for the same job, and polling stops after 12 minutes with a distinct "taking longer than expected" message. The generic-error state no longer offers "Start again", because the job may still be running. `GENERIC_PLAN_ERROR` moved to `frontend/src/lib/error-messages.ts`.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -299,6 +303,8 @@ Document and set the new configuration, deploy, and evaluate plan quality, the r
 **Intent**: Decide whether the two-pass pipeline produces a believable personalized plan and whether the review model needs upgrading.
 
 **Contract**: run at least three profiles on the deployed stack (the user's own 5 to 5 expert profile, a beginner 2 to 4, an intermediate 3 to 5) and record in `change.md` Notes: time to complete, token cost per job from logs, whether the frequency ramp held, muscle balance, tolerability of exercise repetition with a 32-exercise catalog, and whether the review pass visibly improved the draft. If review quality is poor, upgrading is a config change: set `PLAN_REVIEW_MODEL` to the stronger model's id from the user's OpenAI model list (likely `gpt-6-sol`; unconfirmed).
+
+**Deviation (2026-10-24):** The plan assumed a single Fly machine, but the app has two machines. Starting the second one (a Fly secrets change did) split in-memory jobs and limiter counters across machines and produced a 404 for a running job; the stopped machine was removed and the app now runs one machine (release 13). Keep it at one machine until jobs and counters move out of memory. The model id confirmed on the user's account is `gpt-6-luna`, not the `gpt-5.6-luna` named in Key Discoveries.
 
 ### Success Criteria:
 

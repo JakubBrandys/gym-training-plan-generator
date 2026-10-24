@@ -20,6 +20,8 @@ export interface PlanJob {
 }
 
 export const TERMINAL_JOB_RETENTION_MS = 60 * 60 * 1000;
+export const PLAN_JOB_TIMEOUT_MS = 10 * 60 * 1000;
+export const STALE_RUNNING_JOB_MS = PLAN_JOB_TIMEOUT_MS + 2 * 60 * 1000;
 
 @Injectable()
 export class PlanJobStore {
@@ -50,6 +52,7 @@ export class PlanJobStore {
   }
 
   hasActive(ownerId: string): boolean {
+    this.purgeExpired();
     return [...this.jobs.values()].some(
       (job) => job.ownerId === ownerId && job.status === 'running',
     );
@@ -76,7 +79,7 @@ export class PlanJobStore {
     outcome: Pick<PlanJob, 'status' | 'plan' | 'error'>,
   ): void {
     const job = this.jobs.get(jobId);
-    if (job) {
+    if (job?.status === 'running') {
       const now = new Date();
       Object.assign(job, outcome, {
         stage: null,
@@ -87,9 +90,13 @@ export class PlanJobStore {
   }
 
   private purgeExpired(): void {
-    const cutoff = Date.now() - TERMINAL_JOB_RETENTION_MS;
+    const now = Date.now();
+    const terminalCutoff = now - TERMINAL_JOB_RETENTION_MS;
+    const staleCutoff = now - STALE_RUNNING_JOB_MS;
     for (const [jobId, job] of this.jobs) {
-      if (job.finishedAt && job.finishedAt.getTime() <= cutoff) {
+      if (job.status === 'running' && job.createdAt.getTime() <= staleCutoff) {
+        this.fail(jobId, 'internal');
+      } else if (job.finishedAt && job.finishedAt.getTime() <= terminalCutoff) {
         this.jobs.delete(jobId);
       }
     }
