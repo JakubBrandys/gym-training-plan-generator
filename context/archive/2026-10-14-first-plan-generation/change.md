@@ -1,10 +1,10 @@
 ---
 change_id: first-plan-generation
 title: First plan generation
-status: impl_reviewed
+status: archived
 created: 2026-10-14
 updated: 2026-10-24
-archived_at: null
+archived_at: 2026-10-24T13:22:22Z
 ---
 
 ## Notes
