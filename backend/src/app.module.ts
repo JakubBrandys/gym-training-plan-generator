@@ -5,6 +5,7 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ExercisesModule } from './exercises/exercises.module.js';
 import { HealthController } from './health/health.controller.js';
+import { PlanGenerationModule } from './plan-generation/plan-generation.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 
 @Module({
@@ -12,6 +13,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     ExercisesModule,
+    PlanGenerationModule,
     AuthModule,
   ],
   controllers: [AppController, HealthController],

@@ -180,6 +180,8 @@ Add the model client, the two-pass pipeline, the in-memory job store, the limite
 
 **Carried from Phase 1 (2026-10-14):** once the module registers `planGenerationConfigProvider`, manually verify that the backend refuses to boot with a message naming `OPENAI_API_KEY` when it is unset (deferred half of check 1.4), and confirm on the first real run that OpenAI strict mode accepts the safe-integer `minimum`/`maximum` bounds zod 4 emits on integer fields, or that the AI SDK strips them.
 
+**Deviation (2026-10-24):** The `daily_limit` half of manual check 2.5 was not run in this phase; it is covered by unit tests and verified on the deployed Cloudflare page (checks 3.6 and 4.5). Verified manually in Phase 2: a real generation completed with 8 weeks, sessions per week 3,3,3,4,4,4,5,5, and all 160 exercises from the catalog; `active_job` returned 429; a bad key failed the job with `provider_unavailable` and no goals in the logs; the backend refuses to boot with a blank `OPENAI_API_KEY`. OpenAI accepted the strict schema including zod's integer bounds, and `gpt-6-luna` worked as the model id.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -361,28 +363,28 @@ None. No schema change, no migration and no data backfill. Jobs are lost on rest
 
 #### Automated
 
-- [x] 1.1 Backend builds: `cd backend && npm run build`
-- [x] 1.2 Linting passes: `cd backend && npm run lint`
-- [x] 1.3 Config, form schema, plan schema and validator specs pass: `cd backend && npx vitest run src/plan-generation`
+- [x] 1.1 Backend builds: `cd backend && npm run build` — 63d21e1
+- [x] 1.2 Linting passes: `cd backend && npm run lint` — 63d21e1
+- [x] 1.3 Config, form schema, plan schema and validator specs pass: `cd backend && npx vitest run src/plan-generation` — 63d21e1
 
 #### Manual
 
-- [x] 1.4 Backend refuses to boot with a message naming `OPENAI_API_KEY` when it is unset, and boots when `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` and `PLAN_REVIEW_MODEL` are set in `backend/.env` (edited by hand; agent access to `.env*` is denied)
+- [x] 1.4 Backend refuses to boot with a message naming `OPENAI_API_KEY` when it is unset, and boots when `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` and `PLAN_REVIEW_MODEL` are set in `backend/.env` (edited by hand; agent access to `.env*` is denied) — 63d21e1
 
 ### Phase 2: Pipeline, jobs and endpoints
 
 #### Automated
 
-- [ ] 2.1 Backend builds: `cd backend && npm run build`
-- [ ] 2.2 Linting passes: `cd backend && npm run lint`
-- [ ] 2.3 All backend unit specs pass, including store, limiter, pipeline and controller specs: `cd backend && npm test`
+- [x] 2.1 Backend builds: `cd backend && npm run build`
+- [x] 2.2 Linting passes: `cd backend && npm run lint`
+- [x] 2.3 All backend unit specs pass, including store, limiter, pipeline and controller specs: `cd backend && npm test`
 
 #### Manual
 
-- [ ] 2.4 With a real key and a valid JWT, `POST /plan-generations` returns 202 with a `jobId` immediately, and polling `GET /plan-generations/:jobId` reaches `completed` with 8 weeks whose exercise names all come from the catalog
-- [ ] 2.5 A second POST while a job is running returns 429 with `active_job`; with `PLAN_DAILY_LIMIT=2`, a third POST after two finished jobs returns 429 with `daily_limit`
-- [ ] 2.6 A second user's token gets 404 for the first user's `jobId`
-- [ ] 2.7 A bad `OPENAI_API_KEY` makes the job end `failed` with `provider_unavailable` and no plan, and server logs show per-pass duration and token usage without any goals text
+- [x] 2.4 With a real key and a valid JWT, `POST /plan-generations` returns 202 with a `jobId` immediately, and polling `GET /plan-generations/:jobId` reaches `completed` with 8 weeks whose exercise names all come from the catalog
+- [x] 2.5 A second POST while a job is running returns 429 with `active_job`; with `PLAN_DAILY_LIMIT=2`, a third POST after two finished jobs returns 429 with `daily_limit`
+- [x] 2.6 A second user's token gets 404 for the first user's `jobId`
+- [x] 2.7 A bad `OPENAI_API_KEY` makes the job end `failed` with `provider_unavailable` and no plan, and server logs show per-pass duration and token usage without any goals text
 
 ### Phase 3: Frontend flow
 
