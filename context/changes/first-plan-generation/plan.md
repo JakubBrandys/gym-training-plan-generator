@@ -409,12 +409,12 @@ None. No schema change, no migration and no data backfill. Jobs are lost on rest
 
 #### Automated
 
-- [x] 4.1 Full backend gates pass: `cd backend && npm run lint && npm run build && npm test`
-- [x] 4.2 Full frontend gates pass: `cd frontend && npm run lint && npm run build`
+- [x] 4.1 Full backend gates pass: `cd backend && npm run lint && npm run build && npm test` — f378b13
+- [x] 4.2 Full frontend gates pass: `cd frontend && npm run lint && npm run build` — f378b13
 
 #### Manual
 
-- [x] 4.3 Fly secrets for the three required variables exist before the merge (`fly secrets list` shows names) and `README.md` and `.env.example` document all four variables
-- [ ] 4.4 After the merge the backend deploys, `/health` is green and the app does not crash-loop on boot
-- [ ] 4.5 A signed-in user completes the full flow on the deployed frontend and backend and sees a valid 8-week plan
-- [ ] 4.6 The three-profile quality evaluation is recorded in `change.md` Notes with the review-model decision
+- [x] 4.3 Fly secrets for the three required variables exist before the merge (`fly secrets list` shows names) and `README.md` and `.env.example` document all four variables — f378b13
+- [x] 4.4 After the merge the backend deploys, `/health` is green and the app does not crash-loop on boot — f378b13
+- [x] 4.5 A signed-in user completes the full flow on the deployed frontend and backend and sees a valid 8-week plan — f378b13
+- [x] 4.6 The three-profile quality evaluation is recorded in `change.md` Notes with the review-model decision — f378b13
