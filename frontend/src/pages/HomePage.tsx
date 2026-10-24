@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { apiFetch } from '../lib/api'
+import { handleAuthFailure } from '../lib/auth-failure'
 import { useAuth } from '../auth/useAuth'
 
 type Me = {
@@ -30,15 +32,7 @@ export const HomePage = () => {
       }
       if (cancelled) return
 
-      if (response.status === 403) {
-        await signOut('blocked')
-        return
-      }
-
-      if (response.status === 401) {
-        await signOut()
-        return
-      }
+      if (await handleAuthFailure(response.status, signOut)) return
 
       if (!response.ok) {
         setState({ status: 'error' })
@@ -77,6 +71,9 @@ export const HomePage = () => {
           <dd>{state.me.role}</dd>
         </dl>
       )}
+      <p>
+        <Link to="/plans/new">Create a training plan</Link>
+      </p>
       <button type="button" onClick={() => void signOut()}>
         Sign out
       </button>

@@ -249,6 +249,8 @@ Add the form page, the polling job page, a plain plan view and the supporting cl
 
 **Contract**: add `/plans/new` and `/plans/generate/:jobId` to the `RequireAuth` children. Add `select`, `textarea`, `fieldset` and minimal plan-list rules next to the existing element selectors; reuse `.hint`, `.status`, `.error`.
 
+**Deviation (2026-10-24):** The daily-limit half of manual check 3.6 was not run locally; the `active_job` message was verified. The `daily_limit` message is verified on the deployed Cloudflare page as part of check 4.5.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -309,7 +311,7 @@ Document and set the new configuration, deploy, and evaluate plan quality, the r
 
 - Fly secrets for the three required variables exist before the merge (`fly secrets list` shows names) and `README.md` and `.env.example` document all four variables
 - After the merge the backend deploys, `/health` is green and the app does not crash-loop on boot
-- A signed-in user completes the full flow on the deployed frontend and backend and sees a valid 8-week plan
+- A signed-in user completes the full flow on the deployed frontend and backend and sees a valid 8-week plan, and exceeding the daily limit shows the daily-limit message (carried from check 3.6)
 - The three-profile quality evaluation is recorded in `change.md` Notes with the review-model decision
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase. Phase blocks use plain bullets — the corresponding `- [ ]` checkboxes for these items live in the `## Progress` section at the bottom of the plan.
@@ -375,33 +377,33 @@ None. No schema change, no migration and no data backfill. Jobs are lost on rest
 
 #### Automated
 
-- [x] 2.1 Backend builds: `cd backend && npm run build`
-- [x] 2.2 Linting passes: `cd backend && npm run lint`
-- [x] 2.3 All backend unit specs pass, including store, limiter, pipeline and controller specs: `cd backend && npm test`
+- [x] 2.1 Backend builds: `cd backend && npm run build` — 9efef38
+- [x] 2.2 Linting passes: `cd backend && npm run lint` — 9efef38
+- [x] 2.3 All backend unit specs pass, including store, limiter, pipeline and controller specs: `cd backend && npm test` — 9efef38
 
 #### Manual
 
-- [x] 2.4 With a real key and a valid JWT, `POST /plan-generations` returns 202 with a `jobId` immediately, and polling `GET /plan-generations/:jobId` reaches `completed` with 8 weeks whose exercise names all come from the catalog
-- [x] 2.5 A second POST while a job is running returns 429 with `active_job`; with `PLAN_DAILY_LIMIT=2`, a third POST after two finished jobs returns 429 with `daily_limit`
-- [x] 2.6 A second user's token gets 404 for the first user's `jobId`
-- [x] 2.7 A bad `OPENAI_API_KEY` makes the job end `failed` with `provider_unavailable` and no plan, and server logs show per-pass duration and token usage without any goals text
+- [x] 2.4 With a real key and a valid JWT, `POST /plan-generations` returns 202 with a `jobId` immediately, and polling `GET /plan-generations/:jobId` reaches `completed` with 8 weeks whose exercise names all come from the catalog — 9efef38
+- [x] 2.5 A second POST while a job is running returns 429 with `active_job`; with `PLAN_DAILY_LIMIT=2`, a third POST after two finished jobs returns 429 with `daily_limit` — 9efef38
+- [x] 2.6 A second user's token gets 404 for the first user's `jobId` — 9efef38
+- [x] 2.7 A bad `OPENAI_API_KEY` makes the job end `failed` with `provider_unavailable` and no plan, and server logs show per-pass duration and token usage without any goals text — 9efef38
 
 ### Phase 3: Frontend flow
 
 #### Automated
 
-- [ ] 3.1 Linting passes: `cd frontend && npm run lint`
-- [ ] 3.2 Type check and production build pass: `cd frontend && npm run build`
+- [x] 3.1 Linting passes: `cd frontend && npm run lint`
+- [x] 3.2 Type check and production build pass: `cd frontend && npm run build`
 
 #### Manual
 
-- [ ] 3.3 Submitting the form navigates to the job page, shows the stage, then renders the full 8-week plan
-- [ ] 3.4 Refreshing the job page mid-generation resumes polling the same job
-- [ ] 3.5 A failed job and a bad provider key each show fixed copy with no provider text, and the user can start again
-- [ ] 3.6 Starting a second job while one runs, and exceeding the daily limit, show the two limit messages on the form page
-- [ ] 3.7 An unknown or expired `jobId` shows the "not found, start again" message
-- [ ] 3.8 Form controls have visible labels, the error uses `role="alert"`, and the form is fully keyboard operable
-- [ ] 3.9 A blocked user still gets the sign-out banner from Home and from the job page (regression check on the extracted helper)
+- [x] 3.3 Submitting the form navigates to the job page, shows the stage, then renders the full 8-week plan
+- [x] 3.4 Refreshing the job page mid-generation resumes polling the same job
+- [x] 3.5 A failed job and a bad provider key each show fixed copy with no provider text, and the user can start again
+- [x] 3.6 Starting a second job while one runs, and exceeding the daily limit, show the two limit messages on the form page
+- [x] 3.7 An unknown or expired `jobId` shows the "not found, start again" message
+- [x] 3.8 Form controls have visible labels, the error uses `role="alert"`, and the form is fully keyboard operable
+- [x] 3.9 A blocked user still gets the sign-out banner from Home and from the job page (regression check on the extracted helper)
 
 ### Phase 4: Rollout and quality check
 

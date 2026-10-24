@@ -51,13 +51,34 @@ label {
   font-weight: 600;
 }
 
-input {
+input,
+select,
+textarea {
   font: inherit;
   padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
   color: var(--text);
+}
+
+textarea {
+  resize: vertical;
+}
+
+fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
 }
 
 button {
@@ -110,4 +131,29 @@ dt {
 
 dd {
   margin: 0 0 0.5rem;
+}
+
+.plan-view h2 {
+  font-size: 1.25rem;
+  margin: 1.5rem 0 0.25rem;
+}
+
+.plan-view h3 {
+  font-size: 1rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.plan-sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plan-exercises {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.plan-exercises li {
+  margin-bottom: 0.25rem;
 }
