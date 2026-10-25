@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
   isValidWeekNumber,
@@ -36,14 +36,19 @@ interface Subscription {
   listener: PlanProgressListener;
 }
 
+const logger = new Logger('PlanJobStore');
+
 const deliver = (
+  jobId: string,
   listener: PlanProgressListener,
   event: PlanProgressEvent,
 ): void => {
   try {
     listener(event);
-  } catch {
-    return;
+  } catch (error) {
+    logger.warn(
+      `Job ${jobId} progress listener failed on event ${event.id}: ${error instanceof Error ? error.name : 'unknown error'}`,
+    );
   }
 };
 
@@ -112,6 +117,12 @@ export class PlanJobStore {
     this.record(job, event);
   }
 
+  subscriberCount(jobId: string, ownerId: string): number {
+    return this.get(jobId, ownerId)
+      ? (this.subscriptions.get(jobId)?.size ?? 0)
+      : 0;
+  }
+
   subscribe(
     jobId: string,
     ownerId: string,
@@ -123,7 +134,7 @@ export class PlanJobStore {
       return undefined;
     }
     for (const event of job.events.filter(({ id }) => id > afterId)) {
-      deliver(listener, event);
+      deliver(job.id, listener, event);
     }
     if (job.status !== 'running') {
       return () => undefined;
@@ -182,7 +193,7 @@ export class PlanJobStore {
     const forJob = this.subscriptions.get(job.id);
     if (forJob) {
       for (const subscription of forJob) {
-        deliver(subscription.listener, event);
+        deliver(job.id, subscription.listener, event);
       }
     }
   }

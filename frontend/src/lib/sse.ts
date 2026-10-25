@@ -12,12 +12,15 @@ type PendingFrame = {
   id: string | null
   event: string | null
   dataLines: string[]
+  dataChars: number
   hasField: boolean
 }
 
+export const MAX_SSE_PENDING_CHARS = 64 * 1024
+
 const LINE_BREAK = /\r\n|\n|\r/
 
-const emptyFrame = (): PendingFrame => ({ id: null, event: null, dataLines: [], hasField: false })
+const emptyFrame = (): PendingFrame => ({ id: null, event: null, dataLines: [], dataChars: 0, hasField: false })
 
 const takeLine = (buffer: string): { line: string; rest: string } | null => {
   const match = LINE_BREAK.exec(buffer)
@@ -58,7 +61,9 @@ export const createSseParser = (): SseParser => {
       pending.hasField = true
     } else if (field === 'data') {
       pending.dataLines.push(value)
+      pending.dataChars += value.length
       pending.hasField = true
+      if (pending.dataChars > MAX_SSE_PENDING_CHARS) throw new Error('SSE frame is too large')
     }
     return null
   }
@@ -73,6 +78,7 @@ export const createSseParser = (): SseParser => {
       if (frame) frames.push(frame)
       next = takeLine(buffer)
     }
+    if (buffer.length > MAX_SSE_PENDING_CHARS) throw new Error('SSE line is too long')
     return frames
   }
 

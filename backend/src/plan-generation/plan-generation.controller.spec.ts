@@ -4,6 +4,7 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import type { RequestUser } from '../auth/auth-user.js';
@@ -43,7 +44,11 @@ const config: PlanGenerationConfig = {
   dailyLimit: 2,
 };
 
-const streamConfig: PlanStreamConfig = { heartbeatMs: 1_000, windowMs: 10_000 };
+const streamConfig: PlanStreamConfig = {
+  heartbeatMs: 1_000,
+  windowMs: 10_000,
+  maxStreamsPerJob: 2,
+};
 
 const setup = () => {
   const store = new PlanJobStore();
@@ -285,8 +290,14 @@ describe('PlanGenerationController', () => {
   });
 
   describe('streamEvents', () => {
+    beforeEach(() => {
+      vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    });
+
     afterEach(() => {
       vi.useRealTimers();
+      vi.restoreAllMocks();
     });
 
     it('writes event frames with id, event name and JSON data', () => {
@@ -448,6 +459,201 @@ describe('PlanGenerationController', () => {
       expect(response.body).not.toContain('id:');
       expect(response.end).toHaveBeenCalledTimes(1);
       expect(store.get(jobId, user.id)?.status).toBe('running');
+    });
+
+    it('denies a stream over the per-job cap with 429 before writing anything', () => {
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+      const first = openStream(controller, user, jobId);
+      const second = openStream(controller, user, jobId);
+
+      const response = new FakeResponse();
+      const error = rejectionOf(() =>
+        controller.streamEvents(
+          user,
+          jobId,
+          undefined,
+          response as unknown as Response,
+        ),
+      );
+
+      expect(error).toBeInstanceOf(HttpException);
+      expect((error as HttpException).getStatus()).toBe(429);
+      expect((error as HttpException).getResponse()).toEqual({
+        code: 'too_many_streams',
+      });
+      expect(response.writeHead).not.toHaveBeenCalled();
+      expect(response.chunks).toHaveLength(0);
+      first.emit('close');
+      second.emit('close');
+    });
+
+    it('frees a slot when a stream disconnects', () => {
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+      const first = openStream(controller, user, jobId);
+      const second = openStream(controller, user, jobId);
+      first.emit('close');
+
+      const third = openStream(controller, user, jobId);
+
+      expect(third.head?.status).toBe(200);
+      second.emit('close');
+      third.emit('close');
+    });
+
+    it('does not count another owners streams toward the cap', () => {
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+      const first = openStream(controller, user, jobId);
+      const second = openStream(controller, user, jobId);
+
+      const error = rejectionOf(() => openStream(controller, otherUser, jobId));
+
+      expect(error).toBeInstanceOf(NotFoundException);
+      first.emit('close');
+      second.emit('close');
+    });
+
+    describe('logging', () => {
+      const loggedLines = (spy: { mock: { calls: unknown[][] } }): string[] =>
+        spy.mock.calls.map(([message]) => String(message));
+
+      it('logs the open with the job id and the numeric Last-Event-ID', () => {
+        const log = vi
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+        const { controller } = setup();
+        const { jobId } = controller.start(user, form);
+
+        const response = openStream(controller, user, jobId, '7');
+
+        expect(loggedLines(log)).toContain(
+          `Job ${jobId} stream opened lastEventId=7`,
+        );
+        response.emit('close');
+      });
+
+      it('logs the raw header value never, only the parsed id', () => {
+        const log = vi
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+        const { controller } = setup();
+        const { jobId } = controller.start(user, form);
+
+        const response = openStream(
+          controller,
+          user,
+          jobId,
+          'abc\nforged line',
+        );
+
+        const lines = loggedLines(log);
+        expect(lines).toContain(`Job ${jobId} stream opened lastEventId=0`);
+        expect(lines.join('\n')).not.toContain('forged');
+        response.emit('close');
+      });
+
+      it('logs the close reason when the client disconnects', () => {
+        const log = vi
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+        const { controller } = setup();
+        const { jobId } = controller.start(user, form);
+        const response = openStream(controller, user, jobId);
+
+        response.emit('close');
+
+        expect(
+          loggedLines(log).some((line) =>
+            line.startsWith(
+              `Job ${jobId} stream closed reason=client-disconnect durationMs=`,
+            ),
+          ),
+        ).toBe(true);
+      });
+
+      it('logs the close reason after a terminal event', () => {
+        const log = vi
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+        const { controller, store } = setup();
+        const { jobId } = controller.start(user, form);
+        openStream(controller, user, jobId);
+
+        store.complete(jobId, { weeks: [] });
+
+        expect(
+          loggedLines(log).some((line) =>
+            line.includes(`Job ${jobId} stream closed reason=terminal`),
+          ),
+        ).toBe(true);
+      });
+
+      it('logs the close reason when the window elapses', () => {
+        vi.useFakeTimers();
+        const log = vi
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+        const { controller } = setup();
+        const { jobId } = controller.start(user, form);
+        openStream(controller, user, jobId);
+
+        vi.advanceTimersByTime(streamConfig.windowMs);
+
+        expect(
+          loggedLines(log).some((line) =>
+            line.includes(`Job ${jobId} stream closed reason=window`),
+          ),
+        ).toBe(true);
+      });
+
+      it('logs a finished job that had nothing left to replay', () => {
+        const log = vi
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+        const { controller, store } = setup();
+        const { jobId } = controller.start(user, form);
+        store.complete(jobId, { weeks: [] });
+        const lastId = store.get(jobId, user.id)?.events.length ?? 0;
+
+        openStream(controller, user, jobId, String(lastId));
+
+        expect(
+          loggedLines(log).some((line) =>
+            line.includes(`Job ${jobId} stream closed reason=job-finished`),
+          ),
+        ).toBe(true);
+      });
+
+      it('warns without echoing the job id when the job is unknown', () => {
+        const warn = vi
+          .spyOn(Logger.prototype, 'warn')
+          .mockImplementation(() => undefined);
+        const { controller } = setup();
+
+        rejectionOf(() => openStream(controller, user, 'x\nforged'));
+
+        expect(loggedLines(warn)).toEqual(['Stream rejected reason=not-found']);
+      });
+
+      it('warns when a stream is refused over the cap', () => {
+        const warn = vi
+          .spyOn(Logger.prototype, 'warn')
+          .mockImplementation(() => undefined);
+        const { controller } = setup();
+        const { jobId } = controller.start(user, form);
+        const first = openStream(controller, user, jobId);
+        const second = openStream(controller, user, jobId);
+
+        rejectionOf(() => openStream(controller, user, jobId));
+
+        expect(loggedLines(warn)).toEqual([
+          `Job ${jobId} stream rejected reason=too-many-streams`,
+        ]);
+        first.emit('close');
+        second.emit('close');
+      });
     });
 
     it('stops timers and listening once the client disconnects', () => {

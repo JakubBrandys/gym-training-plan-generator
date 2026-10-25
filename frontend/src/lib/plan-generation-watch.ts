@@ -11,7 +11,12 @@ import {
   reduceProgress,
   type ProgressState,
 } from './plan-progress'
-import { nextBackoffMs, nextFailureCount, shouldFallBackToPolling } from './stream-policy'
+import {
+  isStableConnection,
+  nextBackoffMs,
+  nextFailureCount,
+  shouldFallBackToPolling,
+} from './stream-policy'
 
 export const POLL_INTERVAL_MS = 3000
 export const MAX_CONSECUTIVE_POLL_FAILURES = 3
@@ -145,6 +150,7 @@ export const watchPlanGeneration = async (
     }
 
     const idBeforeAttempt = lastEventId
+    const connectionStartedAt = Date.now()
     const outcome = await streamPlanEvents({
       jobId,
       lastEventId,
@@ -176,12 +182,13 @@ export const watchPlanGeneration = async (
       return
     }
 
-    if (outcome.kind === 'closed') {
+    if (outcome.kind === 'closed' && isStableConnection(Date.now() - connectionStartedAt)) {
       consecutiveFailures = 0
       continue
     }
 
-    consecutiveFailures = nextFailureCount(consecutiveFailures, lastEventId > idBeforeAttempt)
+    const receivedEvent = outcome.kind !== 'closed' && lastEventId > idBeforeAttempt
+    consecutiveFailures = nextFailureCount(consecutiveFailures, receivedEvent)
 
     if (shouldFallBackToPolling(consecutiveFailures)) {
       await poll(progress)

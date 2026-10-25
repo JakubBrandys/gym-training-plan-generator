@@ -124,3 +124,35 @@ describe('isTerminalEvent', () => {
     expect(isTerminalEvent({ type: 'week' })).toBe(false)
   })
 })
+
+describe('parseProgressEvent payload validation', () => {
+  const parse = (fields: Record<string, unknown>) => parseProgressEvent(JSON.stringify({ id: 1, at, ...fields }))
+
+  it('rejects a week event without a whole week inside the plan range', () => {
+    expect(parse({ type: 'week', stage: 'drafting' })).toBeNull()
+    expect(parse({ type: 'week', stage: 'drafting', week: '3' })).toBeNull()
+    expect(parse({ type: 'week', stage: 'drafting', week: 0 })).toBeNull()
+    expect(parse({ type: 'week', stage: 'drafting', week: 9 })).toBeNull()
+    expect(parse({ type: 'week', stage: 'drafting', week: 2.5 })).toBeNull()
+    expect(parse({ type: 'week', stage: 'drafting', week: 8 })).not.toBeNull()
+  })
+
+  it('rejects events whose stage is missing or unknown', () => {
+    expect(parse({ type: 'stage' })).toBeNull()
+    expect(parse({ type: 'stage', stage: 'finishing' })).toBeNull()
+    expect(parse({ type: 'validating', stage: 3 })).toBeNull()
+  })
+
+  it('rejects a retrying event without a positive attempt and a failed event without a code', () => {
+    expect(parse({ type: 'retrying', stage: 'drafting' })).toBeNull()
+    expect(parse({ type: 'retrying', stage: 'drafting', attempt: 0 })).toBeNull()
+    expect(parse({ type: 'retrying', stage: 'drafting', attempt: 2 })).not.toBeNull()
+    expect(parse({ type: 'failed' })).toBeNull()
+    expect(parse({ type: 'failed', code: 'internal' })).not.toBeNull()
+  })
+
+  it('still passes unknown event types through for the reducer to ignore', () => {
+    expect(parse({ type: 'something-new' })).not.toBeNull()
+    expect(parse({ type: 'completed' })).not.toBeNull()
+  })
+})

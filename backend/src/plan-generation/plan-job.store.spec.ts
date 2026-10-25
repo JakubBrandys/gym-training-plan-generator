@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   PlanJobStore,
   PLAN_JOB_TIMEOUT_MS,
@@ -319,7 +320,34 @@ describe('PlanJobStore', () => {
       expect(listener).not.toHaveBeenCalled();
     });
 
+    it('counts live subscribers for the owner only', () => {
+      const job = store.create(OWNER);
+      expect(store.subscriberCount(job.id, OWNER)).toBe(0);
+
+      const stopFirst = store.subscribe(job.id, OWNER, 0, () => undefined);
+      const stopSecond = store.subscribe(job.id, OWNER, 0, () => undefined);
+      expect(store.subscriberCount(job.id, OWNER)).toBe(2);
+      expect(store.subscriberCount(job.id, OTHER)).toBe(0);
+
+      stopFirst?.();
+      expect(store.subscriberCount(job.id, OWNER)).toBe(1);
+      stopSecond?.();
+      expect(store.subscriberCount(job.id, OWNER)).toBe(0);
+    });
+
+    it('counts no subscribers once the job finishes or is unknown', () => {
+      const job = store.create(OWNER);
+      store.subscribe(job.id, OWNER, 0, () => undefined);
+      store.complete(job.id, { weeks: [] });
+
+      expect(store.subscriberCount(job.id, OWNER)).toBe(0);
+      expect(store.subscriberCount('missing', OWNER)).toBe(0);
+    });
+
     it('survives a throwing listener and still serves the others', () => {
+      const warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
       const job = store.create(OWNER);
       store.subscribe(job.id, OWNER, 0, () => {
         throw new Error('listener boom');
@@ -334,9 +362,33 @@ describe('PlanJobStore', () => {
         'completed',
       ]);
       expect(job.status).toBe('completed');
+      warn.mockRestore();
+    });
+
+    it('warns with the job id and error name when a listener throws, never with the payload', () => {
+      const warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      const job = store.create(OWNER);
+      store.subscribe(job.id, OWNER, 0, () => {
+        throw new TypeError('secret detail');
+      });
+
+      store.setStage(job.id, 'drafting');
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toBe(
+        `Job ${job.id} progress listener failed on event 1: TypeError`,
+      );
+      expect(message).not.toContain('secret detail');
+      warn.mockRestore();
     });
 
     it('survives a throwing listener during replay', () => {
+      const warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
       const job = store.create(OWNER);
       store.setStage(job.id, 'drafting');
       const received: PlanProgressEvent[] = [];
@@ -351,6 +403,7 @@ describe('PlanJobStore', () => {
 
       expect(calls).toBe(2);
       expect(received.map((event) => event.id)).toEqual([1, 2]);
+      warn.mockRestore();
     });
 
     it('lets the reaper fail a stale job and tell its subscribers', () => {

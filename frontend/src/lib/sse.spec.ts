@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createSseParser } from './sse'
+import { MAX_SSE_PENDING_CHARS, createSseParser } from './sse'
 
 describe('createSseParser', () => {
   it('parses a complete frame with id, event and data', () => {
@@ -78,5 +78,28 @@ describe('createSseParser', () => {
     const parser = createSseParser()
 
     expect(parser.feed('data:  spaced\n\n')).toEqual([{ id: null, event: 'message', data: ' spaced' }])
+  })
+})
+
+describe('createSseParser size limits', () => {
+  it('throws when a line never ends and the pending buffer outgrows the limit', () => {
+    const parser = createSseParser()
+
+    expect(() => parser.feed('data: ' + 'x'.repeat(MAX_SSE_PENDING_CHARS))).toThrow()
+  })
+
+  it('throws when the data lines of one frame add up past the limit', () => {
+    const parser = createSseParser()
+    const line = 'data: ' + 'x'.repeat(MAX_SSE_PENDING_CHARS / 4) + '\n'
+
+    expect(() => parser.feed(line.repeat(5))).toThrow()
+  })
+
+  it('accepts frames just under the limit and keeps parsing afterwards', () => {
+    const parser = createSseParser()
+    const payload = 'x'.repeat(MAX_SSE_PENDING_CHARS - 100)
+
+    expect(parser.feed(`id: 1\ndata: ${payload}\n\n`)).toEqual([{ id: '1', event: 'message', data: payload }])
+    expect(parser.feed('id: 2\ndata: ok\n\n')).toEqual([{ id: '2', event: 'message', data: 'ok' }])
   })
 })

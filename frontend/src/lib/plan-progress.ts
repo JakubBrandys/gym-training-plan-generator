@@ -78,6 +78,33 @@ export const progressFromSnapshot = (
 export const isTerminalEvent = (event: Pick<PlanProgressEvent, 'type'>): boolean =>
   event.type === 'completed' || event.type === 'failed'
 
+const STAGES: readonly string[] = ['drafting', 'reviewing']
+
+const isStage = (value: unknown): boolean => typeof value === 'string' && STAGES.includes(value)
+
+const isWholeNumberAtLeast = (value: unknown, minimum: number): boolean =>
+  typeof value === 'number' && Number.isInteger(value) && value >= minimum
+
+const hasValidPayload = (candidate: Record<string, unknown>): boolean => {
+  switch (candidate.type) {
+    case 'stage':
+    case 'validating':
+      return isStage(candidate.stage)
+    case 'week':
+      return (
+        isStage(candidate.stage) &&
+        isWholeNumberAtLeast(candidate.week, 1) &&
+        (candidate.week as number) <= WEEK_COUNT
+      )
+    case 'retrying':
+      return isStage(candidate.stage) && isWholeNumberAtLeast(candidate.attempt, 1)
+    case 'failed':
+      return typeof candidate.code === 'string'
+    default:
+      return true
+  }
+}
+
 export const parseProgressEvent = (data: string): PlanProgressEvent | null => {
   try {
     const value: unknown = JSON.parse(data)
@@ -90,6 +117,7 @@ export const parseProgressEvent = (data: string): PlanProgressEvent | null => {
     ) {
       return null
     }
+    if (!hasValidPayload(candidate)) return null
     return candidate as unknown as PlanProgressEvent
   } catch {
     return null

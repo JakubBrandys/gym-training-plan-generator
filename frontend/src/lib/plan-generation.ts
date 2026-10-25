@@ -65,6 +65,8 @@ export type FetchPlanGenerationResult =
   | { kind: 'not-found' }
   | { kind: 'error' }
 
+const SNAPSHOT_REQUEST_TIMEOUT_MS = 10_000
+
 const authFailureOf = (status: number): AuthFailureResult | null => {
   if (status === 401) return { kind: 'unauthorized', status: 401 }
   if (status === 403) return { kind: 'blocked', status: 403 }
@@ -106,7 +108,9 @@ export const fetchPlanGeneration = async (
   signal: AbortSignal,
 ): Promise<FetchPlanGenerationResult> => {
   try {
-    const response = await apiFetch(`/plan-generations/${encodeURIComponent(jobId)}`, { signal })
+    const response = await apiFetch(`/plan-generations/${encodeURIComponent(jobId)}`, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(SNAPSHOT_REQUEST_TIMEOUT_MS)]),
+    })
 
     const authFailure = authFailureOf(response.status)
     if (authFailure) return authFailure

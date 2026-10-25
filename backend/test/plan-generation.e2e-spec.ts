@@ -65,7 +65,11 @@ describe('PlanGenerationController (http)', () => {
   let streamConfig: PlanStreamConfig;
 
   beforeEach(async () => {
-    streamConfig = { heartbeatMs: 3_600_000, windowMs: 3_600_000 };
+    streamConfig = {
+      heartbeatMs: 3_600_000,
+      windowMs: 3_600_000,
+      maxStreamsPerJob: 3,
+    };
     pipelineRun = vi.fn(() => new Promise<void>(() => undefined));
     const moduleRef = await Test.createTestingModule({
       controllers: [PlanGenerationController],

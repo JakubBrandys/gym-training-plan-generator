@@ -9,9 +9,7 @@ export type PlanProgressInput =
   | { type: 'completed' }
   | { type: 'failed'; code: PlanJobErrorCode };
 
-export type PlanProgressType = PlanProgressInput['type'];
-
-export type TerminalPlanProgressType = 'completed' | 'failed';
+type TerminalPlanProgressType = 'completed' | 'failed';
 
 export type PlanProgressDraft = Exclude<
   PlanProgressInput,

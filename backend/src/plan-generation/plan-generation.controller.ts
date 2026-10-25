@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
   Inject,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -59,8 +60,13 @@ const CONNECTED_FRAME = ': connected\n\n';
 const HEARTBEAT_FRAME = ': heartbeat\n\n';
 const RECONNECT_FRAME = 'event: reconnect\ndata: {}\n\n';
 
+type StreamCloseReason =
+  'terminal' | 'window' | 'client-disconnect' | 'job-finished';
+
 @Controller('plan-generations')
 export class PlanGenerationController {
+  private readonly logger = new Logger(PlanGenerationController.name);
+
   constructor(
     private readonly store: PlanJobStore,
     private readonly limiter: PlanLimiter,
@@ -93,6 +99,8 @@ export class PlanGenerationController {
     @Headers('last-event-id') lastEventId: string | undefined,
     @Res() response: Response,
   ): void {
+    const afterId = parseLastEventId(lastEventId);
+    let openedAt = 0;
     let closed = false;
     let opened = false;
     let unsubscribe: (() => void) | undefined;
@@ -117,11 +125,14 @@ export class PlanGenerationController {
       response.write(frame);
     };
 
-    const close = (): void => {
+    const close = (reason: StreamCloseReason): void => {
       if (closed) {
         return;
       }
       closed = true;
+      this.logger.log(
+        `Job ${jobId} stream closed reason=${reason} durationMs=${Date.now() - openedAt}`,
+      );
       clearInterval(heartbeat);
       clearTimeout(windowTimer);
       unsubscribe?.();
@@ -130,25 +141,41 @@ export class PlanGenerationController {
       }
     };
 
-    response.once('close', close);
+    if (!this.store.get(jobId, user.id)) {
+      this.logger.warn('Stream rejected reason=not-found');
+      throw new NotFoundException();
+    }
 
-    unsubscribe = this.store.subscribe(
-      jobId,
-      user.id,
-      parseLastEventId(lastEventId),
-      (event) => {
-        if (closed) {
-          return;
-        }
-        send(toEventFrame(event));
-        if (isTerminalProgressEvent(event)) {
-          close();
-        }
-      },
-    );
+    if (
+      this.store.subscriberCount(jobId, user.id) >=
+      this.streamConfig.maxStreamsPerJob
+    ) {
+      this.logger.warn(`Job ${jobId} stream rejected reason=too-many-streams`);
+      throw new HttpException(
+        { code: 'too_many_streams' },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    const onClientClose = (): void => {
+      close('client-disconnect');
+    };
+    response.once('close', onClientClose);
+    openedAt = Date.now();
+    this.logger.log(`Job ${jobId} stream opened lastEventId=${afterId}`);
+
+    unsubscribe = this.store.subscribe(jobId, user.id, afterId, (event) => {
+      if (closed) {
+        return;
+      }
+      send(toEventFrame(event));
+      if (isTerminalProgressEvent(event)) {
+        close('terminal');
+      }
+    });
 
     if (!unsubscribe) {
-      response.off('close', close);
+      response.off('close', onClientClose);
       throw new NotFoundException();
     }
     if (closed) {
@@ -160,7 +187,7 @@ export class PlanGenerationController {
       send(CONNECTED_FRAME);
     }
     if (this.store.get(jobId, user.id)?.status !== 'running') {
-      close();
+      close('job-finished');
       return;
     }
     heartbeat = setInterval(() => {
@@ -168,7 +195,7 @@ export class PlanGenerationController {
     }, this.streamConfig.heartbeatMs);
     windowTimer = setTimeout(() => {
       send(RECONNECT_FRAME);
-      close();
+      close('window');
     }, this.streamConfig.windowMs);
   }
 
