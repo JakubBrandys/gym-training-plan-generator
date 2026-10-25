@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events';
+import type { Response } from 'express';
 import {
   BadRequestException,
   HttpException,
@@ -10,6 +12,7 @@ import { planFormSchema, type PlanForm } from './plan-form.schema.js';
 import type { PlanGenerationConfig } from './plan-generation.config.js';
 import { PlanJobStore } from './plan-job.store.js';
 import { PlanLimiter } from './plan.limiter.js';
+import type { PlanStreamConfig } from './plan-stream.config.js';
 import type { PlanPipelineService } from './plan-pipeline.service.js';
 import { ZodValidationPipe } from './zod-validation.pipe.js';
 
@@ -40,14 +43,56 @@ const config: PlanGenerationConfig = {
   dailyLimit: 2,
 };
 
+const streamConfig: PlanStreamConfig = { heartbeatMs: 1_000, windowMs: 10_000 };
+
 const setup = () => {
   const store = new PlanJobStore();
   const limiter = new PlanLimiter(store, config);
   const run = vi.fn(() => Promise.resolve());
-  const controller = new PlanGenerationController(store, limiter, {
-    run,
-  } as unknown as PlanPipelineService);
+  const controller = new PlanGenerationController(
+    store,
+    limiter,
+    { run } as unknown as PlanPipelineService,
+    streamConfig,
+  );
   return { store, limiter, run, controller };
+};
+
+class FakeResponse extends EventEmitter {
+  writableEnded = false;
+  head: { status: number; headers: Record<string, string> } | undefined;
+  chunks: string[] = [];
+  writeHead = vi.fn((status: number, headers: Record<string, string>) => {
+    this.head = { status, headers };
+  });
+  flushHeaders = vi.fn();
+  write = vi.fn((chunk: string) => {
+    this.chunks.push(chunk);
+    return true;
+  });
+  end = vi.fn(() => {
+    this.writableEnded = true;
+  });
+
+  get body(): string {
+    return this.chunks.join('');
+  }
+}
+
+const openStream = (
+  controller: PlanGenerationController,
+  asUser: RequestUser,
+  jobId: string,
+  lastEventId?: string,
+) => {
+  const response = new FakeResponse();
+  controller.streamEvents(
+    asUser,
+    jobId,
+    lastEventId,
+    response as unknown as Response,
+  );
+  return response;
 };
 
 const rejectionOf = (action: () => unknown): unknown => {
@@ -236,6 +281,189 @@ describe('PlanGenerationController', () => {
       expect(() => controller.getJob(sameEmailOtherId, jobId)).toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('streamEvents', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('writes event frames with id, event name and JSON data', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      store.setStage(jobId, 'drafting');
+
+      const response = openStream(controller, user, jobId);
+
+      expect(response.head?.status).toBe(200);
+      expect(response.head?.headers['Content-Type']).toContain(
+        'text/event-stream',
+      );
+      expect(response.flushHeaders).toHaveBeenCalledTimes(1);
+      const [event] = store.get(jobId, user.id)?.events ?? [];
+      expect(response.body).toBe(
+        `id: 1\nevent: stage\ndata: ${JSON.stringify(event)}\n\n`,
+      );
+      response.emit('close');
+    });
+
+    it('flushes headers with a connected comment when there is nothing to replay', () => {
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+
+      const response = openStream(controller, user, jobId);
+
+      expect(response.flushHeaders).toHaveBeenCalledTimes(1);
+      expect(response.body).toBe(': connected\n\n');
+      response.emit('close');
+    });
+
+    it('replays only events after Last-Event-ID', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      store.setStage(jobId, 'drafting');
+      store.append(jobId, { type: 'week', stage: 'drafting', week: 1 });
+      store.append(jobId, { type: 'week', stage: 'drafting', week: 2 });
+
+      const response = openStream(controller, user, jobId, '2');
+
+      expect(response.body).toContain('id: 3\n');
+      expect(response.body).not.toContain('id: 1\n');
+      expect(response.body).not.toContain('id: 2\n');
+      response.emit('close');
+    });
+
+    it.each([undefined, '', 'abc', '-3', '1.5', '2x'])(
+      'treats Last-Event-ID %j as zero',
+      (raw) => {
+        const { controller, store } = setup();
+        const { jobId } = controller.start(user, form);
+        store.setStage(jobId, 'drafting');
+
+        const response = openStream(controller, user, jobId, raw);
+
+        expect(response.body).toContain('id: 1\n');
+        response.emit('close');
+      },
+    );
+
+    it('follows live events and closes after the terminal event', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      const response = openStream(controller, user, jobId);
+
+      store.setStage(jobId, 'drafting');
+      expect(response.body).toContain('event: stage\n');
+      expect(response.end).not.toHaveBeenCalled();
+
+      store.complete(jobId, { weeks: [] });
+
+      expect(response.body).toContain('id: 2\nevent: completed\n');
+      expect(response.end).toHaveBeenCalledTimes(1);
+    });
+
+    it('replays a finished job including the terminal event and closes', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      store.setStage(jobId, 'drafting');
+      store.fail(jobId, 'provider_unavailable');
+
+      const response = openStream(controller, user, jobId);
+
+      expect(response.body).toContain('id: 2\nevent: failed\n');
+      expect(response.body).not.toContain(': connected');
+      expect(response.end).toHaveBeenCalledTimes(1);
+    });
+
+    it('replays nothing but still closes for a finished job when Last-Event-ID is past the end', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      store.complete(jobId, { weeks: [] });
+
+      const response = openStream(controller, user, jobId, '1');
+
+      expect(response.body).toBe(': connected\n\n');
+      expect(response.end).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws NotFoundException before writing anything for an unknown job', () => {
+      const { controller } = setup();
+      const response = new FakeResponse();
+
+      expect(() =>
+        controller.streamEvents(
+          user,
+          'no-such-job',
+          undefined,
+          response as unknown as Response,
+        ),
+      ).toThrow(NotFoundException);
+      expect(response.writeHead).not.toHaveBeenCalled();
+      expect(response.write).not.toHaveBeenCalled();
+      expect(response.listenerCount('close')).toBe(0);
+    });
+
+    it('throws NotFoundException for another owners job', () => {
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+      const response = new FakeResponse();
+
+      expect(() =>
+        controller.streamEvents(
+          otherUser,
+          jobId,
+          undefined,
+          response as unknown as Response,
+        ),
+      ).toThrow(NotFoundException);
+      expect(response.writeHead).not.toHaveBeenCalled();
+    });
+
+    it('sends id-less heartbeat comments on the configured interval', () => {
+      vi.useFakeTimers();
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+      const response = openStream(controller, user, jobId);
+
+      vi.advanceTimersByTime(streamConfig.heartbeatMs * 2);
+
+      expect(response.body).toBe(
+        ': connected\n\n: heartbeat\n\n: heartbeat\n\n',
+      );
+      response.emit('close');
+    });
+
+    it('sends a reconnect event without an id and closes when the window elapses', () => {
+      vi.useFakeTimers();
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      const response = openStream(controller, user, jobId);
+
+      vi.advanceTimersByTime(streamConfig.windowMs);
+
+      expect(response.body.endsWith('event: reconnect\ndata: {}\n\n')).toBe(
+        true,
+      );
+      expect(response.body).not.toContain('id:');
+      expect(response.end).toHaveBeenCalledTimes(1);
+      expect(store.get(jobId, user.id)?.status).toBe('running');
+    });
+
+    it('stops timers and listening once the client disconnects', () => {
+      vi.useFakeTimers();
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      const response = openStream(controller, user, jobId);
+      response.emit('close');
+      const written = response.chunks.length;
+
+      vi.advanceTimersByTime(streamConfig.windowMs * 2);
+      store.setStage(jobId, 'drafting');
+
+      expect(response.chunks).toHaveLength(written);
+      expect(vi.getTimerCount()).toBe(0);
+      expect(store.get(jobId, user.id)?.status).toBe('running');
     });
   });
 });

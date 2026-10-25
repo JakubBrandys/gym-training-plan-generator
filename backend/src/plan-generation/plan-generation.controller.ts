@@ -2,13 +2,17 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpException,
   HttpStatus,
+  Inject,
   NotFoundException,
   Param,
   Post,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import type { RequestUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { planFormSchema, type PlanForm } from './plan-form.schema.js';
@@ -20,6 +24,14 @@ import {
   type PlanJobStatus,
 } from './plan-job.store.js';
 import { PlanPipelineService } from './plan-pipeline.service.js';
+import {
+  isTerminalProgressEvent,
+  type PlanProgressEvent,
+} from './plan-progress.js';
+import {
+  PLAN_STREAM_CONFIG,
+  type PlanStreamConfig,
+} from './plan-stream.config.js';
 import type { PlanResult } from './plan.schema.js';
 import { ZodValidationPipe } from './zod-validation.pipe.js';
 
@@ -31,12 +43,29 @@ export interface PlanJobView {
   error: { code: PlanJobErrorCode } | null;
 }
 
+const parseLastEventId = (raw: string | undefined): number => {
+  const trimmed = raw?.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) {
+    return 0;
+  }
+  const id = Number(trimmed);
+  return Number.isSafeInteger(id) ? id : 0;
+};
+
+const toEventFrame = (event: PlanProgressEvent): string =>
+  `id: ${event.id}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+
+const CONNECTED_FRAME = ': connected\n\n';
+const HEARTBEAT_FRAME = ': heartbeat\n\n';
+const RECONNECT_FRAME = 'event: reconnect\ndata: {}\n\n';
+
 @Controller('plan-generations')
 export class PlanGenerationController {
   constructor(
     private readonly store: PlanJobStore,
     private readonly limiter: PlanLimiter,
     private readonly pipeline: PlanPipelineService,
+    @Inject(PLAN_STREAM_CONFIG) private readonly streamConfig: PlanStreamConfig,
   ) {}
 
   @Post()
@@ -55,6 +84,92 @@ export class PlanGenerationController {
     const job = this.store.create(user.id);
     void this.pipeline.run(job.id, form);
     return { jobId: job.id };
+  }
+
+  @Get(':jobId/events')
+  streamEvents(
+    @CurrentUser() user: RequestUser,
+    @Param('jobId') jobId: string,
+    @Headers('last-event-id') lastEventId: string | undefined,
+    @Res() response: Response,
+  ): void {
+    let closed = false;
+    let opened = false;
+    let unsubscribe: (() => void) | undefined;
+    let heartbeat: NodeJS.Timeout | undefined;
+    let windowTimer: NodeJS.Timeout | undefined;
+
+    const open = (): void => {
+      if (opened) {
+        return;
+      }
+      opened = true;
+      response.writeHead(HttpStatus.OK, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+      });
+      response.flushHeaders();
+    };
+
+    const send = (frame: string): void => {
+      open();
+      response.write(frame);
+    };
+
+    const close = (): void => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      clearInterval(heartbeat);
+      clearTimeout(windowTimer);
+      unsubscribe?.();
+      if (!response.writableEnded) {
+        response.end();
+      }
+    };
+
+    response.once('close', close);
+
+    unsubscribe = this.store.subscribe(
+      jobId,
+      user.id,
+      parseLastEventId(lastEventId),
+      (event) => {
+        if (closed) {
+          return;
+        }
+        send(toEventFrame(event));
+        if (isTerminalProgressEvent(event)) {
+          close();
+        }
+      },
+    );
+
+    if (!unsubscribe) {
+      response.off('close', close);
+      throw new NotFoundException();
+    }
+    if (closed) {
+      unsubscribe();
+      return;
+    }
+
+    if (!opened) {
+      send(CONNECTED_FRAME);
+    }
+    if (this.store.get(jobId, user.id)?.status !== 'running') {
+      close();
+      return;
+    }
+    heartbeat = setInterval(() => {
+      send(HEARTBEAT_FRAME);
+    }, this.streamConfig.heartbeatMs);
+    windowTimer = setTimeout(() => {
+      send(RECONNECT_FRAME);
+      close();
+    }, this.streamConfig.windowMs);
   }
 
   @Get(':jobId')

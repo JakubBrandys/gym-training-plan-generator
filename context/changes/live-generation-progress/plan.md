@@ -170,6 +170,8 @@ Serve the event log as a Server-Sent Events stream with heartbeats, replay from 
 
 **Contract**: Exported numeric constants for the heartbeat interval (~12 000 ms) and the stream window (~240 000 ms).
 
+**Deviation (2026-10-25):** The endpoint uses a raw `@Res()` response instead of `@Sse()` with an Observable, so a missing job is a normal 404 before any stream header is written, ids are explicit and headers flush at once. The stream timings are injectable through a `PLAN_STREAM_CONFIG` provider (heartbeat 12 000 ms, window 240 000 ms) that `plan-stream.config.ts` exports alongside the two constants, and the controller takes it as a fourth constructor dependency. The first frame is the replayed event, or a `: connected` comment when nothing was replayed. The `reconnect` frame is `event: reconnect` with `data: {}` and no id, because a frame without a data line never fires in browsers. After subscribing, the controller rechecks the job status and closes when the job is already finished, so a `Last-Event-ID` at or past the terminal id does not leave the stream open. Backpressure from `response.write` is not handled, since frames are tiny and the stream is capped. E2e heartbeat and window tests use tiny real-timer configs rather than fake timers, which interfere with real sockets, and assert at least two heartbeats and a closing `reconnect` frame.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -350,26 +352,26 @@ None. No schema or persistence changes, and `POST` and the snapshot `GET` remain
 
 #### Automated
 
-- [x] 2.1 Model client spec mocks `streamText` and covers a successful stream, partial week counting, a `NoObjectGeneratedError` on the final output, an error part mapping to `unavailable`, and abort: `cd backend && npx vitest run src/plan-generation/plan-model.client.spec.ts`
-- [x] 2.2 Pipeline spec asserts the event order for a clean run, a validation retry, a model-error retry and a hard failure: `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts`
-- [x] 2.3 All plan-generation specs pass: `cd backend && npx vitest run src/plan-generation`
-- [x] 2.4 Backend lint passes: `cd backend && npm run lint`
-- [x] 2.5 Backend build passes: `cd backend && npm run build`
+- [x] 2.1 Model client spec mocks `streamText` and covers a successful stream, partial week counting, a `NoObjectGeneratedError` on the final output, an error part mapping to `unavailable`, and abort: `cd backend && npx vitest run src/plan-generation/plan-model.client.spec.ts` — 06cb9ef
+- [x] 2.2 Pipeline spec asserts the event order for a clean run, a validation retry, a model-error retry and a hard failure: `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts` — 06cb9ef
+- [x] 2.3 All plan-generation specs pass: `cd backend && npx vitest run src/plan-generation` — 06cb9ef
+- [x] 2.4 Backend lint passes: `cd backend && npm run lint` — 06cb9ef
+- [x] 2.5 Backend build passes: `cd backend && npm run build` — 06cb9ef
 
 #### Manual
 
-- [x] 2.6 With a real OpenAI key locally, one generation logs the week counter reaching 8 in each pass; record the time from request to the first `week` event for the draft and review passes
-- [x] 2.7 Using an invalid model id yields a `failed` event with `provider_unavailable`, the job ends as failed, and the log shows no unhandled rejection
+- [x] 2.6 With a real OpenAI key locally, one generation logs the week counter reaching 8 in each pass; record the time from request to the first `week` event for the draft and review passes — 06cb9ef
+- [x] 2.7 Using an invalid model id yields a `failed` event with `provider_unavailable`, the job ends as failed, and the log shows no unhandled rejection — 06cb9ef
 
 ### Phase 3: SSE endpoint
 
 #### Automated
 
-- [ ] 3.1 Controller specs cover the events handler's replay, terminal close and unknown-job 404: `cd backend && npx vitest run src/plan-generation/plan-generation.controller.spec.ts`
-- [ ] 3.2 Supertest e2e covers frames and headers, `Last-Event-ID` replay with no duplicates, heartbeat under fake timers, close after the terminal event, the window close with a `reconnect` event, owner isolation, and 401 without the header: `cd backend && npm run test:e2e`
-- [ ] 3.3 Backend unit suite passes: `cd backend && npm run test`
-- [ ] 3.4 Backend lint passes: `cd backend && npm run lint`
-- [ ] 3.5 Backend build passes: `cd backend && npm run build`
+- [x] 3.1 Controller specs cover the events handler's replay, terminal close and unknown-job 404: `cd backend && npx vitest run src/plan-generation/plan-generation.controller.spec.ts`
+- [x] 3.2 Supertest e2e covers frames and headers, `Last-Event-ID` replay with no duplicates, heartbeat under fake timers, close after the terminal event, the window close with a `reconnect` event, owner isolation, and 401 without the header: `cd backend && npm run test:e2e`
+- [x] 3.3 Backend unit suite passes: `cd backend && npm run test`
+- [x] 3.4 Backend lint passes: `cd backend && npm run lint`
+- [x] 3.5 Backend build passes: `cd backend && npm run build`
 
 #### Manual
 
