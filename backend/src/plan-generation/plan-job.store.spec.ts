@@ -4,6 +4,8 @@ import {
   STALE_RUNNING_JOB_MS,
   TERMINAL_JOB_RETENTION_MS,
 } from './plan-job.store.js';
+import type { PlanProgressEvent } from './plan-progress.js';
+import { WEEK_COUNT } from './plan.validator.js';
 
 const OWNER = 'owner-1';
 const OTHER = 'owner-2';
@@ -85,6 +87,290 @@ describe('PlanJobStore', () => {
       error: { code: 'invalid_output' },
     });
     expect(job.finishedAt).toBeInstanceOf(Date);
+  });
+
+  describe('progress events', () => {
+    const collect = (jobId: string, ownerId = OWNER, afterId = 0) => {
+      const received: PlanProgressEvent[] = [];
+      const unsubscribe = store.subscribe(jobId, ownerId, afterId, (event) =>
+        received.push(event),
+      );
+      return { received, unsubscribe };
+    };
+
+    it('starts a job with no events and no week', () => {
+      const job = store.create(OWNER);
+      expect(job.events).toEqual([]);
+      expect(job.week).toBeNull();
+    });
+
+    it('assigns monotonic ids starting at 1 with ISO timestamps', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      vi.setSystemTime(new Date('2026-10-14T10:00:03Z'));
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+      store.complete(job.id, { weeks: [] });
+
+      expect(job.events.map((event) => event.id)).toEqual([1, 2, 3, 4]);
+      expect(job.events.map((event) => event.type)).toEqual([
+        'stage',
+        'week',
+        'validating',
+        'completed',
+      ]);
+      expect(job.events[0].at).toBe('2026-10-14T10:00:00.000Z');
+      expect(job.events[1].at).toBe('2026-10-14T10:00:03.000Z');
+    });
+
+    it('records the stage, retry and failure payloads', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, { type: 'retrying', stage: 'drafting', attempt: 2 });
+      store.fail(job.id, 'invalid_output');
+
+      expect(job.events).toMatchObject([
+        { id: 1, type: 'stage', stage: 'drafting' },
+        { id: 2, type: 'retrying', stage: 'drafting', attempt: 2 },
+        { id: 3, type: 'failed', code: 'invalid_output' },
+      ]);
+    });
+
+    it('tracks the latest started week and ignores unchanged, lower or out of range weeks', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 2 });
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 2 });
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
+      store.append(job.id, {
+        type: 'week',
+        stage: 'drafting',
+        week: WEEK_COUNT + 1,
+      });
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 0 });
+      expect(job.week).toBe(2);
+      expect(job.events.filter((event) => event.type === 'week')).toHaveLength(
+        1,
+      );
+
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 5 });
+      expect(job.week).toBe(5);
+    });
+
+    it('resets the week to null when a new stage starts and accepts weeks again', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, {
+        type: 'week',
+        stage: 'drafting',
+        week: WEEK_COUNT,
+      });
+      store.setStage(job.id, 'reviewing');
+      expect(job.week).toBeNull();
+
+      store.append(job.id, { type: 'week', stage: 'reviewing', week: 1 });
+      expect(job.week).toBe(1);
+    });
+
+    it('resets the week to null on a retry and accepts weeks again within the same stage', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 6 });
+      store.append(job.id, { type: 'retrying', stage: 'drafting', attempt: 2 });
+      expect(job.week).toBeNull();
+
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
+      expect(job.week).toBe(1);
+    });
+
+    it('clears the week once the job finishes', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 4 });
+      store.complete(job.id, { weeks: [] });
+      expect(job.week).toBeNull();
+    });
+
+    it('ignores append for an unknown job and for a finished job', () => {
+      store.append('unknown-job', { type: 'validating', stage: 'drafting' });
+      const job = store.create(OWNER);
+      store.fail(job.id, 'internal');
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
+      store.setStage(job.id, 'reviewing');
+
+      expect(job.events.map((event) => event.type)).toEqual(['failed']);
+      expect(job.stage).toBeNull();
+      expect(job.week).toBeNull();
+    });
+
+    it('appends a terminal event only once', () => {
+      const job = store.create(OWNER);
+      store.complete(job.id, { weeks: [] });
+      store.fail(job.id, 'internal');
+      store.complete(job.id, { weeks: [] });
+
+      expect(job.events.map((event) => event.type)).toEqual(['completed']);
+    });
+
+    it('replays stored events then delivers live ones in order', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
+
+      const { received } = collect(job.id);
+      expect(received.map((event) => event.id)).toEqual([1, 2]);
+
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+      store.complete(job.id, { weeks: [] });
+      expect(received.map((event) => event.id)).toEqual([1, 2, 3, 4]);
+      expect(received[3].type).toBe('completed');
+    });
+
+    it('replays only events after afterId', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 2 });
+
+      const { received } = collect(job.id, OWNER, 2);
+      expect(received.map((event) => event.id)).toEqual([3]);
+
+      store.append(job.id, { type: 'week', stage: 'drafting', week: 3 });
+      expect(received.map((event) => event.id)).toEqual([3, 4]);
+    });
+
+    it('replays nothing and then follows live when afterId is past the end', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      const { received } = collect(job.id, OWNER, 99);
+      expect(received).toEqual([]);
+
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+      expect(received.map((event) => event.id)).toEqual([2]);
+    });
+
+    it('delivers every event to each of several subscribers', () => {
+      const job = store.create(OWNER);
+      const first = collect(job.id);
+      const second = collect(job.id);
+      store.setStage(job.id, 'drafting');
+
+      expect(first.received.map((event) => event.id)).toEqual([1]);
+      expect(second.received.map((event) => event.id)).toEqual([1]);
+    });
+
+    it('replays through the terminal event for a finished job', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.fail(job.id, 'provider_unavailable');
+
+      const { received, unsubscribe } = collect(job.id);
+
+      expect(received.map((event) => event.type)).toEqual(['stage', 'failed']);
+      expect(received[1]).toMatchObject({ code: 'provider_unavailable' });
+      expect(unsubscribe).toBeTypeOf('function');
+      expect(() => unsubscribe?.()).not.toThrow();
+    });
+
+    it('replays only the tail of a finished job after afterId', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.complete(job.id, { weeks: [] });
+
+      const { received } = collect(job.id, OWNER, 1);
+      expect(received.map((event) => event.type)).toEqual(['completed']);
+    });
+
+    it('stops delivering after unsubscribe', () => {
+      const job = store.create(OWNER);
+      const { received, unsubscribe } = collect(job.id);
+      store.setStage(job.id, 'drafting');
+      unsubscribe?.();
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+      store.complete(job.id, { weeks: [] });
+
+      expect(received.map((event) => event.id)).toEqual([1]);
+    });
+
+    it('does not call a listener removed by an earlier listener in the same delivery', () => {
+      const job = store.create(OWNER);
+      const late = vi.fn();
+      let unsubscribeLate: (() => void) | undefined;
+      store.subscribe(job.id, OWNER, 0, () => unsubscribeLate?.());
+      unsubscribeLate = store.subscribe(job.id, OWNER, 0, late);
+
+      store.setStage(job.id, 'drafting');
+
+      expect(late).not.toHaveBeenCalled();
+    });
+
+    it('returns undefined and delivers nothing for a foreign or unknown job', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      const listener = vi.fn();
+
+      expect(store.subscribe(job.id, OTHER, 0, listener)).toBeUndefined();
+      expect(
+        store.subscribe('unknown-job', OWNER, 0, listener),
+      ).toBeUndefined();
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('survives a throwing listener and still serves the others', () => {
+      const job = store.create(OWNER);
+      store.subscribe(job.id, OWNER, 0, () => {
+        throw new Error('listener boom');
+      });
+      const healthy = collect(job.id);
+
+      expect(() => store.setStage(job.id, 'drafting')).not.toThrow();
+      expect(() => store.complete(job.id, { weeks: [] })).not.toThrow();
+
+      expect(healthy.received.map((event) => event.type)).toEqual([
+        'stage',
+        'completed',
+      ]);
+      expect(job.status).toBe('completed');
+    });
+
+    it('survives a throwing listener during replay', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      const received: PlanProgressEvent[] = [];
+      let calls = 0;
+
+      store.subscribe(job.id, OWNER, 0, (event) => {
+        calls += 1;
+        received.push(event);
+        throw new Error('replay boom');
+      });
+      store.append(job.id, { type: 'validating', stage: 'drafting' });
+
+      expect(calls).toBe(2);
+      expect(received.map((event) => event.id)).toEqual([1, 2]);
+    });
+
+    it('lets the reaper fail a stale job and tell its subscribers', () => {
+      const job = store.create(OWNER);
+      const { received } = collect(job.id);
+      vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
+      store.hasActive(OWNER);
+
+      expect(received).toMatchObject([{ type: 'failed', code: 'internal' }]);
+    });
+
+    it('purges the event log together with its job', () => {
+      const job = store.create(OWNER);
+      store.setStage(job.id, 'drafting');
+      store.complete(job.id, { weeks: [] });
+      vi.setSystemTime(Date.now() + TERMINAL_JOB_RETENTION_MS);
+
+      expect(store.get(job.id, OWNER)).toBeUndefined();
+      expect(store.subscribe(job.id, OWNER, 0, vi.fn())).toBeUndefined();
+    });
   });
 
   describe('purging', () => {

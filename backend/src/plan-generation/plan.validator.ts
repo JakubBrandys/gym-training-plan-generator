@@ -4,7 +4,7 @@ import type { GeneratedPlan } from './plan.schema.js';
 export type PlanValidationResult =
   { ok: true } | { ok: false; issues: string[] };
 
-const WEEK_COUNT = 8;
+export const WEEK_COUNT = 8;
 const MIN_EXERCISES_PER_SESSION = 3;
 const MAX_EXERCISES_PER_SESSION = 10;
 const MIN_SETS = 1;

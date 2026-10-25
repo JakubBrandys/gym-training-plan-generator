@@ -26,6 +26,7 @@ import { ZodValidationPipe } from './zod-validation.pipe.js';
 export interface PlanJobView {
   status: PlanJobStatus;
   stage: PlanJobStage | null;
+  week: number | null;
   plan: PlanResult | null;
   error: { code: PlanJobErrorCode } | null;
 }
@@ -68,6 +69,7 @@ export class PlanGenerationController {
     return {
       status: job.status,
       stage: job.stage,
+      week: job.week,
       plan: job.plan,
       error: job.error,
     };

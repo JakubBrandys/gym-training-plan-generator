@@ -146,8 +146,34 @@ describe('PlanGenerationController', () => {
       expect(controller.getJob(user, jobId)).toEqual({
         status: 'running',
         stage: 'reviewing',
+        week: null,
         plan: null,
         error: null,
+      });
+    });
+
+    it('returns the latest started week while the job runs', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      store.setStage(jobId, 'drafting');
+      store.append(jobId, { type: 'week', stage: 'drafting', week: 3 });
+
+      expect(controller.getJob(user, jobId)).toMatchObject({
+        stage: 'drafting',
+        week: 3,
+      });
+    });
+
+    it('resets the week when the next stage starts', () => {
+      const { controller, store } = setup();
+      const { jobId } = controller.start(user, form);
+      store.setStage(jobId, 'drafting');
+      store.append(jobId, { type: 'week', stage: 'drafting', week: 8 });
+      store.setStage(jobId, 'reviewing');
+
+      expect(controller.getJob(user, jobId)).toMatchObject({
+        stage: 'reviewing',
+        week: null,
       });
     });
 
@@ -160,6 +186,7 @@ describe('PlanGenerationController', () => {
       expect(controller.getJob(user, jobId)).toEqual({
         status: 'completed',
         stage: null,
+        week: null,
         plan,
         error: null,
       });
@@ -173,6 +200,7 @@ describe('PlanGenerationController', () => {
       expect(controller.getJob(user, jobId)).toEqual({
         status: 'failed',
         stage: null,
+        week: null,
         plan: null,
         error: { code: 'provider_unavailable' },
       });

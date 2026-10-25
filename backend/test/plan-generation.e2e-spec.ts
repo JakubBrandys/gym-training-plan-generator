@@ -156,6 +156,7 @@ describe('PlanGenerationController (http)', () => {
     expect(response.body).toEqual({
       status: 'running',
       stage: null,
+      week: null,
       plan: null,
       error: null,
     });
