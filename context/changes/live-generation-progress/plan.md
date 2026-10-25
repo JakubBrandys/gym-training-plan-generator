@@ -237,6 +237,8 @@ Add a scoped test setup, a pure SSE parser and progress reducer, a stream loop w
 
 **Contract**: The polling state is replaced by stream state with the same terminal states (`completed`, `failed`, `not-found`, `error`, `timed-out`) and the same Retry behavior. Copy: "Drafting your plan" / "Reviewing your plan" with "week N of 8", a native `<progress>` bar, a notice such as "Checking the plan…" while validating and "Trying again…" while retrying, and a local elapsed timer derived from the pass start timestamp and kept outside the live region. A polling fallback shows the same view from the snapshot's `stage` and `week`. Styles follow the existing CSS variables, with dark-mode support and no motion that ignores `prefers-reduced-motion`.
 
+**Deviation (2026-10-25):** The stream loop lives in two extra modules the plan did not list. `stream-policy.ts` (with its spec) holds the pure helpers for backoff, the fallback decision, duplicate-event filtering and failure counting, apart from the stream client because that imports `api.ts` and `supabase.ts`, which need `import.meta.env`. `plan-generation-watch.ts` holds the reconnect, backoff and fallback loop plus the polling loop extracted from the page, so the page only subscribes. The page's `polling` state became `running` and carries the progress state in both stream and fallback modes. The 12-minute ceiling is measured from the start of the watch, so it covers the stream phase as well. A drop after at least one new event restarts the failure count at 1, a `reconnect` event or window close resets it to 0, and an end of stream without a `reconnect` or terminal event counts as a failure. Polling continues from the last known progress, and `progressFromSnapshot` in `plan-progress.ts` keeps the pass start time while the stage is unchanged. The elapsed timer runs from the latest `stage` event's timestamp and a retry does not reset it. The validating and retrying notices and the timer sit outside the `role="status"` region, which announces only the pass and week line. `vite.config.ts` now imports `defineConfig` from `vitest/config`, and its comment was removed. Vitest ^4.1.12 was added.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -367,11 +369,11 @@ None. No schema or persistence changes, and `POST` and the snapshot `GET` remain
 
 #### Automated
 
-- [x] 3.1 Controller specs cover the events handler's replay, terminal close and unknown-job 404: `cd backend && npx vitest run src/plan-generation/plan-generation.controller.spec.ts`
-- [x] 3.2 Supertest e2e covers frames and headers, `Last-Event-ID` replay with no duplicates, heartbeat under fake timers, close after the terminal event, the window close with a `reconnect` event, owner isolation, and 401 without the header: `cd backend && npm run test:e2e`
-- [x] 3.3 Backend unit suite passes: `cd backend && npm run test`
-- [x] 3.4 Backend lint passes: `cd backend && npm run lint`
-- [x] 3.5 Backend build passes: `cd backend && npm run build`
+- [x] 3.1 Controller specs cover the events handler's replay, terminal close and unknown-job 404: `cd backend && npx vitest run src/plan-generation/plan-generation.controller.spec.ts` — d447eff
+- [x] 3.2 Supertest e2e covers frames and headers, `Last-Event-ID` replay with no duplicates, heartbeat under fake timers, close after the terminal event, the window close with a `reconnect` event, owner isolation, and 401 without the header: `cd backend && npm run test:e2e` — d447eff
+- [x] 3.3 Backend unit suite passes: `cd backend && npm run test` — d447eff
+- [x] 3.4 Backend lint passes: `cd backend && npm run lint` — d447eff
+- [x] 3.5 Backend build passes: `cd backend && npm run build` — d447eff
 
 #### Manual
 
@@ -382,16 +384,16 @@ None. No schema or persistence changes, and `POST` and the snapshot `GET` remain
 
 #### Automated
 
-- [ ] 4.1 Parser and reducer specs pass: `cd frontend && npm test`
-- [ ] 4.2 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 4.3 Frontend build (type check plus bundle) passes: `cd frontend && npm run build`
+- [x] 4.1 Parser and reducer specs pass: `cd frontend && npm test`
+- [x] 4.2 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 4.3 Frontend build (type check plus bundle) passes: `cd frontend && npm run build`
 
 #### Manual
 
-- [ ] 4.4 Locally against a real run, the page shows the pass, "week N of 8" advancing, the progress bar and a ticking timer until the plan appears
-- [ ] 4.5 Refreshing mid-run resumes the same job with the right week and an elapsed time that did not reset
-- [ ] 4.6 Setting the browser offline for 10 seconds mid-run reconnects and continues; blocking `/events` entirely makes the page fall back to polling and still finish
-- [ ] 4.7 With a screen reader or the accessibility tree, only pass and week changes are announced, not the timer
+- [x] 4.4 Locally against a real run, the page shows the pass, "week N of 8" advancing, the progress bar and a ticking timer until the plan appears
+- [x] 4.5 Refreshing mid-run resumes the same job with the right week and an elapsed time that did not reset
+- [x] 4.6 Setting the browser offline for 10 seconds mid-run reconnects and continues; blocking `/events` entirely makes the page fall back to polling and still finish
+- [x] 4.7 With a screen reader or the accessibility tree, only pass and week changes are announced, not the timer
 
 ### Phase 5: Rollout and live verification
 

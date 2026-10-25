@@ -42,6 +42,7 @@ export type PlanJobErrorCode = 'provider_unavailable' | 'invalid_output' | 'inte
 export type PlanJobView = {
   status: PlanJobStatus
   stage: PlanJobStage | null
+  week: number | null
   plan: PlanResult | null
   error: { code: PlanJobErrorCode } | null
 }

@@ -157,3 +157,16 @@ dd {
 .plan-exercises li {
   margin-bottom: 0.25rem;
 }
+
+.plan-progress-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.plan-progress {
+  width: 100%;
+  height: 0.75rem;
+  accent-color: var(--accent);
+}

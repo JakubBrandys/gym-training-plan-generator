@@ -4,19 +4,14 @@ import { PlanView } from '../components/PlanView'
 import { useAuth } from '../auth/useAuth'
 import { handleAuthFailure } from '../lib/auth-failure'
 import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
-import {
-  fetchPlanGeneration,
-  type PlanJobErrorCode,
-  type PlanJobStage,
-  type PlanResult,
-} from '../lib/plan-generation'
-
-const POLL_INTERVAL_MS = 3000
-const MAX_CONSECUTIVE_FAILURES = 3
-const MAX_POLLING_MS = 12 * 60 * 1000
+import type { PlanJobErrorCode, PlanJobStage } from '../lib/plan-generation'
+import { watchPlanGeneration, type WatchState } from '../lib/plan-generation-watch'
+import { WEEK_COUNT, initialProgress, type ProgressState } from '../lib/plan-progress'
 
 const NOT_FOUND_ERROR = 'This plan could not be found or has expired.'
 const TIMED_OUT_ERROR = 'This is taking longer than expected. Check back later.'
+const VALIDATING_NOTICE = 'Checking the plan…'
+const RETRYING_NOTICE = 'Trying again…'
 
 const FAILURE_MESSAGES: Record<PlanJobErrorCode, string> = {
   provider_unavailable: 'The plan service is unavailable right now. Try again later.',
@@ -25,18 +20,60 @@ const FAILURE_MESSAGES: Record<PlanJobErrorCode, string> = {
 }
 
 const stageMessage = (stage: PlanJobStage | null): string => {
-  if (stage === 'drafting') return 'Drafting your plan…'
-  if (stage === 'reviewing') return 'Reviewing your plan…'
-  return 'Starting…'
+  if (stage === 'drafting') return 'Drafting your plan'
+  if (stage === 'reviewing') return 'Reviewing your plan'
+  return 'Starting'
 }
 
-type JobPageState =
-  | { status: 'polling'; stage: PlanJobStage | null }
-  | { status: 'completed'; plan: PlanResult }
-  | { status: 'failed'; code: PlanJobErrorCode }
-  | { status: 'not-found' }
-  | { status: 'error' }
-  | { status: 'timed-out' }
+const formatElapsed = (milliseconds: number): string => {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = String(totalSeconds % 60).padStart(2, '0')
+  return `${minutes}:${seconds}`
+}
+
+type ElapsedTimerProps = {
+  since: string
+}
+
+const ElapsedTimer = ({ since }: ElapsedTimerProps) => {
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  return <p className="hint">Elapsed {formatElapsed(now - Date.parse(since))}</p>
+}
+
+type ProgressPanelProps = {
+  progress: ProgressState
+}
+
+const ProgressPanel = ({ progress }: ProgressPanelProps) => {
+  const weekLabel = progress.week >= 1 ? `, week ${progress.week} of ${WEEK_COUNT}` : ''
+  const notice = progress.retrying ? RETRYING_NOTICE : progress.validating ? VALIDATING_NOTICE : null
+
+  return (
+    <div className="plan-progress-panel">
+      <p className="status" role="status">
+        {stageMessage(progress.stage)}
+        {weekLabel}…
+      </p>
+      <progress
+        className="plan-progress"
+        aria-label="Plan progress"
+        max={WEEK_COUNT}
+        value={progress.week}
+      />
+      {notice && <p className="hint">{notice}</p>}
+      {progress.stageStartedAt && <ElapsedTimer since={progress.stageStartedAt} />}
+    </div>
+  )
+}
+
+const INITIAL_STATE: WatchState = { status: 'running', progress: initialProgress }
 
 type PlanGenerationJobProps = {
   jobId: string | undefined
@@ -44,12 +81,12 @@ type PlanGenerationJobProps = {
 
 const PlanGenerationJob = ({ jobId }: PlanGenerationJobProps) => {
   const { signOut } = useAuth()
-  const [polledState, setState] = useState<JobPageState>({ status: 'polling', stage: null })
+  const [watchedState, setState] = useState<WatchState>(INITIAL_STATE)
   const [attempt, setAttempt] = useState(0)
-  const state: JobPageState = jobId ? polledState : { status: 'not-found' }
+  const state: WatchState = jobId ? watchedState : { status: 'not-found' }
 
   const handleRetry = () => {
-    setState({ status: 'polling', stage: null })
+    setState(INITIAL_STATE)
     setAttempt((current) => current + 1)
   }
 
@@ -57,75 +94,21 @@ const PlanGenerationJob = ({ jobId }: PlanGenerationJobProps) => {
     if (!jobId) return
 
     const controller = new AbortController()
-    const startedAt = Date.now()
-    let timer: number | undefined
-    let consecutiveFailures = 0
 
-    const scheduleNextPoll = () => {
-      if (Date.now() - startedAt >= MAX_POLLING_MS) {
-        setState({ status: 'timed-out' })
-        return
-      }
-      timer = window.setTimeout(() => void poll(), POLL_INTERVAL_MS)
-    }
+    void watchPlanGeneration(jobId, controller.signal, {
+      onState: setState,
+      onAuthFailure: async (status) => {
+        await handleAuthFailure(status, signOut)
+      },
+    })
 
-    const poll = async () => {
-      const result = await fetchPlanGeneration(jobId, controller.signal)
-      if (controller.signal.aborted) return
-
-      if (result.kind === 'unauthorized' || result.kind === 'blocked') {
-        await handleAuthFailure(result.status, signOut)
-        return
-      }
-
-      if (result.kind === 'not-found') {
-        setState({ status: 'not-found' })
-        return
-      }
-
-      if (result.kind === 'error') {
-        consecutiveFailures += 1
-        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          setState({ status: 'error' })
-          return
-        }
-        scheduleNextPoll()
-        return
-      }
-
-      consecutiveFailures = 0
-      const { job } = result
-
-      if (job.status === 'completed') {
-        setState(job.plan ? { status: 'completed', plan: job.plan } : { status: 'error' })
-        return
-      }
-
-      if (job.status === 'failed') {
-        setState({ status: 'failed', code: job.error?.code ?? 'internal' })
-        return
-      }
-
-      setState({ status: 'polling', stage: job.stage })
-      scheduleNextPoll()
-    }
-
-    void poll()
-
-    return () => {
-      controller.abort()
-      window.clearTimeout(timer)
-    }
+    return () => controller.abort()
   }, [jobId, signOut, attempt])
 
   return (
     <main className="plan-generation">
       <h1>Your training plan</h1>
-      {state.status === 'polling' && (
-        <p className="status" role="status">
-          {stageMessage(state.stage)}
-        </p>
-      )}
+      {state.status === 'running' && <ProgressPanel progress={state.progress} />}
       {state.status === 'completed' && <PlanView plan={state.plan} />}
       {state.status === 'failed' && (
         <p className="error" role="alert">
