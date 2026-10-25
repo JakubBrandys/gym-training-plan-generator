@@ -106,6 +106,28 @@ Supabase Auth settings (dashboard → Authentication):
 - **Email provider**: "Confirm email" is off for v1, so sign-up returns a session immediately. Turn it on (with custom SMTP) before opening sign-up to others.
 - **URL Configuration**: Site URL is the production Worker URL; Redirect URLs include `http://localhost:5173/**`.
 
+### Plan generation progress stream
+
+`GET /plan-generations/:jobId/events` streams live progress for a generation job as Server-Sent Events. It authenticates with the `Authorization: Bearer` header like every other route, so clients read it with a `fetch` stream; the native `EventSource` cannot send that header.
+
+Each event is a frame of the form:
+
+```
+id: 3
+event: week
+data: {"id":3,"type":"week",...}
+```
+
+Event types are `stage`, `week`, `validating`, `retrying`, `completed` and `failed`. `completed` and `failed` are terminal: the server closes the stream right after sending one.
+
+- **Replay**: send `Last-Event-ID` with the last `id` received and the stream resumes with the events after it. Without it, the stream starts from the first event.
+- **Heartbeat**: a `: heartbeat` comment line is sent about every 12 seconds to keep the connection open through proxies.
+- **Window**: a stream lasts about 4 minutes. It then ends with an `event: reconnect` frame and closes, and the client reconnects with `Last-Event-ID`.
+- **Errors**: an unknown job, or a job that belongs to another user, returns `404`.
+- **Polling fallback**: when the stream cannot be re-established, the client polls `GET /plan-generations/:jobId`, which returns `status`, `stage`, `week`, `plan` and `error`.
+
+Jobs and their events are held in memory, so a backend restart loses them; a client then gets `404` for a job it was watching.
+
 ## Observability
 
 In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.

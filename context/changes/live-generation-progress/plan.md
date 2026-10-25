@@ -280,6 +280,8 @@ Correct the stale transport note, deploy, and measure the real stream behavior o
 
 **Contract**: Add a short section to the README on the events endpoint (auth header, heartbeat, stream window, polling fallback). Record the measured time to the first week event, and the final stall-timeout values if they changed from the Phase 2 defaults, as dated notes under the relevant phase (per `context/foundation/lessons.md`).
 
+**Note (2026-10-25):** The README section sits after "Secrets and auth settings" in `backend/README.md`, and the `fly.toml` comment now describes the SSE stream and the in-memory jobs and events it replays from. Measured time to the first week event and any stall-timeout change are recorded in this phase after the deployed run (row 5.7).
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -384,24 +386,24 @@ None. No schema or persistence changes, and `POST` and the snapshot `GET` remain
 
 #### Automated
 
-- [x] 4.1 Parser and reducer specs pass: `cd frontend && npm test`
-- [x] 4.2 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 4.3 Frontend build (type check plus bundle) passes: `cd frontend && npm run build`
+- [x] 4.1 Parser and reducer specs pass: `cd frontend && npm test` — 8f7a9e9
+- [x] 4.2 Frontend lint passes: `cd frontend && npm run lint` — 8f7a9e9
+- [x] 4.3 Frontend build (type check plus bundle) passes: `cd frontend && npm run build` — 8f7a9e9
 
 #### Manual
 
-- [x] 4.4 Locally against a real run, the page shows the pass, "week N of 8" advancing, the progress bar and a ticking timer until the plan appears
-- [x] 4.5 Refreshing mid-run resumes the same job with the right week and an elapsed time that did not reset
-- [x] 4.6 Setting the browser offline for 10 seconds mid-run reconnects and continues; blocking `/events` entirely makes the page fall back to polling and still finish
-- [x] 4.7 With a screen reader or the accessibility tree, only pass and week changes are announced, not the timer
+- [x] 4.4 Locally against a real run, the page shows the pass, "week N of 8" advancing, the progress bar and a ticking timer until the plan appears — 8f7a9e9
+- [x] 4.5 Refreshing mid-run resumes the same job with the right week and an elapsed time that did not reset — 8f7a9e9
+- [x] 4.6 Setting the browser offline for 10 seconds mid-run reconnects and continues; blocking `/events` entirely makes the page fall back to polling and still finish — 8f7a9e9
+- [x] 4.7 With a screen reader or the accessibility tree, only pass and week changes are announced, not the timer — 8f7a9e9
 
 ### Phase 5: Rollout and live verification
 
 #### Automated
 
-- [ ] 5.1 Backend lint, unit and e2e suites pass: `cd backend && npm run lint && npm run test && npm run test:e2e`
-- [ ] 5.2 Backend build passes: `cd backend && npm run build`
-- [ ] 5.3 Frontend lint, tests and build pass: `cd frontend && npm run lint && npm test && npm run build`
+- [x] 5.1 Backend lint, unit and e2e suites pass: `cd backend && npm run lint && npm run test && npm run test:e2e`
+- [x] 5.2 Backend build passes: `cd backend && npm run build`
+- [x] 5.3 Frontend lint, tests and build pass: `cd frontend && npm run lint && npm test && npm run build`
 
 #### Manual
 

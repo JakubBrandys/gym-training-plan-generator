@@ -11,9 +11,9 @@ primary_region = "fra"
   internal_port = 3000
   force_https = true
   auto_start_machines = true
-  # Fly's default is to autostop idle machines to zero. That would silently
-  # reintroduce the connection-drop failure Fly was chosen to avoid (FR-006,
-  # no-fixed-max-wait live-progress WebSocket) — keep at least one machine up.
+  # Fly's default is to autostop idle machines to zero. That would drop open
+  # live-progress streams (SSE) and lose the in-memory jobs and events they
+  # replay from (FR-006) — keep at least one machine up.
   auto_stop_machines = "off"
   min_machines_running = 1
 
