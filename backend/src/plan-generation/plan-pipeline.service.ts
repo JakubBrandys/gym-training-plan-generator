@@ -118,6 +118,9 @@ export class PlanPipelineService {
     this.store.setStage(context.jobId, stage);
     let prompt = basePrompt;
     for (let attempt = 1; attempt <= ATTEMPTS_PER_PASS; attempt += 1) {
+      if (attempt > 1) {
+        this.store.append(context.jobId, { type: 'retrying', stage, attempt });
+      }
       const outcome = await this.tryAttempt(
         context,
         stage,
@@ -148,10 +151,14 @@ export class PlanPipelineService {
         prompt,
         schema: context.schema,
         signal: context.signal,
+        onPartial: (week) => {
+          this.store.append(context.jobId, { type: 'week', stage, week });
+        },
       });
       this.logger.log(
         `Job ${context.jobId} stage=${stage} attempt=${attempt} durationMs=${Date.now() - startedAt} inputTokens=${result.usage.inputTokens} outputTokens=${result.usage.outputTokens} finishReason=${result.finishReason}`,
       );
+      this.store.append(context.jobId, { type: 'validating', stage });
       const validation = validateGeneratedPlan(
         result.output,
         context.form,

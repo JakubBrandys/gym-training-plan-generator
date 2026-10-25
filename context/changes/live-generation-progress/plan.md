@@ -127,6 +127,8 @@ Switch each pass from a blocking call to a streamed one so the pipeline can repo
 
 **Contract**: In `runPass`, `stage` is appended as the pass starts; the `onPartial` callback appends `week` events (deduplicated by the store or caller); after the stream completes and before the validator runs, `validating` is appended; before an attempt after the first, `retrying` is appended with the attempt number. Terminal `completed` and `failed` come from the existing `store.complete` and `store.fail`. The failure policy, error codes, logging (including the no-goals-in-logs rule) and the "fire-and-forget never rejects" guarantee are unchanged.
 
+**Deviation (2026-10-25):** In the installed ai 7.0.140 a mid-stream provider error does not stop the step: it finishes with finish reason `error` and `result.output` then rejects with `NoObjectGeneratedError` on the truncated text. The client therefore throws the first error recorded by `onError` right after draining the partial stream, so a provider error maps to `unavailable` with the stream error's cause name and status code, while a `NoObjectGeneratedError` with no recorded stream error (for example finish reason `length`) still maps to `invalid_output`. Week counting is a small `countStartedWeeks` helper (array length clamped to `WEEK_COUNT`) and the client reports a week only when the count grows. Stall timeouts are placeholders pending the manual measurement: first chunk 120 000 ms, between chunks 45 000 ms, total 180 000 ms, held as constants at the top of `plan-model.client.ts`. It is unconfirmed whether reasoning chunks reset the first-chunk timer.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -339,25 +341,25 @@ None. No schema or persistence changes, and `POST` and the snapshot `GET` remain
 
 #### Automated
 
-- [x] 1.1 Store specs cover id monotonicity, replay with `afterId`, live delivery, owner isolation, replay-then-terminal for a finished job, and purge: `cd backend && npx vitest run src/plan-generation/plan-job.store.spec.ts`
-- [x] 1.2 Controller spec asserts the snapshot's `week` field: `cd backend && npx vitest run src/plan-generation/plan-generation.controller.spec.ts`
-- [x] 1.3 Backend lint passes: `cd backend && npm run lint`
-- [x] 1.4 Backend build passes: `cd backend && npm run build`
+- [x] 1.1 Store specs cover id monotonicity, replay with `afterId`, live delivery, owner isolation, replay-then-terminal for a finished job, and purge: `cd backend && npx vitest run src/plan-generation/plan-job.store.spec.ts` — ada7289
+- [x] 1.2 Controller spec asserts the snapshot's `week` field: `cd backend && npx vitest run src/plan-generation/plan-generation.controller.spec.ts` — ada7289
+- [x] 1.3 Backend lint passes: `cd backend && npm run lint` — ada7289
+- [x] 1.4 Backend build passes: `cd backend && npm run build` — ada7289
 
 ### Phase 2: Streaming model client and pipeline events
 
 #### Automated
 
-- [ ] 2.1 Model client spec mocks `streamText` and covers a successful stream, partial week counting, a `NoObjectGeneratedError` on the final output, an error part mapping to `unavailable`, and abort: `cd backend && npx vitest run src/plan-generation/plan-model.client.spec.ts`
-- [ ] 2.2 Pipeline spec asserts the event order for a clean run, a validation retry, a model-error retry and a hard failure: `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts`
-- [ ] 2.3 All plan-generation specs pass: `cd backend && npx vitest run src/plan-generation`
-- [ ] 2.4 Backend lint passes: `cd backend && npm run lint`
-- [ ] 2.5 Backend build passes: `cd backend && npm run build`
+- [x] 2.1 Model client spec mocks `streamText` and covers a successful stream, partial week counting, a `NoObjectGeneratedError` on the final output, an error part mapping to `unavailable`, and abort: `cd backend && npx vitest run src/plan-generation/plan-model.client.spec.ts`
+- [x] 2.2 Pipeline spec asserts the event order for a clean run, a validation retry, a model-error retry and a hard failure: `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts`
+- [x] 2.3 All plan-generation specs pass: `cd backend && npx vitest run src/plan-generation`
+- [x] 2.4 Backend lint passes: `cd backend && npm run lint`
+- [x] 2.5 Backend build passes: `cd backend && npm run build`
 
 #### Manual
 
-- [ ] 2.6 With a real OpenAI key locally, one generation logs the week counter reaching 8 in each pass; record the time from request to the first `week` event for the draft and review passes
-- [ ] 2.7 Using an invalid model id yields a `failed` event with `provider_unavailable`, the job ends as failed, and the log shows no unhandled rejection
+- [x] 2.6 With a real OpenAI key locally, one generation logs the week counter reaching 8 in each pass; record the time from request to the first `week` event for the draft and review passes
+- [x] 2.7 Using an invalid model id yields a `failed` event with `provider_unavailable`, the job ends as failed, and the log shows no unhandled rejection
 
 ### Phase 3: SSE endpoint
 

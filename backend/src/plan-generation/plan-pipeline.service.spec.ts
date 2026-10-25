@@ -69,9 +69,19 @@ const buildPlan = (counts = [3, 3, 3, 3, 3, 3, 3, 3]): GeneratedPlan => ({
   })),
 });
 
+const WEEKS_STREAMED_PER_PLAN = 8;
+
 const rampViolation = (): GeneratedPlan => buildPlan([3, 3, 3, 3, 3, 3, 3, 4]);
 
-type Reply = GeneratedPlan | Error | 'hang';
+interface FailingReply {
+  error: Error;
+  weeksBeforeError: number;
+}
+
+type Reply = GeneratedPlan | Error | FailingReply | 'hang';
+
+const isFailingReply = (reply: Reply): reply is FailingReply =>
+  typeof reply === 'object' && 'weeksBeforeError' in reply;
 
 interface RecordedCall extends PlanModelRequest<never> {
   stageAtCall: PlanJob['stage'] | undefined;
@@ -92,6 +102,16 @@ class FakePlanModelClient {
       stageAtCall: this.store.get(this.jobId, OWNER)?.stage,
     });
     const reply = this.replies.shift();
+    if (reply !== undefined && reply !== 'hang') {
+      const weeks = isFailingReply(reply)
+        ? reply.weeksBeforeError
+        : reply instanceof Error
+          ? 0
+          : WEEKS_STREAMED_PER_PLAN;
+      for (let week = 1; week <= weeks; week += 1) {
+        request.onPartial?.(week);
+      }
+    }
     if (reply === 'hang') {
       return new Promise<never>((_resolve, reject) => {
         request.signal.addEventListener(
@@ -102,6 +122,9 @@ class FakePlanModelClient {
           { once: true },
         );
       });
+    }
+    if (reply !== undefined && isFailingReply(reply)) {
+      return Promise.reject(reply.error);
     }
     if (reply === undefined || reply instanceof Error) {
       return Promise.reject(reply ?? new Error('no reply queued'));
@@ -244,6 +267,227 @@ describe('PlanPipelineService', () => {
       expect(client.calls[0].prompt).toContain(
         `<goals>\n${GOALS_TEXT}\n</goals>`,
       );
+    });
+  });
+
+  describe('progress events', () => {
+    const weekEvents = (stage: string, from: number, to: number) =>
+      Array.from(
+        { length: to - from + 1 },
+        (_unused, index) => `week:${stage}:${from + index}`,
+      );
+
+    const summarize = (job: PlanJob) =>
+      job.events.map((event) => {
+        switch (event.type) {
+          case 'stage':
+            return `stage:${event.stage}`;
+          case 'week':
+            return `week:${event.stage}:${event.week}`;
+          case 'validating':
+            return `validating:${event.stage}`;
+          case 'retrying':
+            return `retrying:${event.stage}:${event.attempt}`;
+          case 'completed':
+            return 'completed';
+          case 'failed':
+            return `failed:${event.code}`;
+        }
+      });
+
+    it('emits stage, weeks and validating per pass, then completed, for a clean run', async () => {
+      const { job, run } = setup([buildPlan(), buildPlan()]);
+
+      await run();
+
+      expect(summarize(job)).toEqual([
+        'stage:drafting',
+        ...weekEvents('drafting', 1, 8),
+        'validating:drafting',
+        'stage:reviewing',
+        ...weekEvents('reviewing', 1, 8),
+        'validating:reviewing',
+        'completed',
+      ]);
+    });
+
+    it('assigns consecutive ids to the events in order', async () => {
+      const { job, run } = setup([buildPlan(), buildPlan()]);
+
+      await run();
+
+      expect(job.events.map((event) => event.id)).toEqual(
+        job.events.map((_event, index) => index + 1),
+      );
+    });
+
+    it('appends validating only after the model call has returned and before the verdict', async () => {
+      const { job, client, run } = setup([buildPlan(), buildPlan()]);
+      const typesAtCall: string[][] = [];
+      const generate = client.generate.bind(client);
+      client.generate = (request) => {
+        typesAtCall.push(job.events.map((event) => event.type));
+        return generate(request);
+      };
+
+      await run();
+
+      expect(typesAtCall[0]).toEqual(['stage']);
+      expect(typesAtCall[1]).toEqual([
+        'stage',
+        ...Array.from({ length: 8 }, () => 'week'),
+        'validating',
+        'stage',
+      ]);
+    });
+
+    it('appends a retrying event with the attempt number before a validation retry', async () => {
+      const { job, run } = setup([rampViolation(), buildPlan(), buildPlan()]);
+
+      await run();
+
+      expect(summarize(job)).toEqual([
+        'stage:drafting',
+        ...weekEvents('drafting', 1, 8),
+        'validating:drafting',
+        'retrying:drafting:2',
+        ...weekEvents('drafting', 1, 8),
+        'validating:drafting',
+        'stage:reviewing',
+        ...weekEvents('reviewing', 1, 8),
+        'validating:reviewing',
+        'completed',
+      ]);
+    });
+
+    it('appends retrying without validating after an unparseable attempt that streamed some weeks', async () => {
+      const { job, run } = setup([
+        {
+          error: new PlanModelError('invalid_output', 'length'),
+          weeksBeforeError: 3,
+        },
+        buildPlan(),
+        buildPlan(),
+      ]);
+
+      await run();
+
+      expect(summarize(job)).toEqual([
+        'stage:drafting',
+        ...weekEvents('drafting', 1, 3),
+        'retrying:drafting:2',
+        ...weekEvents('drafting', 1, 8),
+        'validating:drafting',
+        'stage:reviewing',
+        ...weekEvents('reviewing', 1, 8),
+        'validating:reviewing',
+        'completed',
+      ]);
+    });
+
+    it('retries the review pass with its own stage on its events', async () => {
+      const { job, run } = setup([buildPlan(), rampViolation(), buildPlan()]);
+
+      await run();
+
+      expect(summarize(job).slice(10)).toEqual([
+        'stage:reviewing',
+        ...weekEvents('reviewing', 1, 8),
+        'validating:reviewing',
+        'retrying:reviewing:2',
+        ...weekEvents('reviewing', 1, 8),
+        'validating:reviewing',
+        'completed',
+      ]);
+    });
+
+    it('ends with failed invalid_output after two rejected attempts', async () => {
+      const { job, run } = setup([rampViolation(), rampViolation()]);
+
+      await run();
+
+      expect(summarize(job)).toEqual([
+        'stage:drafting',
+        ...weekEvents('drafting', 1, 8),
+        'validating:drafting',
+        'retrying:drafting:2',
+        ...weekEvents('drafting', 1, 8),
+        'validating:drafting',
+        'failed:invalid_output',
+      ]);
+    });
+
+    it('ends with failed provider_unavailable and no retry after a hard model failure', async () => {
+      const { job, run } = setup([
+        {
+          error: new PlanModelError('unavailable'),
+          weeksBeforeError: 2,
+        },
+      ]);
+
+      await run();
+
+      expect(summarize(job)).toEqual([
+        'stage:drafting',
+        'week:drafting:1',
+        'week:drafting:2',
+        'failed:provider_unavailable',
+      ]);
+    });
+
+    it('records no week events for a model failure before anything streamed', async () => {
+      const { job, run } = setup([
+        buildPlan(),
+        new PlanModelError('unavailable'),
+      ]);
+
+      await run();
+
+      expect(summarize(job).slice(10)).toEqual([
+        'stage:reviewing',
+        'failed:provider_unavailable',
+      ]);
+    });
+
+    it('ends with failed internal for an unexpected throw', async () => {
+      const { job, run } = setup([new TypeError('kaboom')]);
+
+      await run();
+
+      expect(summarize(job)).toEqual(['stage:drafting', 'failed:internal']);
+    });
+
+    it('records no events when the catalog is empty beyond the terminal failure', async () => {
+      const { job, run } = setup([], []);
+
+      await run();
+
+      expect(summarize(job)).toEqual(['failed:internal']);
+    });
+
+    it('does not duplicate a week event when the client reports the same count twice', async () => {
+      const { job, client, run } = setup([buildPlan(), buildPlan()]);
+      const generate = client.generate.bind(client);
+      client.generate = (request) => {
+        request.onPartial?.(1);
+        request.onPartial?.(1);
+        return generate(request);
+      };
+
+      await run();
+
+      const drafting = summarize(job).filter((entry) =>
+        entry.startsWith('week:drafting:'),
+      );
+      expect(drafting).toEqual(weekEvents('drafting', 1, 8));
+    });
+
+    it('never puts the goals text into an event', async () => {
+      const { job, run } = setup([rampViolation(), buildPlan(), buildPlan()]);
+
+      await run();
+
+      expect(JSON.stringify(job.events)).not.toContain(GOALS_TEXT);
     });
   });
 
