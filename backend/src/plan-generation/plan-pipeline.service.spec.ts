@@ -203,6 +203,19 @@ describe('PlanPipelineService', () => {
   };
 
   describe('happy path', () => {
+    it('resolves each exercise to its own catalog imageKey', async () => {
+      const { job, run } = setup([buildPlan(), buildPlan()]);
+
+      await run();
+
+      const exercises = job.plan?.weeks[0].sessions[0].exercises ?? [];
+      expect(exercises.map(({ slug, imageKey }) => [slug, imageKey])).toEqual([
+        ['squat', 'squat.png'],
+        ['bench-press', 'bench-press.png'],
+        ['barbell-row', 'barbell-row.png'],
+      ]);
+    });
+
     it('makes exactly two calls, draft then review, and completes with names joined', async () => {
       const draft = buildPlan();
       const reviewed = buildPlan();
@@ -222,6 +235,7 @@ describe('PlanPipelineService', () => {
       expect(job.plan?.weeks[0].sessions[0].exercises[0]).toEqual({
         slug: 'squat',
         name: 'Name of squat',
+        imageKey: 'squat.png',
         sets: 3,
         reps: '8-10',
         restSeconds: 90,

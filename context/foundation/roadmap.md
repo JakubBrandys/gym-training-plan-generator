@@ -46,7 +46,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | S-01 | sign-up-and-login        | sign up, log in, and be redirected to sign-in when hitting a gated route              | —             | FR-001, US-01                 | done        |
 | S-02 | first-plan-generation    | submit the plan form and receive an AI-generated 8-week plan from the catalog         | S-01, F-01    | FR-004, FR-005, US-01         | done |
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | done |
-| S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | proposed |
+| S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | in-progress |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | proposed |
 | S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | proposed |
 | S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | proposed |
@@ -138,7 +138,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Depends on the catalog images from `F-01` being usable in the UI; independent of live progress, so it can proceed in parallel with `S-03`.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-05: Save and view the plan
 
