@@ -244,14 +244,14 @@ None. Plan jobs live in memory only, so no stored data carries the old shape, an
 
 #### Automated
 
-- [x] 1.1 Backend unit tests pass: `cd backend && npm run test`
-- [x] 1.2 Backend e2e tests pass: `cd backend && npm run test:e2e`
-- [x] 1.3 Backend type check and build pass: `cd backend && npm run build`
-- [x] 1.4 Backend lint passes: `cd backend && npm run lint`
+- [x] 1.1 Backend unit tests pass: `cd backend && npm run test` — 15d1358
+- [x] 1.2 Backend e2e tests pass: `cd backend && npm run test:e2e` — 15d1358
+- [x] 1.3 Backend type check and build pass: `cd backend && npm run build` — 15d1358
+- [x] 1.4 Backend lint passes: `cd backend && npm run lint` — 15d1358
 
 #### Manual
 
-- [x] 1.5 `GET /plan-generations/:jobId` for a completed job returns `imageKey` such as `exercises/barbell-squat.jpg` on every exercise
+- [x] 1.5 `GET /plan-generations/:jobId` for a completed job returns `imageKey` such as `exercises/barbell-squat.jpg` on every exercise — 15d1358
 
 ### Phase 2: Frontend — component test environment
 
