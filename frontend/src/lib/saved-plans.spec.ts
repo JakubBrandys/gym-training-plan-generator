@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiFetch } from './api'
-import { saveGeneratedPlan, type SavedPlanSummary } from './saved-plans'
+import {
+  fetchSavedPlan,
+  listSavedPlans,
+  saveGeneratedPlan,
+  type SavedPlan,
+  type SavedPlanSummary,
+} from './saved-plans'
 
 vi.mock('./api', () => ({ apiFetch: vi.fn() }))
 
@@ -91,5 +97,122 @@ describe('saveGeneratedPlan', () => {
     apiFetchMock.mockResolvedValue(new Response('not json', { status: 201 }))
 
     expect(await saveGeneratedPlan('job-1')).toEqual({ kind: 'error' })
+  })
+})
+
+describe('listSavedPlans', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset()
+  })
+
+  it('requests the saved-plans endpoint', async () => {
+    respondWith(200, [])
+
+    await listSavedPlans()
+
+    expect(apiFetchMock).toHaveBeenCalledTimes(1)
+    expect(apiFetchMock.mock.calls[0][0]).toBe('/saved-plans')
+  })
+
+  it('maps 200 to ok keeping the server order', async () => {
+    const older = { ...savedPlan, id: 'plan-0', createdAt: '2026-10-26T10:00:00.000Z' }
+    respondWith(200, [savedPlan, older])
+
+    expect(await listSavedPlans()).toEqual({ kind: 'ok', plans: [savedPlan, older] })
+  })
+
+  it('maps 401 to unauthorized', async () => {
+    respondWith(401)
+
+    expect(await listSavedPlans()).toEqual({ kind: 'unauthorized', status: 401 })
+  })
+
+  it('maps 403 to blocked', async () => {
+    respondWith(403)
+
+    expect(await listSavedPlans()).toEqual({ kind: 'blocked', status: 403 })
+  })
+
+  it.each([400, 404, 500, 503])('maps %i to error', async (status) => {
+    respondWith(status)
+
+    expect(await listSavedPlans()).toEqual({ kind: 'error' })
+  })
+
+  it('maps a thrown fetch to error', async () => {
+    apiFetchMock.mockRejectedValue(new TypeError('network down'))
+
+    expect(await listSavedPlans()).toEqual({ kind: 'error' })
+  })
+
+  it('maps an unreadable success body to error', async () => {
+    apiFetchMock.mockResolvedValue(new Response('not json', { status: 200 }))
+
+    expect(await listSavedPlans()).toEqual({ kind: 'error' })
+  })
+
+  it('maps a non-list success body to error', async () => {
+    respondWith(200, { plans: [] })
+
+    expect(await listSavedPlans()).toEqual({ kind: 'error' })
+  })
+})
+
+describe('fetchSavedPlan', () => {
+  const fullPlan: SavedPlan = { ...savedPlan, plan: { weeks: [] } }
+
+  beforeEach(() => {
+    apiFetchMock.mockReset()
+  })
+
+  it('requests the saved plan by encoded id', async () => {
+    respondWith(200, fullPlan)
+
+    await fetchSavedPlan('plan/1 x')
+
+    expect(apiFetchMock).toHaveBeenCalledTimes(1)
+    expect(apiFetchMock.mock.calls[0][0]).toBe('/saved-plans/plan%2F1%20x')
+  })
+
+  it('maps 200 to ok with the saved plan', async () => {
+    respondWith(200, fullPlan)
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'ok', plan: fullPlan })
+  })
+
+  it('maps 401 to unauthorized', async () => {
+    respondWith(401)
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'unauthorized', status: 401 })
+  })
+
+  it('maps 403 to blocked', async () => {
+    respondWith(403)
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'blocked', status: 403 })
+  })
+
+  it('maps 404 to not-found', async () => {
+    respondWith(404)
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'not-found' })
+  })
+
+  it.each([400, 500, 503])('maps %i to error', async (status) => {
+    respondWith(status)
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+
+  it('maps a thrown fetch to error', async () => {
+    apiFetchMock.mockRejectedValue(new TypeError('network down'))
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+
+  it('maps an unreadable success body to error', async () => {
+    apiFetchMock.mockResolvedValue(new Response('not json', { status: 200 }))
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
   })
 })

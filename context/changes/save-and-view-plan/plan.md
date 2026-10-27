@@ -387,9 +387,9 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Automated
 
-- [x] 3.1 Frontend builds: `cd frontend && npm run build`
-- [x] 3.2 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 3.3 Frontend tests pass: `cd frontend && npm test`
+- [x] 3.1 Frontend builds: `cd frontend && npm run build` — 39ff189
+- [x] 3.2 Frontend lint passes: `cd frontend && npm run lint` — 39ff189
+- [x] 3.3 Frontend tests pass: `cd frontend && npm test` — 39ff189
 
 #### Manual
 
@@ -401,9 +401,9 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Automated
 
-- [ ] 4.1 Frontend builds: `cd frontend && npm run build`
-- [ ] 4.2 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 4.3 Frontend tests pass: `cd frontend && npm test`
+- [x] 4.1 Frontend builds: `cd frontend && npm run build`
+- [x] 4.2 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 4.3 Frontend tests pass: `cd frontend && npm test`
 
 #### Manual
 
