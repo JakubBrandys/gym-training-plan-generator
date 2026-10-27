@@ -124,6 +124,14 @@ describe('PlanGenerationController', () => {
       });
     });
 
+    it('keeps the validated form on the job', () => {
+      const { controller, store } = setup();
+
+      const { jobId } = controller.start(user, form);
+
+      expect(store.get(jobId, user.id)?.form).toEqual(form);
+    });
+
     it('creates the job for user.id rather than the email', () => {
       const { controller, store } = setup();
 
@@ -200,6 +208,13 @@ describe('PlanGenerationController', () => {
         plan: null,
         error: null,
       });
+    });
+
+    it('does not expose the form', () => {
+      const { controller } = setup();
+      const { jobId } = controller.start(user, form);
+
+      expect(controller.getJob(user, jobId)).not.toHaveProperty('form');
     });
 
     it('returns the latest started week while the job runs', () => {

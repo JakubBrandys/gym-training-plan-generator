@@ -158,7 +158,7 @@ const setup = (
     store,
     config,
   );
-  const job = store.create(OWNER);
+  const job = store.create(OWNER, frequencyForm);
   client.jobId = job.id;
   const run = () => pipeline.run(job.id, frequencyForm);
   return { store, client, job, run, findAll };

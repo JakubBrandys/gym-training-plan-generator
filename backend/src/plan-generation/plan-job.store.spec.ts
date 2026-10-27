@@ -5,11 +5,21 @@ import {
   STALE_RUNNING_JOB_MS,
   TERMINAL_JOB_RETENTION_MS,
 } from './plan-job.store.js';
+import type { PlanForm } from './plan-form.schema.js';
 import type { PlanProgressEvent } from './plan-progress.js';
 import { WEEK_COUNT } from './plan.validator.js';
 
 const OWNER = 'owner-1';
 const OTHER = 'owner-2';
+
+const form: PlanForm = {
+  experience: 'beginner',
+  currentFrequency: 2,
+  desiredFrequency: 4,
+  heightCm: 170,
+  weightKg: 65,
+  goals: 'Get stronger',
+};
 
 describe('PlanJobStore', () => {
   let store: PlanJobStore;
@@ -25,7 +35,7 @@ describe('PlanJobStore', () => {
   });
 
   it('creates a running job owned by the caller with a uuid id', () => {
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     expect(job).toMatchObject({
       ownerId: OWNER,
       status: 'running',
@@ -37,20 +47,25 @@ describe('PlanJobStore', () => {
     expect(job.id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it('keeps the form the job was created with', () => {
+    const job = store.create(OWNER, form);
+    expect(store.get(job.id, OWNER)?.form).toEqual(form);
+  });
+
   it('returns the job to its owner', () => {
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     expect(store.get(job.id, OWNER)).toBe(job);
   });
 
   it('returns undefined for another owner and for an unknown job alike', () => {
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     expect(store.get(job.id, OTHER)).toBeUndefined();
     expect(store.get('unknown-job', OWNER)).toBeUndefined();
   });
 
   it('reports hasActive only while the owner has a running job', () => {
     expect(store.hasActive(OWNER)).toBe(false);
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     expect(store.hasActive(OWNER)).toBe(true);
     expect(store.hasActive(OTHER)).toBe(false);
     store.fail(job.id, 'internal');
@@ -58,7 +73,7 @@ describe('PlanJobStore', () => {
   });
 
   it('records stage changes and bumps updatedAt', () => {
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     vi.setSystemTime(new Date('2026-10-14T10:00:05Z'));
     store.setStage(job.id, 'reviewing');
     expect(job.stage).toBe('reviewing');
@@ -66,7 +81,7 @@ describe('PlanJobStore', () => {
   });
 
   it('completes a job with its plan and clears the stage', () => {
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     store.setStage(job.id, 'reviewing');
     const plan = { weeks: [] };
     store.complete(job.id, plan);
@@ -80,7 +95,7 @@ describe('PlanJobStore', () => {
   });
 
   it('fails a job with an error code and no plan', () => {
-    const job = store.create(OWNER);
+    const job = store.create(OWNER, form);
     store.fail(job.id, 'invalid_output');
     expect(job).toMatchObject({
       status: 'failed',
@@ -100,13 +115,13 @@ describe('PlanJobStore', () => {
     };
 
     it('starts a job with no events and no week', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       expect(job.events).toEqual([]);
       expect(job.week).toBeNull();
     });
 
     it('assigns monotonic ids starting at 1 with ISO timestamps', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       vi.setSystemTime(new Date('2026-10-14T10:00:03Z'));
       store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
@@ -125,7 +140,7 @@ describe('PlanJobStore', () => {
     });
 
     it('records the stage, retry and failure payloads', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'retrying', stage: 'drafting', attempt: 2 });
       store.fail(job.id, 'invalid_output');
@@ -138,7 +153,7 @@ describe('PlanJobStore', () => {
     });
 
     it('tracks the latest started week and ignores unchanged, lower or out of range weeks', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'week', stage: 'drafting', week: 2 });
       store.append(job.id, { type: 'week', stage: 'drafting', week: 2 });
@@ -159,7 +174,7 @@ describe('PlanJobStore', () => {
     });
 
     it('resets the week to null when a new stage starts and accepts weeks again', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, {
         type: 'week',
@@ -174,7 +189,7 @@ describe('PlanJobStore', () => {
     });
 
     it('resets the week to null on a retry and accepts weeks again within the same stage', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'week', stage: 'drafting', week: 6 });
       store.append(job.id, { type: 'retrying', stage: 'drafting', attempt: 2 });
@@ -185,7 +200,7 @@ describe('PlanJobStore', () => {
     });
 
     it('clears the week once the job finishes', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'week', stage: 'drafting', week: 4 });
       store.complete(job.id, { weeks: [] });
@@ -194,7 +209,7 @@ describe('PlanJobStore', () => {
 
     it('ignores append for an unknown job and for a finished job', () => {
       store.append('unknown-job', { type: 'validating', stage: 'drafting' });
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.fail(job.id, 'internal');
       store.append(job.id, { type: 'validating', stage: 'drafting' });
       store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
@@ -206,7 +221,7 @@ describe('PlanJobStore', () => {
     });
 
     it('appends a terminal event only once', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.complete(job.id, { weeks: [] });
       store.fail(job.id, 'internal');
       store.complete(job.id, { weeks: [] });
@@ -215,7 +230,7 @@ describe('PlanJobStore', () => {
     });
 
     it('replays stored events then delivers live ones in order', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
 
@@ -229,7 +244,7 @@ describe('PlanJobStore', () => {
     });
 
     it('replays only events after afterId', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
       store.append(job.id, { type: 'week', stage: 'drafting', week: 2 });
@@ -242,7 +257,7 @@ describe('PlanJobStore', () => {
     });
 
     it('replays nothing and then follows live when afterId is past the end', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       const { received } = collect(job.id, OWNER, 99);
       expect(received).toEqual([]);
@@ -252,7 +267,7 @@ describe('PlanJobStore', () => {
     });
 
     it('delivers every event to each of several subscribers', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       const first = collect(job.id);
       const second = collect(job.id);
       store.setStage(job.id, 'drafting');
@@ -262,7 +277,7 @@ describe('PlanJobStore', () => {
     });
 
     it('replays through the terminal event for a finished job', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.fail(job.id, 'provider_unavailable');
 
@@ -275,7 +290,7 @@ describe('PlanJobStore', () => {
     });
 
     it('replays only the tail of a finished job after afterId', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.complete(job.id, { weeks: [] });
 
@@ -284,7 +299,7 @@ describe('PlanJobStore', () => {
     });
 
     it('stops delivering after unsubscribe', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       const { received, unsubscribe } = collect(job.id);
       store.setStage(job.id, 'drafting');
       unsubscribe?.();
@@ -295,7 +310,7 @@ describe('PlanJobStore', () => {
     });
 
     it('does not call a listener removed by an earlier listener in the same delivery', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       const late = vi.fn();
       let unsubscribeLate: (() => void) | undefined;
       store.subscribe(job.id, OWNER, 0, () => unsubscribeLate?.());
@@ -307,7 +322,7 @@ describe('PlanJobStore', () => {
     });
 
     it('returns undefined and delivers nothing for a foreign or unknown job', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       const listener = vi.fn();
 
@@ -321,7 +336,7 @@ describe('PlanJobStore', () => {
     });
 
     it('counts live subscribers for the owner only', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       expect(store.subscriberCount(job.id, OWNER)).toBe(0);
 
       const stopFirst = store.subscribe(job.id, OWNER, 0, () => undefined);
@@ -336,7 +351,7 @@ describe('PlanJobStore', () => {
     });
 
     it('counts no subscribers once the job finishes or is unknown', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.subscribe(job.id, OWNER, 0, () => undefined);
       store.complete(job.id, { weeks: [] });
 
@@ -348,7 +363,7 @@ describe('PlanJobStore', () => {
       const warn = vi
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.subscribe(job.id, OWNER, 0, () => {
         throw new Error('listener boom');
       });
@@ -369,7 +384,7 @@ describe('PlanJobStore', () => {
       const warn = vi
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.subscribe(job.id, OWNER, 0, () => {
         throw new TypeError('secret detail');
       });
@@ -389,7 +404,7 @@ describe('PlanJobStore', () => {
       const warn = vi
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       const received: PlanProgressEvent[] = [];
       let calls = 0;
@@ -407,7 +422,7 @@ describe('PlanJobStore', () => {
     });
 
     it('lets the reaper fail a stale job and tell its subscribers', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       const { received } = collect(job.id);
       vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
       store.hasActive(OWNER);
@@ -416,7 +431,7 @@ describe('PlanJobStore', () => {
     });
 
     it('purges the event log together with its job', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.setStage(job.id, 'drafting');
       store.complete(job.id, { weeks: [] });
       vi.setSystemTime(Date.now() + TERMINAL_JOB_RETENTION_MS);
@@ -428,29 +443,29 @@ describe('PlanJobStore', () => {
 
   describe('purging', () => {
     it('keeps a terminal job just before one hour after finishedAt', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.fail(job.id, 'internal');
       vi.setSystemTime(Date.now() + TERMINAL_JOB_RETENTION_MS - 1);
       expect(store.get(job.id, OWNER)).toBe(job);
     });
 
     it('purges a terminal job one hour after finishedAt on get', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       store.fail(job.id, 'internal');
       vi.setSystemTime(Date.now() + TERMINAL_JOB_RETENTION_MS);
       expect(store.get(job.id, OWNER)).toBeUndefined();
     });
 
     it('purges expired terminal jobs lazily on create', () => {
-      const old = store.create(OWNER);
+      const old = store.create(OWNER, form);
       store.complete(old.id, { weeks: [] });
       vi.setSystemTime(Date.now() + TERMINAL_JOB_RETENTION_MS + 1);
-      store.create(OTHER);
+      store.create(OTHER, form);
       expect(store.get(old.id, OWNER)).toBeUndefined();
     });
 
     it('does not reap a running job that is still within the job timeout margin', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS - 1);
       expect(store.get(job.id, OWNER)).toBe(job);
       expect(job.status).toBe('running');
@@ -458,13 +473,13 @@ describe('PlanJobStore', () => {
     });
 
     it('keeps a fresh running job running past the plain job timeout', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       vi.setSystemTime(Date.now() + PLAN_JOB_TIMEOUT_MS);
       expect(store.get(job.id, OWNER)?.status).toBe('running');
     });
 
     it('fails a stale running job as internal on get', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
       const found = store.get(job.id, OWNER);
       expect(found).toBe(job);
@@ -478,7 +493,7 @@ describe('PlanJobStore', () => {
     });
 
     it('stops counting a stale running job as active', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       expect(store.hasActive(OWNER)).toBe(true);
       vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
       expect(store.hasActive(OWNER)).toBe(false);
@@ -486,9 +501,9 @@ describe('PlanJobStore', () => {
     });
 
     it('fails a stale running job lazily on create', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
-      store.create(OTHER);
+      store.create(OTHER, form);
       expect(job).toMatchObject({
         status: 'failed',
         error: { code: 'internal' },
@@ -496,7 +511,7 @@ describe('PlanJobStore', () => {
     });
 
     it('does not let a late completion overwrite a reaped job', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       vi.setSystemTime(Date.now() + STALE_RUNNING_JOB_MS);
       store.hasActive(OWNER);
       store.complete(job.id, { weeks: [] });
@@ -508,7 +523,7 @@ describe('PlanJobStore', () => {
     });
 
     it('measures retention from finishedAt, not createdAt', () => {
-      const job = store.create(OWNER);
+      const job = store.create(OWNER, form);
       vi.setSystemTime(Date.now() + 30 * 60 * 1000);
       store.complete(job.id, { weeks: [] });
       vi.setSystemTime(Date.now() + 45 * 60 * 1000);
