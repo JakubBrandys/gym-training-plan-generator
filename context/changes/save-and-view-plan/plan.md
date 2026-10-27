@@ -373,10 +373,10 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Automated
 
-- [x] 2.1 Backend builds: `cd backend && npm run build`
-- [x] 2.2 Backend lint passes: `cd backend && npm run lint`
-- [x] 2.3 Unit specs pass: `cd backend && npm test`
-- [x] 2.4 E2E specs pass, including cross-user isolation: `cd backend && npm run test:e2e`
+- [x] 2.1 Backend builds: `cd backend && npm run build` — adf772c
+- [x] 2.2 Backend lint passes: `cd backend && npm run lint` — adf772c
+- [x] 2.3 Unit specs pass: `cd backend && npm test` — adf772c
+- [x] 2.4 E2E specs pass, including cross-user isolation: `cd backend && npm run test:e2e` — adf772c
 
 #### Manual
 
@@ -387,9 +387,9 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Automated
 
-- [ ] 3.1 Frontend builds: `cd frontend && npm run build`
-- [ ] 3.2 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 3.3 Frontend tests pass: `cd frontend && npm test`
+- [x] 3.1 Frontend builds: `cd frontend && npm run build`
+- [x] 3.2 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 3.3 Frontend tests pass: `cd frontend && npm test`
 
 #### Manual
 

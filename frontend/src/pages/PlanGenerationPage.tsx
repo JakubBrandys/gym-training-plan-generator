@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { PlanView } from '../components/PlanView'
 import { useAuth } from '../auth/useAuth'
 import { handleAuthFailure } from '../lib/auth-failure'
@@ -7,11 +7,14 @@ import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
 import type { PlanJobErrorCode, PlanJobStage } from '../lib/plan-generation'
 import { watchPlanGeneration, type WatchState } from '../lib/plan-generation-watch'
 import { WEEK_COUNT, initialProgress, type ProgressState } from '../lib/plan-progress'
+import { saveGeneratedPlan } from '../lib/saved-plans'
 
 const NOT_FOUND_ERROR = 'This plan could not be found or has expired.'
 const TIMED_OUT_ERROR = 'This is taking longer than expected. Check back later.'
 const VALIDATING_NOTICE = 'Checking the plan…'
 const RETRYING_NOTICE = 'Trying again…'
+const SAVE_EXPIRED_ERROR = 'This plan has expired and can no longer be saved. Generate a new one.'
+const SAVE_ERROR = GENERIC_PLAN_ERROR
 
 const FAILURE_MESSAGES: Record<PlanJobErrorCode, string> = {
   provider_unavailable: 'The plan service is unavailable right now. Try again later.',
@@ -73,6 +76,59 @@ const ProgressPanel = ({ progress }: ProgressPanelProps) => {
   )
 }
 
+type SavePlanControlProps = {
+  jobId: string
+}
+
+const SavePlanControl = ({ jobId }: SavePlanControlProps) => {
+  const { signOut } = useAuth()
+  const navigate = useNavigate()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      const result = await saveGeneratedPlan(jobId)
+
+      if (result.kind === 'unauthorized' || result.kind === 'blocked') {
+        await handleAuthFailure(result.status, signOut)
+        return
+      }
+
+      if (result.kind === 'not-found') {
+        setError(SAVE_EXPIRED_ERROR)
+        return
+      }
+
+      if (result.kind === 'ok') {
+        navigate(`/plans/${encodeURIComponent(result.plan.id)}`)
+        return
+      }
+
+      setError(SAVE_ERROR)
+    } catch {
+      setError(SAVE_ERROR)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <button type="button" disabled={saving} onClick={handleSave}>
+        {saving ? 'Saving…' : 'Save plan'}
+      </button>
+    </div>
+  )
+}
+
 const INITIAL_STATE: WatchState = { status: 'running', progress: initialProgress }
 
 type PlanGenerationJobProps = {
@@ -109,6 +165,7 @@ const PlanGenerationJob = ({ jobId }: PlanGenerationJobProps) => {
     <main className="plan-generation">
       <h1>Your training plan</h1>
       {state.status === 'running' && <ProgressPanel progress={state.progress} />}
+      {state.status === 'completed' && jobId !== undefined && <SavePlanControl jobId={jobId} />}
       {state.status === 'completed' && <PlanView plan={state.plan} />}
       {state.status === 'failed' && (
         <p className="error" role="alert">
