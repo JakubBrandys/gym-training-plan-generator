@@ -18,6 +18,7 @@ export type PlanResultExercise = {
   reps: string
   restSeconds: number
   note: string | null
+  imageKey: string | null
 }
 
 export type PlanResultSession = {

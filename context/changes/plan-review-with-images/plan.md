@@ -257,10 +257,10 @@ None. Plan jobs live in memory only, so no stored data carries the old shape, an
 
 #### Automated
 
-- [x] 2.1 All frontend specs pass, both projects: `cd frontend && npm run test`
-- [x] 2.2 The existing node-environment specs still run in the `unit` project and pass unchanged
-- [x] 2.3 Type check and build pass: `cd frontend && npm run build`
-- [x] 2.4 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 2.1 All frontend specs pass, both projects: `cd frontend && npm run test` — d934046
+- [x] 2.2 The existing node-environment specs still run in the `unit` project and pass unchanged — d934046
+- [x] 2.3 Type check and build pass: `cd frontend && npm run build` — d934046
+- [x] 2.4 Frontend lint passes: `cd frontend && npm run lint` — d934046
 
 ### Phase 3: Frontend — images in the plan review
 
