@@ -1,7 +1,7 @@
 ---
 change_id: save-and-view-plan
 title: Save and view plan
-status: implementing
+status: implemented
 created: 2026-10-27
 updated: 2026-10-27
 archived_at: null

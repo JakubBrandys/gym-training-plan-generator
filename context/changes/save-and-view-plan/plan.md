@@ -99,6 +99,8 @@ Add the `SavedPlan` table and make the in-memory job carry the form it was start
 
 **Contract**: Use one `PlanForm` fixture per spec file. New assertions: `store.get(...)` returns a job whose `form` equals the one passed to `create`; the `getJob` result has no `form` key.
 
+**Deviation (2026-10-27)**: The migration SQL was generated offline with `prisma migrate diff --from-schema/--to-schema` instead of `prisma:migrate:dev`, then applied with `prisma:migrate:deploy` (same command as the deploy workflow) to avoid a reset prompt on the hosted database. `prisma format` re-aligned the existing `Profile` columns. `plan.limiter.spec.ts` and `plan-pipeline.service.spec.ts` also call `store.create` and moved to the new signature.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -166,6 +168,8 @@ Add the `saved-plans` module with save, list and get endpoints, enforcing owners
 
 **Contract**: Required cases — saves a completed job and stores form and plan unchanged; second save returns the existing row without reading the job (works after the job is purged); `P2002` race returns the existing row; foreign, missing and expired job → 404; running and failed job → 409 `not_completed`; invalid body → 400; list is scoped to the owner, newest first, with the `id` tiebreak for equal `createdAt`; get returns 404 for another owner's id, an unknown id and a malformed id.
 
+**Deviation (2026-10-27)**: The service's `findUnique`, `create` and `findMany` calls use `select` (id, createdAt, form) so the plan JSON is not fetched for summaries; Json columns are cast through `unknown`. The malformed-id 404 is covered in the e2e spec only (the controller spec constructs the controller directly, so the param pipe does not run). The e2e wires `SavedPlansController`, `SavedPlansService` and `PlanJobStore` as direct providers with a fake `PrismaService` instead of importing `PlanGenerationModule`.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -215,6 +219,8 @@ Add the frontend API call and a Save button on the completed review page, plus t
 **Intent**: Cover the mapping and the save interaction. The page spec renders `PlanGenerationPage` inside `MemoryRouter` with `Routes`, mocking `../lib/plan-generation-watch` (emit a `completed` state with a fixture plan), `../lib/saved-plans` and `../auth/useAuth`. The lib spec mocks `./api`.
 
 **Contract**: Lib cases: each status code maps to its result kind and a thrown fetch maps to `error`. Page cases: Save is visible only when completed; click calls `saveGeneratedPlan` with the route's `jobId` and navigates to `/plans/<id>`; button disabled while pending; `not-found` shows the expiry message and keeps the plan; `error` shows the generic message; `unauthorized`/`blocked` call the sign-out path. If importing the page transitively reaches `src/lib/supabase.ts` (which calls `createClient` at import), add `vi.mock('../lib/supabase')` in the spec.
+
+**Deviation (2026-10-27)**: `authFailureOf` in `frontend/src/lib/plan-generation.ts` is now exported so `saved-plans.ts` reuses it. The Save button is its own `SavePlanControl` component rendered above `PlanView` (not beside it) so it stays visible on a long plan, with the label "Save plan" and "Saving…" while pending. `saveGeneratedPlan` also maps an unreadable 2xx body to `error`.
 
 ### Success Criteria:
 
@@ -289,6 +295,8 @@ Add the account views so a saved plan can be found and reopened in a later sessi
 **Intent**: Cover the states and the rendered content with the mocking pattern from phase 3.
 
 **Contract**: List page — renders items in the order returned with date, experience, frequency and goals; empty state; error state; each item links to `/plans/<id>`. Saved-plan page — renders the plan through `PlanView` (week heading and an exercise name from the fixture), the form summary, the not-found message and the error message. Lib cases — `listSavedPlans` and `fetchSavedPlan` status mapping.
+
+**Deviation (2026-10-27)**: The shared wording lives in a new `frontend/src/components/SavedPlanDetails.tsx` and `frontend/src/lib/saved-plan-format.ts` (experience labels and date formatting), used by both pages. `listSavedPlans` also returns `error` when a 200 body is not an array. The saved-plan page spec also checks that `/plans/new` still wins over `/plans/:id`.
 
 ### Success Criteria:
 
@@ -366,8 +374,8 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Manual
 
-- [ ] 1.6 The migration applies to the dev database with `cd backend && npm run prisma:migrate:dev`; the SQL creates `"SavedPlan"` with the unique `(ownerId, sourceJobId)` index, the cascading foreign key to `"Profile"`, and ends with the RLS statement
-- [ ] 1.7 Starting a generation still shows progress and a finished plan (needs the live AI models)
+- [x] 1.6 The migration applies to the dev database with `cd backend && npm run prisma:migrate:dev`; the SQL creates `"SavedPlan"` with the unique `(ownerId, sourceJobId)` index, the cascading foreign key to `"Profile"`, and ends with the RLS statement — 8d56889
+- [x] 1.7 Starting a generation still shows progress and a finished plan (needs the live AI models) — 8d56889
 
 ### Phase 2: Saved-plans API
 
@@ -380,8 +388,8 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Manual
 
-- [ ] 2.5 With a real token against the dev database: save returns 201, a repeat returns the same `id`, the list shows it, and `GET /saved-plans/:id` returns a `plan` deep-equal to the job's `plan`
-- [ ] 2.6 A second account gets 404 for the first account's saved plan id and has an empty list
+- [x] 2.5 With a real token against the dev database: save returns 201, a repeat returns the same `id`, the list shows it, and `GET /saved-plans/:id` returns a `plan` deep-equal to the job's `plan` — adf772c
+- [x] 2.6 A second account gets 404 for the first account's saved plan id and has an empty list — adf772c
 
 ### Phase 3: Save on the review page
 
@@ -393,21 +401,21 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Manual
 
-- [ ] 3.4 Pressing Save on a generated plan succeeds (201 from `/saved-plans` and a new database row); until phase 4 the browser follows the catch-all redirect to `/`
-- [ ] 3.5 Double-clicking Save creates exactly one saved plan
-- [ ] 3.6 With the plan on screen and the server restarted, Save shows the expiry message and keeps the plan visible
+- [x] 3.4 Pressing Save on a generated plan succeeds (201 from `/saved-plans` and a new database row); until phase 4 the browser follows the catch-all redirect to `/` — 39ff189
+- [x] 3.5 Double-clicking Save creates exactly one saved plan — 39ff189
+- [x] 3.6 With the plan on screen and the server restarted, Save shows the expiry message and keeps the plan visible — 39ff189
 
 ### Phase 4: My plans and the saved-plan page
 
 #### Automated
 
-- [x] 4.1 Frontend builds: `cd frontend && npm run build`
-- [x] 4.2 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 4.3 Frontend tests pass: `cd frontend && npm test`
+- [x] 4.1 Frontend builds: `cd frontend && npm run build` — 2e87a2e
+- [x] 4.2 Frontend lint passes: `cd frontend && npm run lint` — 2e87a2e
+- [x] 4.3 Frontend tests pass: `cd frontend && npm test` — 2e87a2e
 
 #### Manual
 
-- [ ] 4.4 Full flow with real data: generate, Save, land on `/plans/:id` showing the whole plan with images, and reload to see the same plan
-- [ ] 4.5 After signing out and back in, Home → "My plans" lists the plan newest first and opens it
-- [ ] 4.6 A fresh account sees the empty state; an invalid or another user's plan id shows the not-found message
-- [ ] 4.7 The list and plan pages are usable at phone width
+- [x] 4.4 Full flow with real data: generate, Save, land on `/plans/:id` showing the whole plan with images, and reload to see the same plan — 2e87a2e
+- [x] 4.5 After signing out and back in, Home → "My plans" lists the plan newest first and opens it — 2e87a2e
+- [x] 4.6 A fresh account sees the empty state; an invalid or another user's plan id shows the not-found message — 2e87a2e
+- [x] 4.7 The list and plan pages are usable at phone width — 2e87a2e
