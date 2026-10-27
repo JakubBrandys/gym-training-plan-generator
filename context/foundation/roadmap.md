@@ -3,7 +3,7 @@ project: Gym Training Plan Generator
 version: 1
 status: draft
 created: 2026-10-03
-updated: 2026-10-25
+updated: 2026-10-27
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -46,7 +46,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | S-01 | sign-up-and-login        | sign up, log in, and be redirected to sign-in when hitting a gated route              | —             | FR-001, US-01                 | done        |
 | S-02 | first-plan-generation    | submit the plan form and receive an AI-generated 8-week plan from the catalog         | S-01, F-01    | FR-004, FR-005, US-01         | done |
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | done |
-| S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | in-progress |
+| S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | done |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | proposed |
 | S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | proposed |
 | S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | proposed |
@@ -138,7 +138,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Depends on the catalog images from `F-01` being usable in the UI; independent of live progress, so it can proceed in parallel with `S-03`.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Save and view the plan
 
@@ -218,3 +218,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-01: user can sign up, log in, and is redirected to sign-in when hitting a gated route; the backend rejects unauthenticated requests to gated endpoints.** — Archived 2026-10-11 → `context/archive/2026-10-10-sign-up-and-login/`. Lesson: never authorize by email; amend plan.md on deviations.
 - **S-02: user can submit the plan form (experience, current/desired frequency, height/weight, goals) and receive an AI-generated 8-week plan, drafted then refined in a second pass, using only catalog exercises; if any pipeline step fails or returns something unusable, the user sees an error.** — Archived 2026-10-24 → `context/archive/2026-10-14-first-plan-generation/`. Lesson: —.
 - **S-03: user can see continuous, stage-by-stage progress updates for the whole time the AI pipeline runs, with no dead air and no fixed maximum wait.** — Archived 2026-10-25 → `context/archive/2026-10-24-live-generation-progress/`. Lesson: —.
+- **S-04: user can review the complete 8-week plan, with an image for each exercise, before deciding whether to save it.** — Archived 2026-10-27 → `context/archive/2026-10-25-plan-review-with-images/`. Lesson: —.
