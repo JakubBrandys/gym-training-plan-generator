@@ -266,14 +266,14 @@ None. Plan jobs live in memory only, so no stored data carries the old shape, an
 
 #### Automated
 
-- [x] 3.1 All frontend specs pass: `cd frontend && npm run test`
-- [x] 3.2 Type check and build pass: `cd frontend && npm run build`
-- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 3.1 All frontend specs pass: `cd frontend && npm run test` — 1056b40
+- [x] 3.2 Type check and build pass: `cd frontend && npm run build` — 1056b40
+- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint` — 1056b40
 
 #### Manual
 
-- [x] 3.4 Generate a plan on the running stack and confirm every exercise in all 8 weeks shows its A/B image next to its details
-- [x] 3.5 In the browser network panel, confirm images below the fold load only as you scroll
-- [x] 3.6 At a 375 px wide viewport the rows stay readable with no horizontal scrolling
-- [x] 3.7 Block or rename one image file, reload the plan, and confirm that exercise shows its text with no broken-image icon while the others keep their images
-- [x] 3.8 An image's accessible name reads as the exercise name followed by "start and end position"
+- [x] 3.4 Generate a plan on the running stack and confirm every exercise in all 8 weeks shows its A/B image next to its details — 1056b40
+- [x] 3.5 In the browser network panel, confirm images below the fold load only as you scroll — 1056b40
+- [x] 3.6 At a 375 px wide viewport the rows stay readable with no horizontal scrolling — 1056b40
+- [x] 3.7 Block or rename one image file, reload the plan, and confirm that exercise shows its text with no broken-image icon while the others keep their images — 1056b40
+- [x] 3.8 An image's accessible name reads as the exercise name followed by "start and end position" — 1056b40

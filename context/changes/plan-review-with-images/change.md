@@ -1,9 +1,9 @@
 ---
 change_id: plan-review-with-images
 title: Plan review with images
-status: implementing
+status: implemented
 created: 2026-10-25
-updated: 2026-10-25
+updated: 2026-10-27
 archived_at: null
 ---
 
