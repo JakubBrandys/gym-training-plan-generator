@@ -71,6 +71,8 @@ Add `imageKey` to each exercise in the plan result and populate it from the cata
 
 **Contract**: `toPlanResult` accepts catalog entries that include `imageKey` (the loaded `Exercise` rows already do). It resolves name and `imageKey` from one slug-keyed lookup. `CatalogExercise` and the prompt builders stay as they are, so the prompts do not gain `imageKey`.
 
+**Deviation (2026-10-27)**: `toPlanResult` types its catalog parameter as `readonly Pick<Exercise, 'slug' | 'name' | 'imageKey'>[]` (type import of `Exercise` from the generated Prisma client) instead of widening `CatalogExercise`, and the service no longer imports `CatalogExercise`. Same intent: prompts stay unchanged and receive the catalog as before.
+
 #### 3. Spec updates
 
 **File**: `backend/src/plan-generation/plan-pipeline.service.spec.ts`
@@ -165,6 +167,8 @@ Render each exercise's image inline in `PlanView`, lazy-loaded, with a graceful 
 
 **Contract**: Each exercise row renders an `<img>` with `src` set to `/${imageKey}` (root-relative, same origin as the app), `loading="lazy"`, fixed square `width` and `height` attributes, and `alt` of `<exercise name>, start and end position`. The image is not rendered when `imageKey` is `null`. A load failure (`onError`) removes the image slot for that exercise only, via small per-exercise state in a dedicated component such as `ExerciseImage`. The week, session and text structure from the current component stays as it is, with all weeks expanded.
 
+**Deviation (2026-10-27)**: The exercise text (name, sets/reps/rest, note) is wrapped in a new `div.plan-exercise-text` so each row is a flex row of image plus text block. Image size is 112 px (7rem), matching the `width`/`height` attributes.
+
 #### 3. Styles
 
 **File**: `frontend/src/index.css`
@@ -172,6 +176,8 @@ Render each exercise's image inline in `PlanView`, lazy-loaded, with a graceful 
 **Intent**: Lay out the exercise row with the image beside the text, readable at phone width, without making the page excessively tall.
 
 **Contract**: Add rules under the existing `.plan-exercises` block, following the file's existing class naming (`plan-*`). A fixed image size that fits the 800×800 A/B illustration legibly, and the row stacks or wraps gracefully at narrow widths.
+
+**Deviation (2026-10-27)**: `.plan-exercises` drops its list bullets and left padding because each `li` is now a flex row. `.plan-exercise-image` uses a literal `background: #fff` so the illustration stays legible in the dark theme; no existing CSS variable fits, since `--bg` turns dark.
 
 #### 4. Component specs
 
