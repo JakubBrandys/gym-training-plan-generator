@@ -358,11 +358,11 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Automated
 
-- [x] 1.1 Prisma schema validates and the client regenerates: `cd backend && npm run prisma:generate`
-- [x] 1.2 Backend builds: `cd backend && npm run build`
-- [x] 1.3 Backend lint passes: `cd backend && npm run lint`
-- [x] 1.4 Backend unit tests pass, including the updated store and controller specs: `cd backend && npm test`
-- [x] 1.5 Backend e2e tests pass: `cd backend && npm run test:e2e`
+- [x] 1.1 Prisma schema validates and the client regenerates: `cd backend && npm run prisma:generate` — 8d56889
+- [x] 1.2 Backend builds: `cd backend && npm run build` — 8d56889
+- [x] 1.3 Backend lint passes: `cd backend && npm run lint` — 8d56889
+- [x] 1.4 Backend unit tests pass, including the updated store and controller specs: `cd backend && npm test` — 8d56889
+- [x] 1.5 Backend e2e tests pass: `cd backend && npm run test:e2e` — 8d56889
 
 #### Manual
 
@@ -373,10 +373,10 @@ One forward-only migration (`create_saved_plan`). Merging to `main` applies it a
 
 #### Automated
 
-- [ ] 2.1 Backend builds: `cd backend && npm run build`
-- [ ] 2.2 Backend lint passes: `cd backend && npm run lint`
-- [ ] 2.3 Unit specs pass: `cd backend && npm test`
-- [ ] 2.4 E2E specs pass, including cross-user isolation: `cd backend && npm run test:e2e`
+- [x] 2.1 Backend builds: `cd backend && npm run build`
+- [x] 2.2 Backend lint passes: `cd backend && npm run lint`
+- [x] 2.3 Unit specs pass: `cd backend && npm test`
+- [x] 2.4 E2E specs pass, including cross-user isolation: `cd backend && npm run test:e2e`
 
 #### Manual
 
