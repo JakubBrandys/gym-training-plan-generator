@@ -1,12 +1,29 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  Link,
+  MemoryRouter,
+  Outlet,
+  Route,
+  RouterProvider,
+  Routes,
+  createMemoryRouter,
+} from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/useAuth'
-import { fetchSavedPlan, type SavedPlan } from '../lib/saved-plans'
+import { fetchSavedPlan, type FetchSavedPlanResult, type SavedPlan } from '../lib/saved-plans'
 import { SavedPlanPage } from './SavedPlanPage'
 
-vi.mock('../lib/saved-plans', () => ({ fetchSavedPlan: vi.fn() }))
+vi.mock('../lib/saved-plans', () => ({
+  fetchSavedPlan: vi.fn(),
+  listSavedPlans: vi.fn(),
+  saveGeneratedPlan: vi.fn(),
+}))
 vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }))
+vi.mock('../lib/supabase', () => ({ supabase: {} }))
+vi.mock('../auth/RequireAuth', async () => {
+  const { Outlet: AuthOutlet } = await import('react-router')
+  return { RequireAuth: AuthOutlet }
+})
 
 const fetchMock = vi.mocked(fetchSavedPlan)
 const useAuthMock = vi.mocked(useAuth)
@@ -49,6 +66,20 @@ const savedPlan: SavedPlan = {
   },
 }
 
+const planWithGoals = (id: string, goals: string): SavedPlan => ({
+  ...savedPlan,
+  id,
+  form: { ...savedPlan.form, goals },
+})
+
+const deferred = () => {
+  let resolve: (result: FetchSavedPlanResult) => void = () => {}
+  const promise = new Promise<FetchSavedPlanResult>((resolvePromise) => {
+    resolve = resolvePromise
+  })
+  return { promise, resolve }
+}
+
 const renderPage = (path = '/plans/plan-1') =>
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -56,6 +87,24 @@ const renderPage = (path = '/plans/plan-1') =>
         <Route path="/plans" element={<p>My plans list</p>} />
         <Route path="/plans/new" element={<p>New plan page</p>} />
         <Route path="/plans/:id" element={<SavedPlanPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+const renderWithLinkToB = () =>
+  render(
+    <MemoryRouter initialEntries={['/plans/a']}>
+      <Routes>
+        <Route
+          element={
+            <>
+              <Link to="/plans/b">Go to b</Link>
+              <Outlet />
+            </>
+          }
+        >
+          <Route path="/plans/:id" element={<SavedPlanPage />} />
+        </Route>
       </Routes>
     </MemoryRouter>,
   )
@@ -161,5 +210,86 @@ describe('SavedPlanPage', () => {
 
     expect(await screen.findByText('New plan page')).toBeTruthy()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not keep showing the previous plan while the next id loads', async () => {
+    const second = deferred()
+    fetchMock
+      .mockResolvedValueOnce({ kind: 'ok', plan: planWithGoals('a', 'Goal of plan A') })
+      .mockReturnValueOnce(second.promise)
+
+    renderWithLinkToB()
+
+    expect(await screen.findByText('Goal of plan A')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('link', { name: 'Go to b' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(screen.queryByText('Goal of plan A')).toBeNull()
+    expect(screen.getByText('Loading…')).toBeTruthy()
+  })
+
+  it('ignores a stale response after the route id changes', async () => {
+    const first = deferred()
+    const second = deferred()
+    fetchMock.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+
+    renderWithLinkToB()
+
+    fireEvent.click(screen.getByRole('link', { name: 'Go to b' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'a')
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'b')
+
+    await act(async () => {
+      second.resolve({ kind: 'ok', plan: planWithGoals('b', 'Goal of plan B') })
+    })
+    expect(await screen.findByText('Goal of plan B')).toBeTruthy()
+
+    await act(async () => {
+      first.resolve({ kind: 'ok', plan: planWithGoals('a', 'Goal of plan A') })
+    })
+    expect(screen.getByText('Goal of plan B')).toBeTruthy()
+    expect(screen.queryByText('Goal of plan A')).toBeNull()
+  })
+
+  it('does not update state or log errors when unmounted before the plan resolves', async () => {
+    const pending = deferred()
+    fetchMock.mockReturnValue(pending.promise)
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { unmount, container } = renderPage()
+    unmount()
+
+    await act(async () => {
+      pending.resolve({ kind: 'ok', plan: savedPlan })
+    })
+
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(container.textContent).toBe('')
+    expect(signOut).not.toHaveBeenCalled()
+    consoleError.mockRestore()
+  })
+
+  it('resolves the new-plan and saved-plan paths to their own pages in the real router', async () => {
+    const { router } = await import('../router/router')
+    fetchMock.mockResolvedValue({ kind: 'ok', plan: savedPlan })
+
+    const newPlanRouter = createMemoryRouter(router.routes, { initialEntries: ['/plans/new'] })
+    render(<RouterProvider router={newPlanRouter} />)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'New training plan' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Saved plan' })).toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+
+    cleanup()
+
+    const savedPlanRouter = createMemoryRouter(router.routes, {
+      initialEntries: ['/plans/0b6f2c1e-6d0e-4a3c-9d6b-2f3a1c4e5d6f'],
+    })
+    render(<RouterProvider router={savedPlanRouter} />)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Saved plan' })).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledWith('0b6f2c1e-6d0e-4a3c-9d6b-2f3a1c4e5d6f')
   })
 })

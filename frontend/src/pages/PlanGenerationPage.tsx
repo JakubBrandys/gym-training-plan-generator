@@ -14,7 +14,6 @@ const TIMED_OUT_ERROR = 'This is taking longer than expected. Check back later.'
 const VALIDATING_NOTICE = 'Checking the plan…'
 const RETRYING_NOTICE = 'Trying again…'
 const SAVE_EXPIRED_ERROR = 'This plan has expired and can no longer be saved. Generate a new one.'
-const SAVE_ERROR = GENERIC_PLAN_ERROR
 
 const FAILURE_MESSAGES: Record<PlanJobErrorCode, string> = {
   provider_unavailable: 'The plan service is unavailable right now. Try again later.',
@@ -107,9 +106,9 @@ const SavePlanControl = ({ jobId }: SavePlanControlProps) => {
         return
       }
 
-      setError(SAVE_ERROR)
+      setError(GENERIC_PLAN_ERROR)
     } catch {
-      setError(SAVE_ERROR)
+      setError(GENERIC_PLAN_ERROR)
     } finally {
       setSaving(false)
     }

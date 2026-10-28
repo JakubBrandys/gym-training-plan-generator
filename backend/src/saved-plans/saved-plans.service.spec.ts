@@ -1,4 +1,4 @@
-import { HttpException, NotFoundException } from '@nestjs/common';
+import { HttpException, Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '../generated/prisma/client.js';
 import type { PlanForm } from '../plan-generation/plan-form.schema.js';
@@ -170,6 +170,64 @@ describe('SavedPlansService', () => {
 
       await expect(service.save(OWNER_ID, jobId)).rejects.toBe(failure);
       expect(findUnique).toHaveBeenCalledTimes(1);
+    });
+
+    it('rethrows the original P2002 when the re-read finds nothing', async () => {
+      const jobId = completedJobId();
+      const failure = uniqueViolation();
+      findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+      create.mockRejectedValue(failure);
+
+      await expect(service.save(OWNER_ID, jobId)).rejects.toBe(failure);
+      expect(findUnique).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ['a generic error', new Error('boom'), 'Error'],
+      [
+        'a non-P2002 Prisma error',
+        new Prisma.PrismaClientKnownRequestError('Record missing', {
+          code: 'P2025',
+          clientVersion: Prisma.prismaVersion.client,
+        }),
+        'PrismaClientKnownRequestError',
+      ],
+    ])(
+      'logs only the job id and error name when create fails with %s',
+      async (_label, failure, errorName) => {
+        const jobId = completedJobId();
+        const warn = vi
+          .spyOn(Logger.prototype, 'warn')
+          .mockImplementation(() => undefined);
+        findUnique.mockResolvedValue(null);
+        create.mockRejectedValue(failure);
+
+        await expect(service.save(OWNER_ID, jobId)).rejects.toBe(failure);
+
+        expect(findUnique).toHaveBeenCalledTimes(1);
+        expect(warn).toHaveBeenCalledTimes(1);
+        const message = String(warn.mock.calls[0][0]);
+        expect(message).toContain(jobId);
+        expect(message).toContain(errorName);
+        expect(message).not.toContain(failure.message);
+        expect(message).not.toContain(form.goals);
+        expect(message).not.toContain('Squat');
+        warn.mockRestore();
+      },
+    );
+
+    it('does not log when create fails with P2002', async () => {
+      const jobId = completedJobId();
+      const warn = vi
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => undefined);
+      findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(makeRow());
+      create.mockRejectedValue(uniqueViolation());
+
+      await service.save(OWNER_ID, jobId);
+
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     });
 
     it('throws NotFoundException for an unknown or expired job', async () => {

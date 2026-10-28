@@ -2,6 +2,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '../generated/prisma/client.js';
@@ -49,6 +50,8 @@ const isUniqueViolation = (error: unknown): boolean =>
 
 @Injectable()
 export class SavedPlansService {
+  private readonly logger = new Logger(SavedPlansService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly store: PlanJobStore,
@@ -81,6 +84,9 @@ export class SavedPlansService {
       return toSummary(created);
     } catch (error) {
       if (!isUniqueViolation(error)) {
+        this.logger.warn(
+          `Saving job ${jobId} failed: ${error instanceof Error ? error.name : 'unknown error'}`,
+        );
         throw error;
       }
       const raced = await this.findBySourceJob(ownerId, jobId);

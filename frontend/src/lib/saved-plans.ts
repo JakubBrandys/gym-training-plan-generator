@@ -34,12 +34,16 @@ export type SaveGeneratedPlanResult =
   | { kind: 'not-completed' }
   | { kind: 'error' }
 
+const SAVE_REQUEST_TIMEOUT_MS = 30_000
+const READ_REQUEST_TIMEOUT_MS = 15_000
+
 export const saveGeneratedPlan = async (jobId: string): Promise<SaveGeneratedPlanResult> => {
   try {
     const response = await apiFetch('/saved-plans', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jobId }),
+      signal: AbortSignal.timeout(SAVE_REQUEST_TIMEOUT_MS),
     })
 
     const authFailure = authFailureOf(response.status)
@@ -51,8 +55,8 @@ export const saveGeneratedPlan = async (jobId: string): Promise<SaveGeneratedPla
 
     if (!response.ok) return { kind: 'error' }
 
-    const plan = (await response.json()) as SavedPlanSummary
-    return { kind: 'ok', plan }
+    const plan = (await response.json()) as SavedPlanSummary | null
+    return typeof plan?.id === 'string' ? { kind: 'ok', plan } : { kind: 'error' }
   } catch {
     return { kind: 'error' }
   }
@@ -60,7 +64,9 @@ export const saveGeneratedPlan = async (jobId: string): Promise<SaveGeneratedPla
 
 export const listSavedPlans = async (): Promise<ListSavedPlansResult> => {
   try {
-    const response = await apiFetch('/saved-plans')
+    const response = await apiFetch('/saved-plans', {
+      signal: AbortSignal.timeout(READ_REQUEST_TIMEOUT_MS),
+    })
 
     const authFailure = authFailureOf(response.status)
     if (authFailure) return authFailure
@@ -76,7 +82,9 @@ export const listSavedPlans = async (): Promise<ListSavedPlansResult> => {
 
 export const fetchSavedPlan = async (id: string): Promise<FetchSavedPlanResult> => {
   try {
-    const response = await apiFetch(`/saved-plans/${encodeURIComponent(id)}`)
+    const response = await apiFetch(`/saved-plans/${encodeURIComponent(id)}`, {
+      signal: AbortSignal.timeout(READ_REQUEST_TIMEOUT_MS),
+    })
 
     const authFailure = authFailureOf(response.status)
     if (authFailure) return authFailure
@@ -85,8 +93,8 @@ export const fetchSavedPlan = async (id: string): Promise<FetchSavedPlanResult> 
 
     if (!response.ok) return { kind: 'error' }
 
-    const plan = (await response.json()) as SavedPlan
-    return { kind: 'ok', plan }
+    const plan = (await response.json()) as SavedPlan | null
+    return typeof plan?.id === 'string' ? { kind: 'ok', plan } : { kind: 'error' }
   } catch {
     return { kind: 'error' }
   }

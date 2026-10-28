@@ -98,6 +98,28 @@ describe('saveGeneratedPlan', () => {
 
     expect(await saveGeneratedPlan('job-1')).toEqual({ kind: 'error' })
   })
+
+  it.each([{}, null])('maps a success body without an id (%j) to error', async (body) => {
+    respondWith(201, body)
+
+    expect(await saveGeneratedPlan('job-1')).toEqual({ kind: 'error' })
+  })
+
+  it('passes an abort signal to apiFetch', async () => {
+    respondWith(201, savedPlan)
+
+    await saveGeneratedPlan('job-1')
+
+    expect(apiFetchMock.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
+
+  it('maps a request timeout to error', async () => {
+    apiFetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
+
+    expect(await saveGeneratedPlan('job-1')).toEqual({ kind: 'error' })
+  })
 })
 
 describe('listSavedPlans', () => {
@@ -153,6 +175,22 @@ describe('listSavedPlans', () => {
 
   it('maps a non-list success body to error', async () => {
     respondWith(200, { plans: [] })
+
+    expect(await listSavedPlans()).toEqual({ kind: 'error' })
+  })
+
+  it('passes an abort signal to apiFetch', async () => {
+    respondWith(200, [])
+
+    await listSavedPlans()
+
+    expect(apiFetchMock.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
+
+  it('maps a request timeout to error', async () => {
+    apiFetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
 
     expect(await listSavedPlans()).toEqual({ kind: 'error' })
   })
@@ -212,6 +250,28 @@ describe('fetchSavedPlan', () => {
 
   it('maps an unreadable success body to error', async () => {
     apiFetchMock.mockResolvedValue(new Response('not json', { status: 200 }))
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+
+  it.each([{}, null])('maps a success body without an id (%j) to error', async (body) => {
+    respondWith(200, body)
+
+    expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+
+  it('passes an abort signal to apiFetch', async () => {
+    respondWith(200, fullPlan)
+
+    await fetchSavedPlan('plan-1')
+
+    expect(apiFetchMock.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
+
+  it('maps a request timeout to error', async () => {
+    apiFetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
 
     expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
   })
