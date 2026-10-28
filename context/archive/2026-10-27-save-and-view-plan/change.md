@@ -1,10 +1,10 @@
 ---
 change_id: save-and-view-plan
 title: Save and view plan
-status: impl_reviewed
+status: archived
 created: 2026-10-27
-updated: 2026-10-27
-archived_at: null
+updated: 2026-10-28
+archived_at: 2026-10-28T07:28:18Z
 ---
 
 ## Notes
