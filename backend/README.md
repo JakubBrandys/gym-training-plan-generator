@@ -106,6 +106,22 @@ Supabase Auth settings (dashboard → Authentication):
 - **Email provider**: "Confirm email" is off for v1, so sign-up returns a session immediately. Turn it on (with custom SMTP) before opening sign-up to others.
 - **URL Configuration**: Site URL is the production Worker URL; Redirect URLs include `http://localhost:5173/**`.
 
+### First admin
+
+No code designates an admin, so the first one is set by hand in the database:
+
+1. Sign in to the app once so a `Profile` row exists for you.
+2. In the Supabase dashboard open Authentication → Users and copy your user id. It equals `Profile.id`.
+3. In the Supabase SQL editor run:
+
+```sql
+UPDATE "Profile" SET "role" = 'ADMIN' WHERE "id" = '<user-uuid>';
+```
+
+Never match by email. Sign-up emails are unverified while "Confirm email" is off, so anyone can register an address that is not theirs; the user id is the only identifier that proves who you are.
+
+The change takes effect on your next request with no re-login, because the role is read from the database on every request rather than from the token. There is one shared database, so this changes production.
+
 ### Plan generation progress stream
 
 `GET /plan-generations/:jobId/events` streams live progress for a generation job as Server-Sent Events. It authenticates with the `Authorization: Bearer` header like every other route, so clients read it with a `fetch` stream; the native `EventSource` cannot send that header.

@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { RequireAuth } from '../auth/RequireAuth'
+import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { HomePage } from '../pages/HomePage'
 import { NewPlanPage } from '../pages/NewPlanPage'
 import { PlanGenerationPage } from '../pages/PlanGenerationPage'
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
       { path: '/plans/new', element: <NewPlanPage /> },
       { path: '/plans/:id', element: <SavedPlanPage /> },
       { path: '/plans/generate/:jobId', element: <PlanGenerationPage /> },
+      { path: '/admin/users', element: <AdminUsersPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

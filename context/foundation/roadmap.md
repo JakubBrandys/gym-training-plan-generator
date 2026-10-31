@@ -3,7 +3,7 @@ project: Gym Training Plan Generator
 version: 1
 status: draft
 created: 2026-10-03
-updated: 2026-10-28
+updated: 2026-10-31
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -48,7 +48,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | done |
 | S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | done |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | done |
-| S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | proposed |
+| S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | in-progress |
 | S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | proposed |
 
 ## Streams
@@ -163,7 +163,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - How is the admin role assigned to the first admin (the participant)? — Owner: user. Block: no.
 - **Risk:** First slice needing the admin/member distinction; independent of the generation loop, so it can fill gaps while that stream waits.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-07: Admin block user
 
@@ -205,6 +205,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Fetching exercise videos/images from the internet** — Why parked: PRD §Non-Goals; replaced by the self-curated catalog.
 - **Progress / adherence tracking** — Why parked: PRD §Non-Goals; possible future improvement.
 - **Team / coach features** — Why parked: PRD §Non-Goals; plans are single-user-scoped in v1.
+- **Admin user list pagination and a `createdAt` index on `Profile`** — Why parked: S-06 (`admin-user-list`) lists every Profile in one unpaginated query, which the PRD's small `target_scale` allows; revisit before the user count grows.
 
 ## Milestone History
 

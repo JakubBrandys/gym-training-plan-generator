@@ -211,6 +211,29 @@ dd {
   overflow-wrap: anywhere;
 }
 
+.admin-users-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.admin-users-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.admin-users-email {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .plan-progress-panel {
   display: flex;
   flex-direction: column;
