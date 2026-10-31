@@ -281,24 +281,24 @@ No schema or migration change: `blockedAt` already exists. A new required enviro
 
 #### Manual
 
-- [ ] 1.7 `SUPABASE_SECRET_KEY` is set in local `backend/.env` and `backend/.env.example`, and in Fly secrets (`fly secrets list`) before this phase is deployed; env files are edited by hand because they are read-protected in this environment
-- [ ] 1.8 Against the real Supabase project with a throwaway member: `POST /admin/users/<id>/block` as admin returns 200 and the list shows the member Blocked; the member's sign-in attempt is rejected by Supabase (record the observed error code and message); a session opened before the block gets 403 on its next API call
-- [ ] 1.9 Calling block on your own id or another admin returns 409, on an unknown uuid returns 404, and as a member returns 404
-- [ ] 1.10 The throwaway member is unblocked by the README procedure and can sign in again
+- [x] 1.7 `SUPABASE_SECRET_KEY` is set in local `backend/.env` and `backend/.env.example`, and in Fly secrets (`fly secrets list`) before this phase is deployed; env files are edited by hand because they are read-protected in this environment — 9fe3315
+- [x] 1.8 Against the real Supabase project with a throwaway member: `POST /admin/users/<id>/block` as admin returns 200 and the list shows the member Blocked; the member's sign-in attempt is rejected by Supabase (record the observed error code and message); a session opened before the block gets 403 on its next API call — 9fe3315
+- [x] 1.9 Calling block on your own id or another admin returns 409, on an unknown uuid returns 404, and as a member returns 404 — 9fe3315
+- [x] 1.10 The throwaway member is unblocked by the README procedure and can sign in again — 9fe3315
 
 ### Phase 2: Frontend — Block action on the admin page
 
 #### Automated
 
-- [x] 2.1 Lint passes: `cd frontend && npm run lint`
-- [x] 2.2 Build passes: `cd frontend && npm run build`
-- [x] 2.3 Lib and page specs pass: `cd frontend && npx vitest run src/lib/admin-users.spec.ts src/pages/AdminUsersPage.spec.tsx`
-- [x] 2.4 Full frontend suite passes: `cd frontend && npm test`
+- [x] 2.1 Lint passes: `cd frontend && npm run lint` — 17c348c
+- [x] 2.2 Build passes: `cd frontend && npm run build` — 17c348c
+- [x] 2.3 Lib and page specs pass: `cd frontend && npx vitest run src/lib/admin-users.spec.ts src/pages/AdminUsersPage.spec.tsx` — 17c348c
+- [x] 2.4 Full frontend suite passes: `cd frontend && npm test` — 17c348c
 
 #### Manual
 
-- [ ] 2.5 As admin in the browser, Block on a throwaway member shows the inline prompt, Confirm flips the row to `Status: Blocked` with `Re-apply block`, and Cancel leaves a row unchanged
-- [ ] 2.6 Admin rows show no action
-- [ ] 2.7 The throwaway member's open session is signed out with the blocked banner on its next navigation
-- [ ] 2.8 Re-apply block on an already-blocked member completes without an error and the row stays Blocked
-- [ ] 2.9 The throwaway member is unblocked by the README procedure afterwards
+- [x] 2.5 As admin in the browser, Block on a throwaway member shows the inline prompt, Confirm flips the row to `Status: Blocked` with `Re-apply block`, and Cancel leaves a row unchanged — 17c348c
+- [x] 2.6 Admin rows show no action — 17c348c
+- [x] 2.7 The throwaway member's open session is signed out with the blocked banner on its next navigation — 17c348c
+- [x] 2.8 Re-apply block on an already-blocked member completes without an error and the row stays Blocked — 17c348c
+- [x] 2.9 The throwaway member is unblocked by the README procedure afterwards — 17c348c
