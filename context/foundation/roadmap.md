@@ -205,6 +205,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Fetching exercise videos/images from the internet** — Why parked: PRD §Non-Goals; replaced by the self-curated catalog.
 - **Progress / adherence tracking** — Why parked: PRD §Non-Goals; possible future improvement.
 - **Team / coach features** — Why parked: PRD §Non-Goals; plans are single-user-scoped in v1.
+- **Admin user list pagination and a `createdAt` index on `Profile`** — Why parked: S-06 (`admin-user-list`) lists every Profile in one unpaginated query, which the PRD's small `target_scale` allows; revisit before the user count grows.
 
 ## Milestone History
 

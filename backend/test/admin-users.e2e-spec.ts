@@ -140,12 +140,54 @@ describe('AdminUsersController (http)', () => {
     it('answers a member 404 exactly like an unknown route', async () => {
       table.seed({ id: ID_1, email: 'one@example.com' });
 
-      const response = await getList('MEMBER').expect(404);
+      const member = await getList('MEMBER').expect(404);
+      const unknown = await request(app.getHttpServer())
+        .get('/admin/does-not-exist')
+        .set(USER_HEADER, 'caller-1')
+        .expect(404);
 
-      expect(response.body).toMatchObject({
-        statusCode: 404,
-        message: 'Cannot GET /admin/users',
+      expect(member.body).toEqual({
+        ...(unknown.body as Record<string, unknown>),
+        message: (unknown.body as { message: string }).message.replace(
+          '/admin/does-not-exist',
+          '/admin/users',
+        ),
       });
+      expect((member.body as { message: string }).message).toBe(
+        'Cannot GET /admin/users',
+      );
+      expect(table.findMany).not.toHaveBeenCalled();
+    });
+
+    it.each(['/admin/users/', '/admin/users?page=2'])(
+      'answers a member 404 on %s without listing',
+      async (path) => {
+        table.seed({ id: ID_1, email: 'one@example.com' });
+
+        const response = await request(app.getHttpServer())
+          .get(path)
+          .set(USER_HEADER, 'caller-1')
+          .set(ROLE_HEADER, 'MEMBER')
+          .expect(404);
+
+        expect(response.body).toMatchObject({
+          statusCode: 404,
+          error: 'Not Found',
+          message: `Cannot GET ${path}`,
+        });
+        expect(table.findMany).not.toHaveBeenCalled();
+      },
+    );
+
+    it('answers a member 404 on HEAD without listing', async () => {
+      table.seed({ id: ID_1, email: 'one@example.com' });
+
+      await request(app.getHttpServer())
+        .head('/admin/users')
+        .set(USER_HEADER, 'caller-1')
+        .set(ROLE_HEADER, 'MEMBER')
+        .expect(404);
+
       expect(table.findMany).not.toHaveBeenCalled();
     });
 

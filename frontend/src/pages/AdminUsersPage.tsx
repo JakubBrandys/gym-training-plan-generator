@@ -67,7 +67,7 @@ export const AdminUsersPage = () => {
       )}
       {state.status === 'ready' && state.users.length === 0 && <p>No registered users yet.</p>}
       {state.status === 'ready' && state.users.length > 0 && (
-        <ul className="admin-users-list">
+        <ul className="admin-users-list" role="list">
           {state.users.map((user) => (
             <li key={user.id} className="admin-users-item">
               <span className="admin-users-email">{user.email}</span>

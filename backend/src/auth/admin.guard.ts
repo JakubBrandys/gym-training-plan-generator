@@ -18,6 +18,8 @@ export class AdminGuard implements CanActivate {
     if (request.user?.role === 'ADMIN') {
       return true;
     }
-    throw new NotFoundException(`Cannot ${request.method} ${request.url}`);
+    throw new NotFoundException(
+      `Cannot ${request.method} ${request.originalUrl}`,
+    );
   }
 }

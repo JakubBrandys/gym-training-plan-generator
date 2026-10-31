@@ -19,8 +19,14 @@ const READ_REQUEST_TIMEOUT_MS = 15_000
 
 const isAdminUser = (value: unknown): value is AdminUser => {
   if (typeof value !== 'object' || value === null) return false
-  const { id, email } = value as { id?: unknown; email?: unknown }
-  return typeof id === 'string' && typeof email === 'string'
+  const { id, email, role, blockedAt, createdAt } = value as Record<string, unknown>
+  return (
+    typeof id === 'string' &&
+    typeof email === 'string' &&
+    (role === 'MEMBER' || role === 'ADMIN') &&
+    (blockedAt === null || typeof blockedAt === 'string') &&
+    typeof createdAt === 'string'
+  )
 }
 
 export const listAdminUsers = async (): Promise<ListAdminUsersResult> => {

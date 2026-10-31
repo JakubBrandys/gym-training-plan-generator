@@ -98,6 +98,19 @@ describe('listAdminUsers', () => {
     expect(await listAdminUsers()).toEqual({ kind: 'error' })
   })
 
+  it.each([
+    ['a missing role', { ...member, role: undefined }],
+    ['an unexpected role', { ...member, role: 'OWNER' }],
+    ['a missing blockedAt', { ...member, blockedAt: undefined }],
+    ['a non-string blockedAt', { ...member, blockedAt: 42 }],
+    ['a missing createdAt', { ...member, createdAt: undefined }],
+    ['a non-string createdAt', { ...member, createdAt: 42 }],
+  ])('maps a list with an element with %s to error', async (_label, element) => {
+    respondWith(200, [member, element])
+
+    expect(await listAdminUsers()).toEqual({ kind: 'error' })
+  })
+
   it('maps a list with a non-object element to error', async () => {
     respondWith(200, [member, null])
 
