@@ -234,6 +234,17 @@ dd {
   overflow-wrap: anywhere;
 }
 
+.admin-users-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-users-actions button {
+  margin-top: 0;
+}
+
 .plan-progress-panel {
   display: flex;
   flex-direction: column;

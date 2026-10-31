@@ -86,20 +86,21 @@ Prisma cannot express RLS, so every new table needs `ALTER TABLE "<Table>" ENABL
 
 ### Secrets and auth settings
 
-Fly secrets for `gym-training-plan-generator-api` (the backend refuses to start without `SUPABASE_URL`, `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` or `PLAN_REVIEW_MODEL`, so set them before deploying code that needs them):
+Fly secrets for `gym-training-plan-generator-api` (the backend refuses to start without `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` or `PLAN_REVIEW_MODEL`, so set them before deploying code that needs them):
 
 | Secret | Value |
 | --- | --- |
 | `DATABASE_URL` | Supabase transaction pooler (port 6543), `postgres.<project-ref>` user |
 | `DIRECT_URL` | Supabase session pooler (port 5432), same user — used by migrations |
 | `SUPABASE_URL` | `https://<project-ref>.supabase.co` — issuer and JWKS source for token verification |
+| `SUPABASE_SECRET_KEY` | Server-only Supabase Admin API key (the project's secret key) used to ban blocked users. Never expose it to the frontend; set it before deploying |
 | `FRONTEND_URL` | Comma-separated CORS origins, no spaces or trailing slashes — the production Worker URL |
 | `OPENAI_API_KEY` | OpenAI API key used by the plan generation pipeline |
 | `PLAN_DRAFT_MODEL` | OpenAI model id for the draft pass, for example `gpt-6-luna` |
 | `PLAN_REVIEW_MODEL` | OpenAI model id for the review pass; set it to a stronger model to upgrade review quality |
 | `PLAN_DAILY_LIMIT` | Optional. Plan generations allowed per user per rolling 24 hours, default `5` |
 
-Locally these live in `backend/.env` (see `.env.example`), with `FRONTEND_URL=http://localhost:5173`. The e2e spec boots the full app, so `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` and `PLAN_REVIEW_MODEL` must be set to run `npm run test:e2e`. The frontend's `VITE_*` values are baked in at build time from GitHub Actions secrets, not from Fly or Cloudflare.
+Locally these live in `backend/.env` (see `.env.example`), with `FRONTEND_URL=http://localhost:5173`. The e2e spec boots the full app, so `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL` and `PLAN_REVIEW_MODEL` must be set to run `npm run test:e2e`. The frontend's `VITE_*` values are baked in at build time from GitHub Actions secrets, not from Fly or Cloudflare.
 
 Supabase Auth settings (dashboard → Authentication):
 
@@ -121,6 +122,24 @@ UPDATE "Profile" SET "role" = 'ADMIN' WHERE "id" = '<user-uuid>';
 Never match by email. Sign-up emails are unverified while "Confirm email" is off, so anyone can register an address that is not theirs; the user id is the only identifier that proves who you are.
 
 The change takes effect on your next request with no re-login, because the role is read from the database on every request rather than from the token. There is one shared database, so this changes production.
+
+### Unblocking a user
+
+Blocking is one-way in the app: `POST /admin/users/:id/block` sets `Profile.blockedAt` and bans the user in Supabase Auth. Unblocking is manual and has two parts, both required:
+
+1. In the Supabase SQL editor clear the block marker:
+
+```sql
+UPDATE "Profile" SET "blockedAt" = NULL WHERE "id" = '<user-uuid>';
+```
+
+2. Lift the Supabase ban, either in the dashboard (Authentication → Users → the user → Unban) or with the Admin API:
+
+```ts
+await supabase.auth.admin.updateUserById('<user-uuid>', { ban_duration: 'none' });
+```
+
+The SQL alone does not restore sign-in: while the Supabase ban stands, the user cannot obtain a new session.
 
 ### Plan generation progress stream
 

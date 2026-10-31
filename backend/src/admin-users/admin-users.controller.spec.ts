@@ -22,4 +22,15 @@ describe('AdminUsersController', () => {
     await expect(controller.list()).resolves.toEqual([summary]);
     expect(list).toHaveBeenCalledTimes(1);
   });
+
+  it('delegates block to the service with the parsed id and returns its result', async () => {
+    const blocked = { ...summary, blockedAt: new Date('2026-04-01T00:00:00Z') };
+    const block = vi.fn().mockResolvedValue(blocked);
+    const controller = new AdminUsersController({
+      block,
+    } as unknown as AdminUsersService);
+
+    await expect(controller.block('profile-1')).resolves.toBe(blocked);
+    expect(block).toHaveBeenCalledWith('profile-1');
+  });
 });
