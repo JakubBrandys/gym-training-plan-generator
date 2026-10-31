@@ -48,7 +48,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | S-03 | live-generation-progress | see stage-by-stage live progress while the AI pipeline runs                           | S-02          | FR-006, US-01                 | done |
 | S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | done |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | done |
-| S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | in-progress |
+| S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | done |
 | S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | proposed |
 
 ## Streams
@@ -163,7 +163,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - How is the admin role assigned to the first admin (the participant)? — Owner: user. Block: no.
 - **Risk:** First slice needing the admin/member distinction; independent of the generation loop, so it can fill gaps while that stream waits.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-07: Admin block user
 
@@ -221,3 +221,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-03: user can see continuous, stage-by-stage progress updates for the whole time the AI pipeline runs, with no dead air and no fixed maximum wait.** — Archived 2026-10-25 → `context/archive/2026-10-24-live-generation-progress/`. Lesson: —.
 - **S-04: user can review the complete 8-week plan, with an image for each exercise, before deciding whether to save it.** — Archived 2026-10-27 → `context/archive/2026-10-25-plan-review-with-images/`. Lesson: —.
 - **S-05: user can save a reviewed plan to their account and find it again under their account in a later session, intact.** — Archived 2026-10-28 → `context/archive/2026-10-27-save-and-view-plan/`. Lesson: keep saved-plan data backward compatible with its stored shape.
+- **S-06: user (as admin) can view the list of registered users; a member cannot reach it.** — Archived 2026-10-31 → `context/archive/2026-10-31-admin-user-list/`. Lesson: —.
