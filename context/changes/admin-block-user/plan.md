@@ -272,12 +272,12 @@ No schema or migration change: `blockedAt` already exists. A new required enviro
 
 #### Automated
 
-- [x] 1.1 Lint passes: `cd backend && npm run lint`
-- [x] 1.2 Build passes: `cd backend && npm run build`
-- [x] 1.3 New and extended unit specs pass: `cd backend && npx vitest run src/supabase-admin src/admin-users`
-- [x] 1.4 Block endpoint e2e spec passes: `cd backend && npx vitest run --config vitest.config.e2e.ts test/admin-users.e2e-spec.ts`
-- [x] 1.5 Full unit suite passes: `cd backend && npm test`
-- [x] 1.6 Full e2e suite passes (requires `SUPABASE_SECRET_KEY` in `backend/.env`): `cd backend && npm run test:e2e`
+- [x] 1.1 Lint passes: `cd backend && npm run lint` — 9fe3315
+- [x] 1.2 Build passes: `cd backend && npm run build` — 9fe3315
+- [x] 1.3 New and extended unit specs pass: `cd backend && npx vitest run src/supabase-admin src/admin-users` — 9fe3315
+- [x] 1.4 Block endpoint e2e spec passes: `cd backend && npx vitest run --config vitest.config.e2e.ts test/admin-users.e2e-spec.ts` — 9fe3315
+- [x] 1.5 Full unit suite passes: `cd backend && npm test` — 9fe3315
+- [x] 1.6 Full e2e suite passes (requires `SUPABASE_SECRET_KEY` in `backend/.env`): `cd backend && npm run test:e2e` — 9fe3315
 
 #### Manual
 

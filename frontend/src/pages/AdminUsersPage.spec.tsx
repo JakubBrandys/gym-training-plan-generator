@@ -1,12 +1,17 @@
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, RouterProvider, Route, Routes, createMemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/useAuth'
-import { listAdminUsers, type AdminUser } from '../lib/admin-users'
+import {
+  blockAdminUser,
+  listAdminUsers,
+  type AdminUser,
+  type BlockAdminUserResult,
+} from '../lib/admin-users'
 import { formatSavedDate } from '../lib/saved-plan-format'
 import { AdminUsersPage } from './AdminUsersPage'
 
-vi.mock('../lib/admin-users', () => ({ listAdminUsers: vi.fn() }))
+vi.mock('../lib/admin-users', () => ({ listAdminUsers: vi.fn(), blockAdminUser: vi.fn() }))
 vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
 vi.mock('../auth/RequireAuth', async () => {
@@ -15,6 +20,7 @@ vi.mock('../auth/RequireAuth', async () => {
 })
 
 const listMock = vi.mocked(listAdminUsers)
+const blockMock = vi.mocked(blockAdminUser)
 const useAuthMock = vi.mocked(useAuth)
 const signOut = vi.fn()
 
@@ -55,6 +61,7 @@ const renderPage = () =>
 describe('AdminUsersPage', () => {
   beforeEach(() => {
     listMock.mockReset()
+    blockMock.mockReset()
     signOut.mockReset()
     useAuthMock.mockReturnValue({
       session: null,
@@ -178,5 +185,194 @@ describe('AdminUsersPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Registered users' })).toBeTruthy()
     expect(await screen.findByText('first.admin@example.com')).toBeTruthy()
     expect(listMock).toHaveBeenCalledTimes(1)
+  })
+
+  describe('block action', () => {
+    const blockedNewest: AdminUser = { ...newest, blockedAt: '2026-10-30T10:00:00.000Z' }
+
+    const renderList = async () => {
+      listMock.mockResolvedValue({ kind: 'ok', users: [newest, blockedMember, oldestAdmin] })
+      renderPage()
+      await screen.findAllByRole('listitem')
+    }
+
+    const rowOf = (email: string) => within(screen.getByText(email).closest('li') as HTMLElement)
+
+    const pressBlock = () =>
+      fireEvent.click(screen.getByRole('button', { name: `Block for ${newest.email}` }))
+
+    const pressConfirm = () =>
+      fireEvent.click(screen.getByRole('button', { name: `Confirm blocking ${newest.email}` }))
+
+    const settleBlockWith = async (result: BlockAdminUserResult) => {
+      blockMock.mockResolvedValue(result)
+      await renderList()
+      pressBlock()
+      pressConfirm()
+    }
+
+    it('renders no action on an admin row', async () => {
+      await renderList()
+
+      expect(rowOf(oldestAdmin.email).queryAllByRole('button')).toHaveLength(0)
+    })
+
+    it('renders Block on an active member and Re-apply block on a blocked member', async () => {
+      await renderList()
+
+      expect(rowOf(newest.email).getByRole('button', { name: `Block for ${newest.email}` })).toBeTruthy()
+      expect(
+        rowOf(blockedMember.email).getByRole('button', {
+          name: `Re-apply block for ${blockedMember.email}`,
+        }),
+      ).toBeTruthy()
+    })
+
+    it('swaps the action for a prompt naming the email on Block', async () => {
+      await renderList()
+
+      pressBlock()
+
+      const row = rowOf(newest.email)
+      expect(row.getByText(`Block ${newest.email}?`)).toBeTruthy()
+      expect(row.getByRole('button', { name: `Confirm blocking ${newest.email}` })).toBeTruthy()
+      expect(row.getByRole('button', { name: `Cancel blocking ${newest.email}` })).toBeTruthy()
+      expect(row.queryByRole('button', { name: `Block for ${newest.email}` })).toBeNull()
+    })
+
+    it('restores the row without calling anything on Cancel', async () => {
+      await renderList()
+
+      pressBlock()
+      fireEvent.click(screen.getByRole('button', { name: `Cancel blocking ${newest.email}` }))
+
+      expect(rowOf(newest.email).getByRole('button', { name: `Block for ${newest.email}` })).toBeTruthy()
+      expect(screen.queryByText(`Block ${newest.email}?`)).toBeNull()
+      expect(blockMock).not.toHaveBeenCalled()
+      expect(listMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('blocks the user on Confirm and shows the returned user', async () => {
+      blockMock.mockResolvedValue({ kind: 'ok', user: blockedNewest })
+      await renderList()
+
+      pressBlock()
+      pressConfirm()
+
+      await waitFor(() => expect(rowOf(newest.email).getByText('Status: Blocked')).toBeTruthy())
+      expect(blockMock).toHaveBeenCalledTimes(1)
+      expect(blockMock).toHaveBeenCalledWith(newest.id)
+      expect(
+        rowOf(newest.email).getByRole('button', { name: `Re-apply block for ${newest.email}` }),
+      ).toBeTruthy()
+      expect(screen.queryByText(`Block ${newest.email}?`)).toBeNull()
+      expect(screen.queryByRole('alert')).toBeNull()
+      expect(listMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('disables the prompt buttons while the block is pending', async () => {
+      blockMock.mockReturnValue(new Promise(() => {}))
+      await renderList()
+
+      pressBlock()
+      pressConfirm()
+
+      const row = rowOf(newest.email)
+      expect(
+        (row.getByRole('button', { name: `Confirm blocking ${newest.email}` }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true)
+      expect(
+        (row.getByRole('button', { name: `Cancel blocking ${newest.email}` }) as HTMLButtonElement)
+          .disabled,
+      ).toBe(true)
+      expect(
+        (
+          rowOf(blockedMember.email).getByRole('button', {
+            name: `Re-apply block for ${blockedMember.email}`,
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true)
+    })
+
+    it('shows that admins cannot be blocked on conflict', async () => {
+      await settleBlockWith({ kind: 'conflict' })
+
+      const alert = await screen.findByRole('alert')
+      expect(alert.textContent).toBe('Admins cannot be blocked.')
+      expect(rowOf(newest.email).getByText('Status: Active')).toBeTruthy()
+      expect(rowOf(newest.email).getByRole('button', { name: `Block for ${newest.email}` })).toBeTruthy()
+    })
+
+    it('shows that the user was not found and reloads the list on not-found', async () => {
+      await settleBlockWith({ kind: 'not-found' })
+
+      const alert = await screen.findByRole('alert')
+      expect(alert.textContent).toBe('User not found.')
+      await waitFor(() => expect(listMock).toHaveBeenCalledTimes(2))
+    })
+
+    it('explains the failed ban and reloads the list on ban-failed', async () => {
+      blockMock.mockResolvedValue({ kind: 'ban-failed' })
+      await renderList()
+      listMock.mockResolvedValue({ kind: 'ok', users: [blockedNewest, blockedMember, oldestAdmin] })
+
+      pressBlock()
+      pressConfirm()
+
+      const alert = await screen.findByRole('alert')
+      expect(alert.textContent).toContain('blocked in the app')
+      expect(alert.textContent).toContain('Supabase sign-in ban failed')
+      expect(alert.textContent).toContain('Re-apply block')
+      await waitFor(() => expect(listMock).toHaveBeenCalledTimes(2))
+      await waitFor(() => expect(rowOf(newest.email).getByText('Status: Blocked')).toBeTruthy())
+      expect(screen.queryByText('Loading…')).toBeNull()
+    })
+
+    it('keeps the list when the reload after ban-failed fails', async () => {
+      blockMock.mockResolvedValue({ kind: 'ban-failed' })
+      await renderList()
+      listMock.mockResolvedValue({ kind: 'error' })
+
+      pressBlock()
+      pressConfirm()
+
+      await waitFor(() => expect(listMock).toHaveBeenCalledTimes(2))
+      expect(screen.getAllByRole('listitem')).toHaveLength(3)
+      expect(screen.getAllByRole('alert')).toHaveLength(1)
+    })
+
+    it('shows the generic error on error', async () => {
+      await settleBlockWith({ kind: 'error' })
+
+      const alert = await screen.findByRole('alert')
+      expect(alert.textContent).toBe('Something went wrong, try again')
+      expect(listMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the previous message when a new block starts', async () => {
+      await settleBlockWith({ kind: 'conflict' })
+      await screen.findByRole('alert')
+
+      pressBlock()
+
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('signs the user out on unauthorized', async () => {
+      await settleBlockWith({ kind: 'unauthorized', status: 401 })
+
+      await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1))
+      expect(signOut).toHaveBeenCalledWith()
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('signs the user out as blocked on blocked', async () => {
+      await settleBlockWith({ kind: 'blocked', status: 403 })
+
+      await waitFor(() => expect(signOut).toHaveBeenCalledWith('blocked'))
+      expect(signOut).toHaveBeenCalledTimes(1)
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
   })
 })
