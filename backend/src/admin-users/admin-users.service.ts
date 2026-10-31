@@ -42,10 +42,7 @@ export class AdminUsersService {
   }
 
   async block(id: string): Promise<AdminUserSummary> {
-    const target = await this.prisma.profile.findUnique({
-      where: { id },
-      select: SUMMARY_SELECT,
-    });
+    const target = await this.findSummary(id);
     if (!target) {
       throw new NotFoundException('User not found');
     }
@@ -53,13 +50,7 @@ export class AdminUsersService {
       throw new ConflictException('Admins cannot be blocked');
     }
 
-    const blocked = target.blockedAt
-      ? target
-      : await this.prisma.profile.update({
-          where: { id },
-          data: { blockedAt: new Date() },
-          select: SUMMARY_SELECT,
-        });
+    const blocked = target.blockedAt ? target : await this.stampBlock(id);
 
     try {
       await this.supabaseAdmin.banUser(id);
@@ -71,5 +62,28 @@ export class AdminUsersService {
     }
 
     return blocked;
+  }
+
+  private findSummary(id: string): Promise<AdminUserSummary | null> {
+    return this.prisma.profile.findUnique({
+      where: { id },
+      select: SUMMARY_SELECT,
+    });
+  }
+
+  private async stampBlock(id: string): Promise<AdminUserSummary> {
+    await this.prisma.profile.updateMany({
+      where: { id, role: 'MEMBER', blockedAt: null },
+      data: { blockedAt: new Date() },
+    });
+
+    const current = await this.findSummary(id);
+    if (!current) {
+      throw new NotFoundException('User not found');
+    }
+    if (current.role === 'ADMIN') {
+      throw new ConflictException('Admins cannot be blocked');
+    }
+    return current;
   }
 }

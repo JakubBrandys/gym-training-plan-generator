@@ -127,6 +127,7 @@ export const AdminUsersPage = () => {
     }
 
     setNotice(GENERIC_PLAN_ERROR)
+    await refreshUsers()
   }
 
   const renderAction = (user: AdminUser) => {
@@ -159,7 +160,7 @@ export const AdminUsersPage = () => {
         <span>{`${user.blockedAt ? 'Re-apply block for' : 'Block'} ${user.email}?`}</span>
         <button
           type="button"
-          aria-label={`Confirm blocking ${user.email}`}
+          aria-label={pending ? `Blocking… ${user.email}` : `Confirm blocking ${user.email}`}
           disabled={pending}
           onClick={() => void confirmBlock(user.id)}
         >

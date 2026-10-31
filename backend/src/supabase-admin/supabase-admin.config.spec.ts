@@ -59,10 +59,21 @@ describe('readSupabaseAdminConfig', () => {
   });
 
   it('never puts the secret key in an error message', () => {
+    const secret = 'sb-secret-distinctive-value';
+    vi.stubEnv('SUPABASE_SECRET_KEY', secret);
     vi.stubEnv('SUPABASE_URL', 'not a url');
+    let thrown: unknown;
 
-    expect(() => readSupabaseAdminConfig()).toThrow(/SUPABASE_URL/);
-    expect(() => readSupabaseAdminConfig()).not.toThrow(/sb-secret-test/);
+    try {
+      readSupabaseAdminConfig();
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    const { message } = thrown as Error;
+    expect(message).toMatch(/SUPABASE_URL/);
+    expect(message).not.toContain(secret);
   });
 });
 

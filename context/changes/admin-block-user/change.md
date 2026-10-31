@@ -1,7 +1,7 @@
 ---
 change_id: admin-block-user
 title: Admin block user
-status: implemented
+status: impl_reviewed
 created: 2026-10-31
 updated: 2026-10-31
 archived_at: null

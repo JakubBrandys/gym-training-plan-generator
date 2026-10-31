@@ -33,13 +33,13 @@ describe('AdminUsersService', () => {
   let service: AdminUsersService;
   const findMany = vi.fn();
   const findUnique = vi.fn();
-  const update = vi.fn();
+  const updateMany = vi.fn();
   const banUser = vi.fn();
 
   beforeEach(async () => {
     findMany.mockReset();
     findUnique.mockReset();
-    update.mockReset();
+    updateMany.mockReset();
     banUser.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -47,7 +47,7 @@ describe('AdminUsersService', () => {
         AdminUsersService,
         {
           provide: PrismaService,
-          useValue: { profile: { findMany, findUnique, update } },
+          useValue: { profile: { findMany, findUnique, updateMany } },
         },
         { provide: SupabaseAdminClient, useValue: { banUser } },
       ],
@@ -118,7 +118,7 @@ describe('AdminUsersService', () => {
         new NotFoundException('User not found'),
       );
 
-      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
       expect(banUser).not.toHaveBeenCalled();
     });
 
@@ -140,26 +140,79 @@ describe('AdminUsersService', () => {
         new ConflictException('Admins cannot be blocked'),
       );
 
-      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
       expect(banUser).not.toHaveBeenCalled();
     });
 
-    it('stamps blockedAt on an active member, bans them and returns the updated summary', async () => {
+    it('conditionally stamps blockedAt on an active member, re-reads, bans them and returns the re-read summary', async () => {
       const blockedAt = new Date('2026-04-01T00:00:00Z');
       const updated = { ...member, blockedAt };
-      findUnique.mockResolvedValue(member);
-      update.mockResolvedValue(updated);
+      findUnique.mockResolvedValueOnce(member).mockResolvedValueOnce(updated);
+      updateMany.mockResolvedValue({ count: 1 });
       banUser.mockResolvedValue(undefined);
 
       await expect(service.block(userId)).resolves.toBe(updated);
 
-      expect(update).toHaveBeenCalledTimes(1);
-      expect(update).toHaveBeenCalledWith({
-        where: { id: userId },
+      expect(updateMany).toHaveBeenCalledTimes(1);
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: userId, role: 'MEMBER', blockedAt: null },
         data: { blockedAt: expect.any(Date) as Date },
+      });
+      expect(findUnique).toHaveBeenCalledTimes(2);
+      expect(findUnique).toHaveBeenLastCalledWith({
+        where: { id: userId },
         select: SUMMARY_SELECT,
       });
       expect(banUser).toHaveBeenCalledWith(userId);
+    });
+
+    it('returns the row a concurrent block stamped first when the conditional write matches nothing', async () => {
+      const winner = {
+        ...member,
+        blockedAt: new Date('2026-04-01T00:00:00Z'),
+      };
+      findUnique.mockResolvedValueOnce(member).mockResolvedValueOnce(winner);
+      updateMany.mockResolvedValue({ count: 0 });
+      banUser.mockResolvedValue(undefined);
+
+      await expect(service.block(userId)).resolves.toBe(winner);
+
+      expect(banUser).toHaveBeenCalledWith(userId);
+    });
+
+    it('answers conflict without banning when the re-read shows the target became an admin', async () => {
+      findUnique
+        .mockResolvedValueOnce(member)
+        .mockResolvedValueOnce({ ...member, role: 'ADMIN' });
+      updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.block(userId)).rejects.toThrow(
+        new ConflictException('Admins cannot be blocked'),
+      );
+
+      expect(banUser).not.toHaveBeenCalled();
+    });
+
+    it('answers not found without banning when the re-read finds nothing', async () => {
+      findUnique.mockResolvedValueOnce(member).mockResolvedValueOnce(null);
+      updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.block(userId)).rejects.toThrow(
+        new NotFoundException('User not found'),
+      );
+
+      expect(banUser).not.toHaveBeenCalled();
+    });
+
+    it('propagates a rejected database write and never bans', async () => {
+      findUnique.mockResolvedValue(member);
+      updateMany.mockRejectedValue(new Error('database unavailable'));
+
+      await expect(service.block(userId)).rejects.toThrow(
+        'database unavailable',
+      );
+
+      expect(banUser).not.toHaveBeenCalled();
     });
 
     it('keeps the original blockedAt and skips the write for an already blocked member, but still bans', async () => {
@@ -172,18 +225,23 @@ describe('AdminUsersService', () => {
 
       await expect(service.block(userId)).resolves.toBe(blocked);
 
-      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
       expect(banUser).toHaveBeenCalledWith(userId);
     });
 
     it('writes the block before it bans', async () => {
-      findUnique.mockResolvedValue(member);
-      update.mockResolvedValue({ ...member, blockedAt: new Date() });
+      findUnique
+        .mockResolvedValueOnce(member)
+        .mockResolvedValueOnce({ ...member, blockedAt: new Date() });
+      updateMany.mockResolvedValue({ count: 1 });
       banUser.mockResolvedValue(undefined);
 
       await service.block(userId);
 
-      expect(update.mock.invocationCallOrder[0]).toBeLessThan(
+      expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+        banUser.mock.invocationCallOrder[0]!,
+      );
+      expect(findUnique.mock.invocationCallOrder[1]).toBeLessThan(
         banUser.mock.invocationCallOrder[0]!,
       );
     });
@@ -192,22 +250,43 @@ describe('AdminUsersService', () => {
       const logError = vi
         .spyOn(Logger.prototype, 'error')
         .mockImplementation(() => undefined);
-      findUnique.mockResolvedValue(member);
-      update.mockResolvedValue({ ...member, blockedAt: new Date() });
+      findUnique
+        .mockResolvedValueOnce(member)
+        .mockResolvedValueOnce({ ...member, blockedAt: new Date() });
+      updateMany.mockResolvedValue({ count: 1 });
       banUser.mockRejectedValue(new Error('supabase unavailable'));
 
       await expect(service.block(userId)).rejects.toBeInstanceOf(
         BadGatewayException,
       );
 
-      expect(update).toHaveBeenCalledTimes(1);
-      expect(update.mock.invocationCallOrder[0]).toBeLessThan(
+      expect(updateMany).toHaveBeenCalledTimes(1);
+      expect(updateMany.mock.invocationCallOrder[0]).toBeLessThan(
         banUser.mock.invocationCallOrder[0]!,
       );
       expect(logError).toHaveBeenCalledTimes(1);
       const [message] = logError.mock.calls[0] as [string];
       expect(message).toContain(userId);
       expect(message).toContain('supabase unavailable');
+    });
+
+    it('answers bad gateway and logs an unknown error when the ban rejects with a non-error value', async () => {
+      const logError = vi
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+      findUnique.mockResolvedValue({
+        ...member,
+        blockedAt: new Date('2026-03-01T00:00:00Z'),
+      });
+      banUser.mockRejectedValue('boom');
+
+      await expect(service.block(userId)).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
+
+      const [message] = logError.mock.calls[0] as [string];
+      expect(message).toContain('unknown error');
+      expect(message).not.toContain('boom');
     });
 
     it('answers bad gateway when the ban fails for an already blocked member', async () => {
@@ -221,7 +300,7 @@ describe('AdminUsersService', () => {
       await expect(service.block(userId)).rejects.toBeInstanceOf(
         BadGatewayException,
       );
-      expect(update).not.toHaveBeenCalled();
+      expect(updateMany).not.toHaveBeenCalled();
     });
   });
 });

@@ -6,6 +6,16 @@ import {
 } from './supabase-admin.config.js';
 
 export const BAN_DURATION = '876000h';
+export const BAN_REQUEST_TIMEOUT_MS = 10_000;
+const USER_NOT_FOUND_CODE = 'user_not_found';
+
+const fetchWithTimeout: typeof fetch = (input, init) => {
+  const timeoutSignal = AbortSignal.timeout(BAN_REQUEST_TIMEOUT_MS);
+  const signal = init?.signal
+    ? AbortSignal.any([init.signal, timeoutSignal])
+    : timeoutSignal;
+  return fetch(input, { ...init, signal });
+};
 
 @Injectable()
 export class SupabaseAdminClient {
@@ -14,6 +24,7 @@ export class SupabaseAdminClient {
   constructor(@Inject(SUPABASE_ADMIN_CONFIG) config: SupabaseAdminConfig) {
     this.client = createClient(config.url, config.secretKey, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: fetchWithTimeout },
     });
   }
 
@@ -21,7 +32,7 @@ export class SupabaseAdminClient {
     const { error } = await this.client.auth.admin.updateUserById(userId, {
       ban_duration: BAN_DURATION,
     });
-    if (error) {
+    if (error && error.code !== USER_NOT_FOUND_CODE) {
       throw error;
     }
   }

@@ -279,7 +279,7 @@ describe('AdminUsersPage', () => {
 
       const row = rowOf(newest.email)
       expect(
-        (row.getByRole('button', { name: `Confirm blocking ${newest.email}` }) as HTMLButtonElement)
+        (row.getByRole('button', { name: `Blocking… ${newest.email}` }) as HTMLButtonElement)
           .disabled,
       ).toBe(true)
       expect(
@@ -347,7 +347,24 @@ describe('AdminUsersPage', () => {
 
       const alert = await screen.findByRole('alert')
       expect(alert.textContent).toBe('Something went wrong, try again')
-      expect(listMock).toHaveBeenCalledTimes(1)
+      await waitFor(() => expect(listMock).toHaveBeenCalledTimes(2))
+    })
+
+    it('reloads the list on error so a row blocked server-side shows as blocked', async () => {
+      blockMock.mockResolvedValue({ kind: 'error' })
+      await renderList()
+      listMock.mockResolvedValue({ kind: 'ok', users: [blockedNewest, blockedMember, oldestAdmin] })
+
+      pressBlock()
+      pressConfirm()
+
+      await waitFor(() => expect(listMock).toHaveBeenCalledTimes(2))
+      await waitFor(() => expect(rowOf(newest.email).getByText('Status: Blocked')).toBeTruthy())
+      expect(
+        rowOf(newest.email).getByRole('button', { name: `Re-apply block for ${newest.email}` }),
+      ).toBeTruthy()
+      const alert = screen.getByRole('alert')
+      expect(alert.textContent).toBe('Something went wrong, try again')
     })
 
     it('clears the previous message when a new block starts', async () => {

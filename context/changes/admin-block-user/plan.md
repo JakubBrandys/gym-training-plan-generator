@@ -132,6 +132,12 @@ Introduce the Supabase admin client behind a boot-validated config, add `AdminUs
 - Controller: delegates to `service.block` with the parsed id.
 - E2E (extend `FakeProfileTable` with `findUnique` and `update`, provide a fake `SupabaseAdminClient`): no user gives 401; member caller gives a 404 identical to an unknown `POST` route and touches nothing; non-uuid id gives 404; unknown uuid gives 404; admin target gives 409 and no ban; member target gives 200 with exactly the five summary fields, `blockedAt` set and the ban called; repeat block keeps the first `blockedAt`; ban failure gives 502 while the row stays blocked.
 
+**Deviation (2026-10-31)**:
+- npm resolved `@supabase/supabase-js` to `^2.118.0` (frontend `^2.117.3`); both are major 2.
+- The README e2e sentence also lists `SUPABASE_URL`, which was already required but missing from it.
+- `banUser` rethrows the SDK error object; the service logs only its message.
+- After implementation review: the SDK `fetch` is wrapped with a 10 s abort (`BAN_REQUEST_TIMEOUT_MS`) so a stalled ban surfaces through the 502 path; a Supabase `user_not_found` error (detected by `error.code`) counts as a completed ban; the write is `updateMany({ where: { id, role: 'MEMBER', blockedAt: null } })` followed by a re-read, so concurrent blocks keep the first `blockedAt` and a target promoted to admin in between gets 409. The e2e `FakeProfileTable` gained `updateMany` in place of `update`, and the e2e spec gained a describe that runs the real `AuthGuard` for a blocked admin.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -203,6 +209,14 @@ Add `blockAdminUser` to the admin lib and a per-row Block action with inline con
 **Contract**:
 - Lib (mock `./api`): POSTs to the right path with method POST; 200 with a valid user is ok; invalid payload is error; 401 and 403 give the auth failure results; 404, 409 and 502 map to not-found, conflict and ban-failed; another failure status and a thrown error map to error.
 - Page: add `blockAdminUser: vi.fn()` to the `vi.mock('../lib/admin-users', …)` factory. Cases: no action on the admin row; `Block` on an active member and `Re-apply block` on a blocked member; Block then Cancel leaves the row unchanged and calls nothing; Block then Confirm calls `blockAdminUser` with the id and the row shows `Status: Blocked` with `Re-apply block`; buttons are disabled while pending; conflict, not-found, ban-failed (list reloaded once more) and error messages; 401 calls `signOut()` and 403 calls `signOut('blocked')`. Interactions use `fireEvent`; new visible text must not repeat the exact string `Status: Blocked`, which existing tests count.
+
+**Deviation (2026-10-31)**:
+- `blockAdminUser` passes the id through `encodeURIComponent` and uses a `WRITE_REQUEST_TIMEOUT_MS = 15_000` constant.
+- Block-result messages sit in one page-level `role="alert"` above the list, not in the row, and are cleared when a new block starts.
+- While one row is pending, the other rows' action buttons are also disabled.
+- An in-place refresh that returns `error` keeps the current list.
+- `index.css` also has a nested `.admin-users-actions button { margin-top: 0 }` rule beyond the one container class.
+- After implementation review: an `error` result also refreshes the list in place, because the backend may already have written the block; the pending Confirm button's accessible name is `Blocking… <email>` so it contains its visible text.
 
 ### Success Criteria:
 

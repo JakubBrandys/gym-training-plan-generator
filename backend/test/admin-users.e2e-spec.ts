@@ -11,9 +11,12 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AdminUsersController } from '../src/admin-users/admin-users.controller.js';
 import { AdminUsersService } from '../src/admin-users/admin-users.service.js';
+import { AuthGuard } from '../src/auth/auth.guard.js';
 import type { AuthenticatedRequest } from '../src/auth/auth-user.js';
+import { SupabaseJwtVerifier } from '../src/auth/supabase-jwt.verifier.js';
 import type { ProfileRole } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { ProfilesService } from '../src/profiles/profiles.service.js';
 import { SupabaseAdminClient } from '../src/supabase-admin/supabase-admin.client.js';
 
 const USER_HEADER = 'x-test-user';
@@ -106,22 +109,23 @@ class FakeProfileTable {
     },
   );
 
-  update = vi.fn(
+  updateMany = vi.fn(
     ({
       where,
       data,
-      select,
     }: {
-      where: { id: string };
+      where: { id?: string; role?: ProfileRole; blockedAt?: null };
       data: Partial<ProfileRow>;
-      select?: Projection;
     }) => {
-      const row = this.rows.find((candidate) => candidate.id === where.id);
-      if (!row) {
-        return Promise.reject(new Error('Record to update not found'));
-      }
-      Object.assign(row, data);
-      return Promise.resolve(project(row, select));
+      const matches = this.rows.filter(
+        (row) =>
+          (where.id === undefined || row.id === where.id) &&
+          (where.role === undefined || row.role === where.role) &&
+          (where.blockedAt === undefined ||
+            (where.blockedAt === null && row.blockedAt === null)),
+      );
+      matches.forEach((row) => Object.assign(row, data));
+      return Promise.resolve({ count: matches.length });
     },
   );
 }
@@ -351,7 +355,7 @@ describe('AdminUsersController (http)', () => {
         message: `Cannot POST /admin/users/${ID_1}/block`,
       });
       expect(table.findUnique).not.toHaveBeenCalled();
-      expect(table.update).not.toHaveBeenCalled();
+      expect(table.updateMany).not.toHaveBeenCalled();
       expect(banUser).not.toHaveBeenCalled();
       expect(table.rows[0]!.blockedAt).toBeNull();
     });
@@ -369,7 +373,7 @@ describe('AdminUsersController (http)', () => {
       expect((response.body as { message: string }).message).toBe(
         'User not found',
       );
-      expect(table.update).not.toHaveBeenCalled();
+      expect(table.updateMany).not.toHaveBeenCalled();
       expect(banUser).not.toHaveBeenCalled();
     });
 
@@ -381,7 +385,7 @@ describe('AdminUsersController (http)', () => {
       expect((response.body as { message: string }).message).toBe(
         'Admins cannot be blocked',
       );
-      expect(table.update).not.toHaveBeenCalled();
+      expect(table.updateMany).not.toHaveBeenCalled();
       expect(banUser).not.toHaveBeenCalled();
       expect(table.rows[0]!.blockedAt).toBeNull();
     });
@@ -424,16 +428,27 @@ describe('AdminUsersController (http)', () => {
       expect((second.body as { blockedAt: string }).blockedAt).toBe(
         (first.body as { blockedAt: string }).blockedAt,
       );
-      expect(table.update).toHaveBeenCalledTimes(1);
+      expect(table.updateMany).toHaveBeenCalledTimes(1);
       expect(banUser).toHaveBeenCalledTimes(2);
     });
 
     it('answers 502 when the ban fails while the row stays blocked, and a retry repairs it', async () => {
-      vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+      const logError = vi
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
       table.seed({ id: ID_1, email: 'one@example.com' });
-      banUser.mockRejectedValueOnce(new Error('supabase unavailable'));
+      banUser.mockRejectedValueOnce(new Error('upstream down'));
 
-      await postBlock(ID_1, 'ADMIN').expect(502);
+      const failed = await postBlock(ID_1, 'ADMIN').expect(502);
+
+      expect(failed.body).toEqual({
+        statusCode: 502,
+        message: 'Bad Gateway',
+      });
+      expect(failed.text).not.toContain('upstream down');
+      expect(logError).toHaveBeenCalledTimes(1);
+      const [logged] = logError.mock.calls[0] as [string];
+      expect(logged).toContain(ID_1);
 
       expect(table.rows[0]!.blockedAt).toBeInstanceOf(Date);
       const keptBlockedAt = table.rows[0]!.blockedAt;
@@ -443,5 +458,61 @@ describe('AdminUsersController (http)', () => {
       expect(table.rows[0]!.blockedAt).toBe(keptBlockedAt);
       expect(banUser).toHaveBeenCalledTimes(2);
     });
+  });
+});
+
+describe('AdminUsersController (http) behind the real AuthGuard', () => {
+  let app: INestApplication;
+  let table: FakeProfileTable;
+  const banUser = vi.fn();
+  const verify = vi.fn();
+  const resolve = vi.fn();
+
+  beforeEach(async () => {
+    table = new FakeProfileTable();
+    table.seed({ id: ID_1, email: 'one@example.com' });
+    banUser.mockReset();
+    verify.mockReset();
+    resolve.mockReset();
+    verify.mockResolvedValue({ id: ID_2, email: 'admin@example.com' });
+    resolve.mockResolvedValue({
+      id: ID_2,
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      blockedAt: new Date('2026-03-01T00:00:00Z'),
+    });
+    const moduleRef = await Test.createTestingModule({
+      controllers: [AdminUsersController],
+      providers: [
+        AdminUsersService,
+        { provide: PrismaService, useValue: { profile: table } },
+        { provide: SupabaseAdminClient, useValue: { banUser } },
+        { provide: SupabaseJwtVerifier, useValue: { verify } },
+        { provide: ProfilesService, useValue: { resolve } },
+        { provide: APP_GUARD, useClass: AuthGuard },
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('answers a blocked admin 403 on the block route and touches nothing', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/admin/users/${ID_1}/block`)
+      .set('Authorization', 'Bearer test-token')
+      .expect(403);
+
+    expect((response.body as { message: string }).message).toBe(
+      'Account is blocked',
+    );
+    expect(verify).toHaveBeenCalledWith('test-token');
+    expect(table.findUnique).not.toHaveBeenCalled();
+    expect(table.updateMany).not.toHaveBeenCalled();
+    expect(banUser).not.toHaveBeenCalled();
+    expect(table.rows[0]!.blockedAt).toBeNull();
   });
 });
