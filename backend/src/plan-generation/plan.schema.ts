@@ -33,6 +33,7 @@ export type GeneratedPlan = z.infer<
 export interface PlanResultExercise {
   slug: string;
   name: string;
+  imageKey: string | null;
   sets: number;
   reps: string;
   restSeconds: number;

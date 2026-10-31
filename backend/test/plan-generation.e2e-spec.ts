@@ -13,6 +13,7 @@ import request from 'supertest';
 import type { AuthenticatedRequest } from '../src/auth/auth-user.js';
 import { PLAN_GENERATION_CONFIG } from '../src/plan-generation/plan-generation.config.js';
 import { PlanGenerationController } from '../src/plan-generation/plan-generation.controller.js';
+import type { PlanForm } from '../src/plan-generation/plan-form.schema.js';
 import { PlanJobStore } from '../src/plan-generation/plan-job.store.js';
 import { PlanPipelineService } from '../src/plan-generation/plan-pipeline.service.js';
 import { PlanLimiter } from '../src/plan-generation/plan.limiter.js';
@@ -38,7 +39,7 @@ class HeaderUserGuard implements CanActivate {
   }
 }
 
-const validForm = {
+const validForm: PlanForm = {
   experience: 'intermediate',
   currentFrequency: 3,
   desiredFrequency: 4,
@@ -185,6 +186,7 @@ describe('PlanGenerationController (http)', () => {
       plan: null,
       error: null,
     });
+    expect(response.body).not.toHaveProperty('form');
   });
 
   it('answers 404 for an unknown job', async () => {
@@ -211,7 +213,7 @@ describe('PlanGenerationController (http)', () => {
   describe('GET /plan-generations/:jobId/events', () => {
     const finishedJob = (ownerId: string): string => {
       const store = app.get(PlanJobStore);
-      const job = store.create(ownerId);
+      const job = store.create(ownerId, validForm);
       store.setStage(job.id, 'drafting');
       store.append(job.id, { type: 'week', stage: 'drafting', week: 1 });
       store.complete(job.id, { weeks: [] });
@@ -275,7 +277,7 @@ describe('PlanGenerationController (http)', () => {
 
     it('follows live events after the replay without duplicates and closes on the terminal event', async () => {
       const store = app.get(PlanJobStore);
-      const job = store.create('user-1');
+      const job = store.create('user-1', validForm);
       store.setStage(job.id, 'drafting');
       const subscribe = vi.spyOn(store, 'subscribe');
 
@@ -297,7 +299,7 @@ describe('PlanGenerationController (http)', () => {
       streamConfig.heartbeatMs = 15;
       streamConfig.windowMs = 200;
       const store = app.get(PlanJobStore);
-      const job = store.create('user-1');
+      const job = store.create('user-1', validForm);
 
       const response = await request(app.getHttpServer())
         .get(EVENTS_PATH(job.id))
@@ -319,7 +321,7 @@ describe('PlanGenerationController (http)', () => {
       streamConfig.heartbeatMs = 15;
       streamConfig.windowMs = 120;
       const store = app.get(PlanJobStore);
-      const job = store.create('user-1');
+      const job = store.create('user-1', validForm);
       store.setStage(job.id, 'drafting');
 
       const response = await request(app.getHttpServer())
@@ -333,7 +335,7 @@ describe('PlanGenerationController (http)', () => {
 
     it('flushes headers at once, and unsubscribes when the client disconnects', async () => {
       const store = app.get(PlanJobStore);
-      const job = store.create('user-1');
+      const job = store.create('user-1', validForm);
       const original = store.subscribe.bind(store);
       const unsubscribed = vi.fn();
       vi.spyOn(store, 'subscribe').mockImplementation((...args) => {

@@ -75,6 +75,9 @@ export const HomePage = () => {
       <p>
         <Link to="/plans/new">Create a training plan</Link>
       </p>
+      <p>
+        <Link to="/plans">My plans</Link>
+      </p>
       <button type="button" onClick={() => void signOut()}>
         Sign out
       </button>

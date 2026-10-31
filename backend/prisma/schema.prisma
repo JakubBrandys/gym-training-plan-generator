@@ -30,9 +30,23 @@ enum ProfileRole {
 }
 
 model Profile {
-  id        String      @id @db.Uuid
-  email     String
-  role      ProfileRole @default(MEMBER)
-  blockedAt DateTime?
-  createdAt DateTime    @default(now())
+  id         String      @id @db.Uuid
+  email      String
+  role       ProfileRole @default(MEMBER)
+  blockedAt  DateTime?
+  createdAt  DateTime    @default(now())
+  savedPlans SavedPlan[]
+}
+
+model SavedPlan {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerId     String   @db.Uuid
+  owner       Profile  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  sourceJobId String   @db.Uuid
+  form        Json
+  plan        Json
+  createdAt   DateTime @default(now())
+
+  @@unique([ownerId, sourceJobId])
+  @@index([ownerId, createdAt])
 }

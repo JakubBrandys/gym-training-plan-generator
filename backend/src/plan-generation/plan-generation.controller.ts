@@ -87,7 +87,7 @@ export class PlanGenerationController {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
-    const job = this.store.create(user.id);
+    const job = this.store.create(user.id, form);
     void this.pipeline.run(job.id, form);
     return { jobId: job.id };
   }

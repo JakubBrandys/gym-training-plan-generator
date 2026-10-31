@@ -7,6 +7,7 @@ import {
   type PlanProgressInput,
   type PlanProgressListener,
 } from './plan-progress.js';
+import type { PlanForm } from './plan-form.schema.js';
 import type { PlanResult } from './plan.schema.js';
 
 export type PlanJobStatus = 'running' | 'completed' | 'failed';
@@ -17,6 +18,7 @@ export type PlanJobErrorCode =
 export interface PlanJob {
   id: string;
   ownerId: string;
+  form: PlanForm;
   status: PlanJobStatus;
   stage: PlanJobStage | null;
   week: number | null;
@@ -57,12 +59,13 @@ export class PlanJobStore {
   private readonly jobs = new Map<string, PlanJob>();
   private readonly subscriptions = new Map<string, Set<Subscription>>();
 
-  create(ownerId: string): PlanJob {
+  create(ownerId: string, form: PlanForm): PlanJob {
     this.purgeExpired();
     const now = new Date();
     const job: PlanJob = {
       id: randomUUID(),
       ownerId,
+      form,
       status: 'running',
       stage: null,
       week: null,

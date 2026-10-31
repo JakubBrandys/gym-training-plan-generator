@@ -19,5 +19,6 @@ import { planStreamConfigProvider } from './plan-stream.config.js';
     PlanLimiter,
     PlanPipelineService,
   ],
+  exports: [PlanJobStore],
 })
 export class PlanGenerationModule {}

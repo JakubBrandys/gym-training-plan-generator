@@ -69,6 +69,23 @@ describe('planFormSchema', () => {
     expect(accepts({ goals: `  ${'a'.repeat(500)}  ` })).toBe(true);
   });
 
+  it('rejects goals containing a NUL character without echoing the value', () => {
+    const goals = 'Build\u0000strength';
+    const result = planFormSchema.safeParse({ ...validForm, goals });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toHaveLength(1);
+    const [issue] = result.error?.issues ?? [];
+    expect(issue.path).toEqual(['goals']);
+    expect(issue.message).toBe('goals must not contain NUL characters');
+    expect(issue.message).not.toContain('Build');
+    expect(issue.message).not.toContain('strength');
+  });
+
+  it('accepts goals without NUL characters', () => {
+    expect(accepts({ goals: 'Build strength and mobility' })).toBe(true);
+  });
+
   it('rejects missing fields', () => {
     const { goals: _goals, ...withoutGoals } = validForm;
     expect(planFormSchema.safeParse(withoutGoals).success).toBe(false);

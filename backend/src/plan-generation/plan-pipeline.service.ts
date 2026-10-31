@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ExercisesService } from '../exercises/exercises.service.js';
+import type { Exercise } from '../generated/prisma/client.js';
 import {
   PLAN_GENERATION_CONFIG,
   type PlanGenerationConfig,
@@ -17,7 +18,6 @@ import {
   buildRetryPrompt,
   buildReviewPrompt,
   PLAN_SYSTEM_PROMPT,
-  type CatalogExercise,
 } from './plan.prompts.js';
 import {
   buildGeneratedPlanSchema,
@@ -187,10 +187,10 @@ export class PlanPipelineService {
 
   private toPlanResult(
     plan: GeneratedPlan,
-    catalog: readonly CatalogExercise[],
+    catalog: readonly Pick<Exercise, 'slug' | 'name' | 'imageKey'>[],
   ): PlanResult {
-    const namesBySlug = new Map(
-      catalog.map((exercise) => [exercise.slug, exercise.name]),
+    const catalogBySlug = new Map(
+      catalog.map((exercise) => [exercise.slug, exercise]),
     );
     return {
       weeks: plan.weeks.map((week) => ({
@@ -198,10 +198,14 @@ export class PlanPipelineService {
         goal: week.goal,
         sessions: week.sessions.map((session) => ({
           title: session.title,
-          exercises: session.exercises.map((exercise) => ({
-            ...exercise,
-            name: namesBySlug.get(exercise.slug) ?? exercise.slug,
-          })),
+          exercises: session.exercises.map((exercise) => {
+            const entry = catalogBySlug.get(exercise.slug);
+            return {
+              ...exercise,
+              name: entry?.name ?? exercise.slug,
+              imageKey: entry?.imageKey ?? null,
+            };
+          }),
         })),
       })),
     };

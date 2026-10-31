@@ -15,3 +15,10 @@
 - **Problem**: Approved deviations were recorded only in commit messages, so plan.md kept describing BrowserRouter/App.tsx and router state; later reviews and readers treat the plan as ground truth and see false drift.
 - **Rule**: When a phase deviates from its plan contract with user approval, add a dated 'Deviation' note under that phase's Changes Required (what changed and why) in the same commit.
 - **Applies to**: implement, impl-review
+
+## Keep saved-plan data backward compatible with its stored shape
+
+- **Context**: backend/src/saved-plans/saved-plans.service.ts (SavedPlan.form and .plan Json columns), plan-form.schema.ts, plan.schema.ts — first seen in the save-and-view-plan implementation review (F4).
+- **Problem**: Saved rows are read with an unchecked cast (as unknown as PlanForm / PlanResult) and carry no version. A later change to PlanForm or PlanResult would serve old rows unchanged ("Experience: undefined", a PlanView crash), breaking the guardrail that a saved plan is never lost or corrupted.
+- **Rule**: Treat PlanForm and PlanResult as persisted contracts: change them additively only (new optional fields, existing values keep their meaning); a breaking change needs a version column or a data migration plus a read guard in the same change.
+- **Applies to**: plan, plan-review, implement, impl-review

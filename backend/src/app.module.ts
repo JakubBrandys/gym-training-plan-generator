@@ -7,6 +7,7 @@ import { ExercisesModule } from './exercises/exercises.module.js';
 import { HealthController } from './health/health.controller.js';
 import { PlanGenerationModule } from './plan-generation/plan-generation.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { SavedPlansModule } from './saved-plans/saved-plans.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     PrismaModule,
     ExercisesModule,
     PlanGenerationModule,
+    SavedPlansModule,
     AuthModule,
   ],
   controllers: [AppController, HealthController],

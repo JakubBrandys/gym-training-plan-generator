@@ -18,6 +18,7 @@ export type PlanResultExercise = {
   reps: string
   restSeconds: number
   note: string | null
+  imageKey: string | null
 }
 
 export type PlanResultSession = {
@@ -67,7 +68,7 @@ export type FetchPlanGenerationResult =
 
 const SNAPSHOT_REQUEST_TIMEOUT_MS = 10_000
 
-const authFailureOf = (status: number): AuthFailureResult | null => {
+export const authFailureOf = (status: number): AuthFailureResult | null => {
   if (status === 401) return { kind: 'unauthorized', status: 401 }
   if (status === 403) return { kind: 'blocked', status: 403 }
   return null
