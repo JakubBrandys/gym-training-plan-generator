@@ -247,13 +247,13 @@ No schema change and no migration. Designating the first admin is a manual SQL s
 
 #### Automated
 
-- [x] 2.1 Linting passes: `cd frontend && npm run lint`
-- [x] 2.2 Type check and build pass: `cd frontend && npm run build`
-- [x] 2.3 All frontend specs pass: `cd frontend && npm test`
+- [x] 2.1 Linting passes: `cd frontend && npm run lint` — c392483
+- [x] 2.2 Type check and build pass: `cd frontend && npm run build` — c392483
+- [x] 2.3 All frontend specs pass: `cd frontend && npm test` — c392483
 
 #### Manual
 
-- [x] 2.4 After promoting your own Profile with the README SQL, the home page shows a "Registered users" link and the page lists every Profile newest first with email, role, status and joined date
-- [x] 2.5 A second, member account sees no admin link on the home page
-- [x] 2.6 That member opening `/admin/users` directly sees "Page not found", stays signed in, and the browser's request to `/admin/users` returns 404
-- [x] 2.7 The list has no horizontal scroll at phone width (about 375 px), and both links show a visible focus ring when reached by keyboard
+- [x] 2.4 After promoting your own Profile with the README SQL, the home page shows a "Registered users" link and the page lists every Profile newest first with email, role, status and joined date — c392483
+- [x] 2.5 A second, member account sees no admin link on the home page — c392483
+- [x] 2.6 That member opening `/admin/users` directly sees "Page not found", stays signed in, and the browser's request to `/admin/users` returns 404 — c392483
+- [x] 2.7 The list has no horizontal scroll at phone width (about 375 px), and both links show a visible focus ring when reached by keyboard — c392483
