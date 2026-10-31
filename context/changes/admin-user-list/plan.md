@@ -232,16 +232,16 @@ No schema change and no migration. Designating the first admin is a manual SQL s
 
 #### Automated
 
-- [x] 1.1 Linting passes: `cd backend && npm run lint`
-- [x] 1.2 Build passes: `cd backend && npm run build`
-- [x] 1.3 Guard, service and controller specs pass: `cd backend && npx vitest run src/auth/admin.guard.spec.ts src/admin-users`
-- [x] 1.4 Admin list e2e spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/admin-users.e2e-spec.ts`
-- [x] 1.5 Full unit suite passes: `cd backend && npm test`
+- [x] 1.1 Linting passes: `cd backend && npm run lint` — 157f67e
+- [x] 1.2 Build passes: `cd backend && npm run build` — 157f67e
+- [x] 1.3 Guard, service and controller specs pass: `cd backend && npx vitest run src/auth/admin.guard.spec.ts src/admin-users` — 157f67e
+- [x] 1.4 Admin list e2e spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/admin-users.e2e-spec.ts` — 157f67e
+- [x] 1.5 Full unit suite passes: `cd backend && npm test` — 157f67e
 
 #### Manual
 
-- [x] 1.6 The README "First admin" section reads correctly and the SQL uses the table and column names from `backend/prisma/schema.prisma`
-- [x] 1.7 Temporarily removing `@UseGuards(AdminGuard)` from the controller turns the member-gets-404 e2e case red; restore it afterwards
+- [x] 1.6 The README "First admin" section reads correctly and the SQL uses the table and column names from `backend/prisma/schema.prisma` — 157f67e
+- [x] 1.7 Temporarily removing `@UseGuards(AdminGuard)` from the controller turns the member-gets-404 e2e case red; restore it afterwards — 157f67e
 
 ### Phase 2: Frontend page and admin link
 

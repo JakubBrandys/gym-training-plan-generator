@@ -78,6 +78,11 @@ export const HomePage = () => {
       <p>
         <Link to="/plans">My plans</Link>
       </p>
+      {state.status === 'ready' && state.me.role === 'ADMIN' && (
+        <p>
+          <Link to="/admin/users">Registered users</Link>
+        </p>
+      )}
       <button type="button" onClick={() => void signOut()}>
         Sign out
       </button>
