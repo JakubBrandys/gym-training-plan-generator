@@ -136,14 +136,6 @@ describe('AdminUsersPage', () => {
     expect(screen.queryByRole('list')).toBeNull()
   })
 
-  it('links back to home', async () => {
-    listMock.mockResolvedValue({ kind: 'ok', users: [] })
-    renderPage()
-
-    await screen.findByText('No registered users yet.')
-    expect(screen.getByRole('link', { name: 'Back to home' }).getAttribute('href')).toBe('/')
-  })
-
   it('shows a plain page-not-found state for a non-admin without signing out', async () => {
     listMock.mockResolvedValue({ kind: 'not-found' })
     renderPage()
@@ -153,7 +145,7 @@ describe('AdminUsersPage', () => {
     expect(screen.queryByRole('heading', { name: 'Registered users' })).toBeNull()
     expect(screen.queryByRole('heading')).toBeNull()
     expect(screen.queryByRole('list')).toBeNull()
-    expect(screen.getByRole('link', { name: 'Back to home' }).getAttribute('href')).toBe('/')
+    expect(screen.queryByRole('link')).toBeNull()
     expect(signOut).not.toHaveBeenCalled()
   })
 

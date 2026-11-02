@@ -1,3 +1,10 @@
+.kitchen-sink {
+  box-sizing: border-box;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
 .kitchen-sink-case {
   margin: 0 0 1.5rem;
   padding: 1rem;
@@ -14,4 +21,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.kitchen-sink-frame {
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }

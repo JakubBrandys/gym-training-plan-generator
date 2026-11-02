@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { RequireAuth } from '../auth/RequireAuth'
+import { AppShell } from '../components/AppShell'
+import { AuthLayout } from '../components/AuthLayout'
 import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { HomePage } from '../pages/HomePage'
 import { NewPlanPage } from '../pages/NewPlanPage'
@@ -22,17 +24,27 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
 
 export const router = createBrowserRouter([
   ...devRoutes,
-  { path: '/sign-up', element: <SignUpPage /> },
-  { path: '/sign-in', element: <SignInPage /> },
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: '/sign-up', element: <SignUpPage /> },
+      { path: '/sign-in', element: <SignInPage /> },
+    ],
+  },
   {
     element: <RequireAuth />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: '/plans', element: <SavedPlansPage /> },
-      { path: '/plans/new', element: <NewPlanPage /> },
-      { path: '/plans/:id', element: <SavedPlanPage /> },
-      { path: '/plans/generate/:jobId', element: <PlanGenerationPage /> },
-      { path: '/admin/users', element: <AdminUsersPage /> },
+      {
+        element: <AppShell />,
+        children: [
+          { index: true, element: <HomePage /> },
+          { path: '/plans', element: <SavedPlansPage /> },
+          { path: '/plans/new', element: <NewPlanPage /> },
+          { path: '/plans/:id', element: <SavedPlanPage /> },
+          { path: '/plans/generate/:jobId', element: <PlanGenerationPage /> },
+          { path: '/admin/users', element: <AdminUsersPage /> },
+        ],
+      },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

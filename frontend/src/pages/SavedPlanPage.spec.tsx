@@ -161,13 +161,12 @@ describe('SavedPlanPage', () => {
     expect(screen.getByText('Run a faster 5k')).toBeTruthy()
   })
 
-  it('links to My plans and home', async () => {
+  it('links to My plans', async () => {
     fetchMock.mockResolvedValue({ kind: 'ok', plan: savedPlan })
     renderPage()
 
     await screen.findByRole('heading', { level: 2, name: 'Week 1' })
     expect(screen.getByRole('link', { name: 'My plans' }).getAttribute('href')).toBe('/plans')
-    expect(screen.getByRole('link', { name: 'Back to home' }).getAttribute('href')).toBe('/')
   })
 
   it('shows the not-found message', async () => {

@@ -6,17 +6,31 @@ const COLOUR_LITERAL = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(/
 
 const GUARDED_FILES = [
   './pages/HomePage.tsx',
-  './pages/HomeView.tsx',
   './components/Button.tsx',
   './components/ButtonLink.tsx',
   './components/button-class.ts',
+  './components/AppHeader.tsx',
+  './components/AppShell.tsx',
+  './components/AppFooter.tsx',
+  './components/AuthLayout.tsx',
+  './components/nav-active.ts',
+  './profile/profile-context.ts',
+  './profile/ProfileProvider.tsx',
+  './profile/useProfile.ts',
   './dev/KitchenSinkPage.tsx',
   './dev/kitchen-sink.css',
 ]
 
 const ALLOWED_INDEX_CSS_LITERALS = ['background: #fff;']
 
-const REQUIRED_TOKENS = ['--accent', '--accent-hover', '--on-accent', '--radius']
+const REQUIRED_TOKENS = [
+  '--accent',
+  '--accent-hover',
+  '--on-accent',
+  '--radius',
+  '--content-width',
+  '--narrow-width',
+]
 
 const read = (relativePath: string) => readFileSync(new URL(relativePath, import.meta.url), 'utf8')
 

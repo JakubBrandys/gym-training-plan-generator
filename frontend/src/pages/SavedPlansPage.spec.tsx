@@ -121,14 +121,6 @@ describe('SavedPlansPage', () => {
     expect(screen.queryByRole('list')).toBeNull()
   })
 
-  it('links back to home', async () => {
-    listMock.mockResolvedValue({ kind: 'ok', plans: [] })
-    renderPage()
-
-    await screen.findByText('You have no saved plans yet.')
-    expect(screen.getByRole('link', { name: 'Back to home' }).getAttribute('href')).toBe('/')
-  })
-
   it('signs the user out on unauthorized', async () => {
     listMock.mockResolvedValue({ kind: 'unauthorized', status: 401 })
     renderPage()

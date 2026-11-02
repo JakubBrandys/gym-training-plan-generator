@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { handleAuthFailure } from '../lib/auth-failure'
 import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
@@ -162,9 +162,6 @@ export const NewPlanPage = () => {
           {pending ? 'Starting…' : 'Generate plan'}
         </button>
       </form>
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </main>
   )
 }

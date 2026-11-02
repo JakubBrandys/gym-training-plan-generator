@@ -198,9 +198,6 @@ const PlanGenerationJob = ({ jobId }: PlanGenerationJobProps) => {
           <Link to="/plans/new">{state.status === 'completed' ? 'Create another plan' : 'Start again'}</Link>
         </p>
       )}
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </main>
   )
 }

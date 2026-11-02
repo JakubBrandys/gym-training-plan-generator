@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAuth } from './useAuth'
 
 export const RequireAuth = () => {
-  const { session, loading } = useAuth()
+  const { session, loading, signOutReason } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -10,7 +10,8 @@ export const RequireAuth = () => {
   }
 
   if (!session) {
-    return <Navigate to="/sign-in" replace state={{ from: location }} />
+    const state = signOutReason === 'user' ? undefined : { from: location }
+    return <Navigate to="/sign-in" replace state={state} />
   }
 
   return <Outlet />

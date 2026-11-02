@@ -78,9 +78,6 @@ const SavedPlanDetail = ({ id }: SavedPlanDetailProps) => {
       <p>
         <Link to="/plans">My plans</Link>
       </p>
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </main>
   )
 }

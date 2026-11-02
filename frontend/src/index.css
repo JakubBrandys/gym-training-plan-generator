@@ -9,6 +9,8 @@
   --error: #b3261e;
   --error-bg: #fdecea;
   --radius: 4px;
+  --content-width: 48rem;
+  --narrow-width: 28rem;
 
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
   color-scheme: light dark;
@@ -34,9 +36,7 @@ body {
   margin: 0;
 }
 
-#root {
-  max-width: 28rem;
-  margin: 0 auto;
+#root > .status {
   padding: 2rem 1rem;
 }
 
@@ -142,6 +142,107 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin: 1rem 0 1.5rem;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-shell > main {
+  box-sizing: border-box;
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.app-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.app-header-inner {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+}
+
+.app-header-brand {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-header-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.app-header-nav a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.app-header-nav a:hover {
+  color: var(--accent);
+}
+
+.app-header-nav a[aria-current='page'] {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.app-header-user {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+@media (min-width: 40rem) {
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+}
+
+.app-footer {
+  border-top: 1px solid var(--border);
+}
+
+.app-footer-inner {
+  box-sizing: border-box;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.auth-layout {
+  box-sizing: border-box;
+  max-width: var(--narrow-width);
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.auth-layout-brand {
+  margin: 0 0 1.5rem;
+  font-weight: 700;
 }
 
 a {

@@ -35,10 +35,11 @@ No `.env` files exist in either package yet. `backend/.gitignore` already exclud
 
 ### UI contract
 
-- Design tokens (colour, radius) live in `@frontend/src/index.css`: `:root` plus the `prefers-color-scheme: dark` override. Views reference roles (`--accent`, `--on-accent`, `--text-muted`, `--radius`), never colour values.
+- Design tokens (colour, radius, widths) live in `@frontend/src/index.css`: `:root` plus the `prefers-color-scheme: dark` override. Views reference roles (`--accent`, `--on-accent`, `--text-muted`, `--radius`, `--content-width`, `--narrow-width`), never colour values or fixed widths.
 - Shared components live in `@frontend/src/components/` (`Button`, `ButtonLink`, each with `primary` / `secondary` variants). Check this directory before creating a component and extend it instead of styling a second `<button>` or link-button in a view.
+- Signed-in pages render inside `AppShell` (`AppHeader`, the page's own `<main>` through the Outlet, `AppFooter`); sign-in and sign-up render inside `AuthLayout`. Pages keep their own `<main>` and `<h1>`; do not add a "Back to home" link, and add a nav entry in `@frontend/src/components/nav-active.ts`, which also decides the active link. Read the signed-in user's email and role through `useProfile()` from `@frontend/src/profile/` instead of calling `/me` again.
 - No literal colours (hex, `rgb()`, `hsl()`, `oklch()`) in views, components or `frontend/src/dev/`; add or adjust a token in `index.css` instead. `@frontend/src/ui-contract.spec.ts` fails `npm test` on a literal; its one allowlisted entry (`background: #fff` on `.plan-exercise-image`) is removed when that value is tokenised.
-- Every state of a view (loading, ready, error, pending, disabled; empty when the view has a list) belongs in the dev-only kitchen sink at `/dev/kitchen-sink` (`@frontend/src/dev/KitchenSinkPage.tsx`, present only under `npm run dev`). After a visual change, screenshot it at desktop and 375 px in light and dark.
+- Every state of a view (loading, ready, error, pending, disabled; empty when the view has a list) belongs in the dev-only kitchen sink at `/dev/kitchen-sink` (`@frontend/src/dev/KitchenSinkPage.tsx`, present only under `npm run dev`), which also shows the shell header and footer in every state. After a visual change, screenshot it at desktop and 375 px in light and dark.
 
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
