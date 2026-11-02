@@ -328,10 +328,10 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Automated
 
-- [x] 1.1 Literal scan of `index.css` outside the token blocks finds only the `background: #fff` in `.plan-exercise-image`
-- [x] 1.2 No `border-radius: 4px` literal remains
-- [x] 1.3 Existing suite passes
-- [x] 1.4 Build and lint pass
+- [x] 1.1 Literal scan of `index.css` outside the token blocks finds only the `background: #fff` in `.plan-exercise-image` — 69fc23b
+- [x] 1.2 No `border-radius: 4px` literal remains — 69fc23b
+- [x] 1.3 Existing suite passes — 69fc23b
+- [x] 1.4 Build and lint pass — 69fc23b
 
 #### Manual
 
@@ -342,17 +342,17 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Automated
 
-- [x] 2.1 Component specs pass
-- [x] 2.2 No colour literals in the new components
-- [x] 2.3 Full suite, build and lint pass
+- [x] 2.1 Component specs pass — 69fc23b
+- [x] 2.2 No colour literals in the new components — 69fc23b
+- [x] 2.3 Full suite, build and lint pass — 69fc23b
 
 ### Phase 3: Action-first Home
 
 #### Automated
 
-- [x] 3.1 Home specs pass, including the four existing tests
-- [x] 3.2 No colour literals in the Home files
-- [x] 3.3 Full suite, build and lint pass
+- [x] 3.1 Home specs pass, including the four existing tests — 69fc23b
+- [x] 3.2 No colour literals in the Home files — 69fc23b
+- [x] 3.3 Full suite, build and lint pass — 69fc23b
 
 #### Manual
 
@@ -366,8 +366,8 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Automated
 
-- [x] 4.1 Production build contains no kitchen-sink code
-- [x] 4.2 Full suite and lint pass
+- [x] 4.1 Production build contains no kitchen-sink code — 69fc23b
+- [x] 4.2 Full suite and lint pass — 69fc23b
 
 #### Manual
 
@@ -380,9 +380,9 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Automated
 
-- [x] 5.1 Guard spec passes
-- [x] 5.2 Full suite, build and lint pass
-- [x] 5.3 The CLI-managed block is unchanged by this phase
+- [x] 5.1 Guard spec passes — 69fc23b
+- [x] 5.2 Full suite, build and lint pass — 69fc23b
+- [x] 5.3 The CLI-managed block is unchanged by this phase — 69fc23b
 
 #### Manual
 
