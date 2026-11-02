@@ -1,24 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { apiFetch } from '../lib/api'
 import { handleAuthFailure } from '../lib/auth-failure'
-import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
 import { useAuth } from '../auth/useAuth'
-
-type Me = {
-  id: string
-  email: string
-  role: 'MEMBER' | 'ADMIN'
-}
-
-type MeState =
-  | { status: 'loading' }
-  | { status: 'ready'; me: Me }
-  | { status: 'error' }
+import { HomeView, type Me, type MeState } from './HomeView'
 
 export const HomePage = () => {
   const { signOut } = useAuth()
   const [state, setState] = useState<MeState>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+  const [signingOut, setSigningOut] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -53,39 +43,28 @@ export const HomePage = () => {
     return () => {
       cancelled = true
     }
-  }, [signOut])
+  }, [signOut, attempt])
+
+  const handleRetry = () => {
+    setState({ status: 'loading' })
+    setAttempt((current) => current + 1)
+  }
+
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    try {
+      await signOut()
+    } finally {
+      setSigningOut(false)
+    }
+  }
 
   return (
-    <main className="home">
-      <h1>Gym Training Plan Generator</h1>
-      {state.status === 'loading' && <p className="status">Loading…</p>}
-      {state.status === 'error' && (
-        <p className="error" role="alert">
-          {GENERIC_PLAN_ERROR}
-        </p>
-      )}
-      {state.status === 'ready' && (
-        <dl>
-          <dt>Email</dt>
-          <dd>{state.me.email}</dd>
-          <dt>Role</dt>
-          <dd>{state.me.role}</dd>
-        </dl>
-      )}
-      <p>
-        <Link to="/plans/new">Create a training plan</Link>
-      </p>
-      <p>
-        <Link to="/plans">My plans</Link>
-      </p>
-      {state.status === 'ready' && state.me.role === 'ADMIN' && (
-        <p>
-          <Link to="/admin/users">Registered users</Link>
-        </p>
-      )}
-      <button type="button" onClick={() => void signOut()}>
-        Sign out
-      </button>
-    </main>
+    <HomeView
+      state={state}
+      signingOut={signingOut}
+      onSignOut={() => void handleSignOut()}
+      onRetry={handleRetry}
+    />
   )
 }

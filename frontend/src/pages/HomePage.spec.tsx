@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuth } from '../auth/useAuth'
@@ -74,5 +74,64 @@ describe('HomePage', () => {
 
     expect(await screen.findByRole('alert')).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Registered users' })).toBeNull()
+  })
+
+  it('shows the email next to the role', async () => {
+    respondWithMe('MEMBER')
+    renderPage()
+
+    expect(await screen.findByText('someone@example.com')).toBeTruthy()
+    expect(screen.getByText('MEMBER')).toBeTruthy()
+  })
+
+  it('links the main actions to their pages', async () => {
+    respondWithMe('MEMBER')
+    renderPage()
+
+    expect(
+      (await screen.findByRole('link', { name: 'Create a training plan' })).getAttribute('href'),
+    ).toBe('/plans/new')
+    expect(screen.getByRole('link', { name: 'My plans' }).getAttribute('href')).toBe('/plans')
+  })
+
+  it('offers Retry after a failed load and shows the profile when it succeeds', async () => {
+    respondWithMe('MEMBER')
+    apiFetchMock.mockResolvedValueOnce(new Response('{}', { status: 500 }))
+    renderPage()
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    expect(await screen.findByText('MEMBER')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(apiFetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows a pending Sign out while signing out and calls signOut once', async () => {
+    respondWithMe('MEMBER')
+    signOut.mockReturnValue(new Promise<void>(() => {}))
+    renderPage()
+    await screen.findByText('MEMBER')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    const pending = (await screen.findByRole('button', {
+      name: 'Signing out…',
+    })) as HTMLButtonElement
+    expect(pending.disabled).toBe(true)
+    expect(signOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores Sign out when signing out settles', async () => {
+    respondWithMe('MEMBER')
+    signOut.mockResolvedValue(undefined)
+    renderPage()
+    await screen.findByText('MEMBER')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    const restored = (await screen.findByRole('button', { name: 'Sign out' })) as HTMLButtonElement
+    expect(restored.disabled).toBe(false)
+    expect(signOut).toHaveBeenCalledTimes(1)
   })
 })

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router'
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { RequireAuth } from '../auth/RequireAuth'
 import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { HomePage } from '../pages/HomePage'
@@ -9,7 +9,19 @@ import { SavedPlansPage } from '../pages/SavedPlansPage'
 import { SignInPage } from '../pages/SignInPage'
 import { SignUpPage } from '../pages/SignUpPage'
 
+const devRoutes: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: '/dev/kitchen-sink',
+        lazy: async () => ({
+          Component: (await import('../dev/KitchenSinkPage')).KitchenSinkPage,
+        }),
+      },
+    ]
+  : []
+
 export const router = createBrowserRouter([
+  ...devRoutes,
   { path: '/sign-up', element: <SignUpPage /> },
   { path: '/sign-in', element: <SignInPage /> },
   {

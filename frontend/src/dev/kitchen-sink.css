@@ -1,0 +1,17 @@
+.kitchen-sink-case {
+  margin: 0 0 1.5rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.kitchen-sink-case h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.kitchen-sink-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
