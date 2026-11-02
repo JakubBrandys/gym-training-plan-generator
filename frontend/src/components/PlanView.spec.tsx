@@ -92,7 +92,7 @@ describe('PlanView', () => {
     expect(screen.queryByText('Bench Press')).toBeNull()
   })
 
-  it.each(['#week-9', '#week-0', '#foo', '#week-02'])('shows week 1 for the invalid hash %s', (hash) => {
+  it.each(['#week-9', '#week-0', '#foo', '#week-02', '#week-2%20', '#week-%D9%A2'])('shows week 1 for the invalid hash %s', (hash) => {
     renderAt(hash)
 
     expect(screen.getByRole('heading', { level: 2, name: 'Week 1' })).toBeTruthy()
@@ -144,9 +144,9 @@ describe('PlanView', () => {
   it('renders the week switcher with the current week marked', () => {
     renderAt('#week-2')
 
-    expect(screen.getByRole('link', { name: 'Week 2' }).getAttribute('aria-current')).toBe('page')
-    expect(screen.getByRole('link', { name: 'Week 1' }).getAttribute('aria-current')).toBeNull()
-    expect(screen.getByRole('link', { name: 'Week 1' }).getAttribute('href')).toBe('/plans/abc#week-1')
+    expect(screen.getByRole('link', { name: 'W2, week 2' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('link', { name: 'W1, week 1' }).getAttribute('aria-current')).toBeNull()
+    expect(screen.getByRole('link', { name: 'W1, week 1' }).getAttribute('href')).toBe('/plans/abc#week-1')
   })
 
   it('shows only a next link in the pager on the first week', () => {
@@ -166,10 +166,41 @@ describe('PlanView', () => {
   it('switches weeks when a week link is clicked', () => {
     renderAt('')
 
-    fireEvent.click(screen.getByRole('link', { name: 'Week 2' }))
+    fireEvent.click(screen.getByRole('link', { name: 'W2, week 2' }))
 
     expect(screen.getByRole('heading', { level: 2, name: 'Week 2' })).toBeTruthy()
     expect(screen.getByText('Barbell Row')).toBeTruthy()
+  })
+
+  it('does not carry a failed image over to the exercises of another week', () => {
+    renderAt('')
+
+    fireEvent.error(screen.getByAltText('Bench Press, start and end position'))
+    fireEvent.click(screen.getByRole('link', { name: 'W2, week 2' }))
+
+    expect(screen.getByAltText('Barbell Row, start and end position')).toBeTruthy()
+  })
+
+  it('does not move focus when the plan opens on a week', () => {
+    renderAt('#week-2')
+
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('moves focus to the week heading when another week is chosen', () => {
+    renderAt('')
+
+    fireEvent.click(screen.getByRole('link', { name: 'W2, week 2' }))
+
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Week 2' }))
+  })
+
+  it('moves focus to the week heading when the pager link is used', () => {
+    renderAt('')
+
+    fireEvent.click(screen.getByRole('link', { name: 'Next week (Week 2)' }))
+
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Week 2' }))
   })
 
   it('renders an image with the expected src and alt for exercises that have an image key', () => {
@@ -255,7 +286,7 @@ describe('PlanViewContent', () => {
     )
 
     expect(screen.getByRole('heading', { level: 2, name: 'Week 2' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Week 2' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('link', { name: 'W2, week 2' }).getAttribute('aria-current')).toBe('page')
   })
 
   it('falls back to the first week when the week does not exist', () => {

@@ -137,16 +137,16 @@ const EDGE_SLUGS = [
 const EDGE_TITLE = 'Full body strength with unilateral work, tempo reps and a long core finisher set'
 
 const EDGE_GOAL =
-  'Build a strong base across every lift, keep two reps in reserve on the main sets, and use the longer rests to recover fully before the heavier work in the weeks that follow this block.'
+  'Build a strong base across every lift, keep two reps in reserve on the main sets, and use the longer rests to recover fully before the heavier work in the weeks that follow this block. Take your time.'
 
 const EDGE_NOTE =
-  'Control the lowering phase for three seconds, pause briefly at the bottom of each rep, brace your core before every repetition, and stop each set one rep before your form breaks down on either side.'
+  'Control the lowering phase for three seconds, pause briefly at the bottom of every rep, brace your core before every repetition, and stop every set one rep before your form breaks down on either side.'
 
 const edgeExercise = (slug: string): PlanResultExercise => ({
   slug,
   name: toName(slug),
   sets: 8,
-  reps: '10-12 each side, 3s',
+  reps: '10-12 each side, 3 s',
   restSeconds: 600,
   note: EDGE_NOTE,
   imageKey: `exercises/${slug}.jpg`,

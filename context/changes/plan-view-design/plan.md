@@ -132,6 +132,8 @@ Add the presentational components with their CSS and specs. They are not mounted
 
 **Contract**: `PlanSummary({ plan, children })` renders a `Card` with `role="group"` and `aria-label="Plan summary"` showing `"{weeks} weeks · {formatRamp}"` and `"{sessions} sessions · {differentExercises} different exercises"` from `planStats`, then `children` (the saved page's details) when given. It renders no heading.
 
+**Deviation (2026-11-02, impl-review F1, F5)**: `WeekSwitcher` links are named `W{n}, week {n}` instead of `Week {n}`, so the visible text `W{n}` is inside the accessible name (WCAG 2.5.3). After mount and on a week change the switcher scrolls its own strip so the current link is centred (it sets `scrollLeft`, no `scrollIntoView`), and the switcher and pager links got vertical padding (switcher link height 42 px at 375 px, pager links about 40 px) for larger touch targets.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -181,6 +183,8 @@ Rebuild `PlanView`, wire the two pages, tokenise the image backdrop and rewrite 
 **Contract**: `PlanView.spec.tsx` renders inside `MemoryRouter` with the two-week fixture and covers: week 1 only by default (no `Week 2` heading); `#week-2` shows week 2 only; `#week-9`, `#foo` and no hash show week 1; the switcher links and `aria-current`; the pager's absent previous on week 1 and absent next on the last week; exactly one level-2 heading; session headings and exercise counts; chips `3 × 8-10` and `rest 90 s`; image `alt`, `src`, lazy loading, equal fixed dimensions of 64, absence for a null key and removal of a failed image; the summary's derived stats; and the details slot present only when passed. `ui-contract.spec.ts` sets `ALLOWED_INDEX_CSS_LITERALS` to an empty list. The two page specs keep their `Week 1` and `Save plan` assertions unchanged.
 
 **Deviation (2026-11-02)**: (1) `lib/plan-stats.ts` also exports `formatCount(count, noun)` (singular for 1, plural otherwise), used by `formatRamp`, `PlanSummary` and the session exercise count, so a one-week or one-session plan does not read "1 weeks"; it has its own spec cases. (2) `PlanGenerationPage.spec.tsx` gains one test asserting that Save plan has the shared button class (`btn`) and sits before the plan in document order, because no existing test would catch a return to the raw `<button>`. (3) `PlanSummary.spec.tsx` uses a fixture whose session count (7) differs from its different-exercise count (8); the first version had both at 7 and a deliberate break swapping them stayed green. (4) CSS also adds `.plan-summary > :not(.plan-summary-stats)` spacing for the saved page's details.
+
+**Deviation (2026-11-02, impl-review F2)**: the week `h2` has `tabIndex={-1}` and receives focus when the shown week changes (not on first mount), so focus is not lost when a pager link disappears on the first or last week and screen readers hear the new week; `.plan-view h2` has `scroll-margin-top: 5rem` for the sticky header. Specs cover focus after a switcher click, after a pager click, and no focus move on first render.
 
 ### Success Criteria:
 

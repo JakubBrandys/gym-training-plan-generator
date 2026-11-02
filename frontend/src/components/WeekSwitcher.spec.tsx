@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { WeekSwitcher } from './WeekSwitcher'
 
 const renderSwitcher = (current: number, weekCount = 8) =>
@@ -13,6 +13,7 @@ const renderSwitcher = (current: number, weekCount = 8) =>
 describe('WeekSwitcher', () => {
   afterEach(() => {
     cleanup()
+    vi.restoreAllMocks()
   })
 
   it('renders a labelled navigation with one link per week', () => {
@@ -27,16 +28,16 @@ describe('WeekSwitcher', () => {
   it('links every week to its hash and gives each link an accessible name', () => {
     renderSwitcher(1)
 
-    expect(screen.getByRole('link', { name: 'Week 3' }).getAttribute('href')).toBe('/plans/abc#week-3')
-    expect(screen.getByRole('link', { name: 'Week 8' }).getAttribute('href')).toBe('/plans/abc#week-8')
+    expect(screen.getByRole('link', { name: 'W3, week 3' }).getAttribute('href')).toBe('/plans/abc#week-3')
+    expect(screen.getByRole('link', { name: 'W8, week 8' }).getAttribute('href')).toBe('/plans/abc#week-8')
   })
 
   it('marks only the current week as the current page', () => {
     const { container } = renderSwitcher(4)
 
     expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
-    expect(screen.getByRole('link', { name: 'Week 4' }).getAttribute('aria-current')).toBe('page')
-    expect(screen.getByRole('link', { name: 'Week 3' }).getAttribute('aria-current')).toBeNull()
+    expect(screen.getByRole('link', { name: 'W4, week 4' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getByRole('link', { name: 'W3, week 3' }).getAttribute('aria-current')).toBeNull()
   })
 
   it('renders as many links as the plan has weeks', () => {
@@ -52,9 +53,19 @@ describe('WeekSwitcher', () => {
     )
     render(<RouterProvider router={router} />)
 
-    fireEvent.click(screen.getByRole('link', { name: 'Week 3' }))
+    fireEvent.click(screen.getByRole('link', { name: 'W3, week 3' }))
 
     expect(router.state.location.hash).toBe('#week-3')
     expect(router.state.historyAction).toBe('REPLACE')
+  })
+
+  it('scrolls the strip so the current week is centred', () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetLeft', 'get').mockReturnValue(300)
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(48)
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(344)
+
+    renderSwitcher(7)
+
+    expect(screen.getByRole('navigation', { name: 'Weeks' }).scrollLeft).toBe(152)
   })
 })

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation } from 'react-router'
 import type { PlanResult, PlanResultExercise, PlanResultWeek } from '../lib/plan-generation'
 import { formatCount } from '../lib/plan-stats'
@@ -45,31 +45,45 @@ const ExerciseRow = ({ exercise }: { exercise: PlanResultExercise }) => (
   </li>
 )
 
-const WeekSection = ({ week }: { week: PlanResultWeek }) => (
-  <section id={`week-${week.week}`}>
-    <h2>Week {week.week}</h2>
-    <p className="hint">{week.goal}</p>
-    <ul className="plan-sessions">
-      {week.sessions.map((session, sessionIndex) => (
-        <li key={`${week.week}-${sessionIndex}`}>
-          <Card>
-            <div className="plan-session-header">
-              <h3>
-                Session {sessionIndex + 1} · {session.title}
-              </h3>
-              <span className="hint">{formatCount(session.exercises.length, 'exercise')}</span>
-            </div>
-            <ul className="plan-exercises">
-              {session.exercises.map((exercise) => (
-                <ExerciseRow key={exercise.slug} exercise={exercise} />
-              ))}
-            </ul>
-          </Card>
-        </li>
-      ))}
-    </ul>
-  </section>
-)
+const WeekSection = ({ week }: { week: PlanResultWeek }) => {
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const shownWeek = useRef(week.week)
+
+  useEffect(() => {
+    if (shownWeek.current === week.week) return
+
+    shownWeek.current = week.week
+    headingRef.current?.focus()
+  }, [week.week])
+
+  return (
+    <section id={`week-${week.week}`}>
+      <h2 ref={headingRef} tabIndex={-1}>
+        Week {week.week}
+      </h2>
+      <p className="hint">{week.goal}</p>
+      <ul className="plan-sessions">
+        {week.sessions.map((session, sessionIndex) => (
+          <li key={`${week.week}-${sessionIndex}`}>
+            <Card>
+              <div className="plan-session-header">
+                <h3>
+                  Session {sessionIndex + 1} · {session.title}
+                </h3>
+                <span className="hint">{formatCount(session.exercises.length, 'exercise')}</span>
+              </div>
+              <ul className="plan-exercises">
+                {session.exercises.map((exercise) => (
+                  <ExerciseRow key={exercise.slug} exercise={exercise} />
+                ))}
+              </ul>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
 type PlanViewContentProps = {
   plan: PlanResult

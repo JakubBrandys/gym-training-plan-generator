@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { WeekPager } from './WeekPager'
 
@@ -57,5 +57,18 @@ describe('WeekPager', () => {
 
     expect(screen.getByRole('link', { name: 'Previous week (Week 2)' }).textContent).toBe('‹ Week 2')
     expect(screen.getByRole('link', { name: 'Next week (Week 4)' }).textContent).toBe('Week 4 ›')
+  })
+
+  it('replaces the history entry when a week is chosen', () => {
+    const router = createMemoryRouter(
+      [{ path: '/plans/:id', element: <WeekPager weekCount={8} current={3} /> }],
+      { initialEntries: ['/plans/abc'] },
+    )
+    render(<RouterProvider router={router} />)
+
+    fireEvent.click(screen.getByRole('link', { name: 'Next week (Week 4)' }))
+
+    expect(router.state.location.hash).toBe('#week-4')
+    expect(router.state.historyAction).toBe('REPLACE')
   })
 })
