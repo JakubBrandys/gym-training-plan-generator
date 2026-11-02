@@ -3,7 +3,7 @@ project: Gym Training Plan Generator
 version: 1
 status: draft
 created: 2026-10-03
-updated: 2026-10-31
+updated: 2026-11-02
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -49,7 +49,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | done |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | done |
 | S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | done |
-| S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | in-progress |
+| S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | done |
 
 ## Streams
 
@@ -176,7 +176,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - How to stop the sign-in itself, not just API access? S-01 (`sign-up-and-login`) already returns 403 from every gated route when `Profile.blockedAt` is set (holds for live tokens), but Supabase still issues sessions to a blocked user. Options: a Supabase Admin API ban (`auth.admin.updateUserById` with `ban_duration`, needs `SUPABASE_SECRET_KEY`; blocks sign-in and refresh, not already-issued access tokens) or a Supabase Auth Hook reading `blockedAt` (verify it can reject issuance). The block action should set `blockedAt` and apply the chosen Supabase-side block. — Owner: user. Block: no.
 - **Risk:** The guardrail "a blocked user truly loses access" means enforcement must hold for already-issued sessions, not just new sign-ins; that is the one thing to plan carefully.
-- **Status:** in-progress
+- **Status:** done
 
 ## Backlog Handoff
 
@@ -222,3 +222,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-04: user can review the complete 8-week plan, with an image for each exercise, before deciding whether to save it.** — Archived 2026-10-27 → `context/archive/2026-10-25-plan-review-with-images/`. Lesson: —.
 - **S-05: user can save a reviewed plan to their account and find it again under their account in a later session, intact.** — Archived 2026-10-28 → `context/archive/2026-10-27-save-and-view-plan/`. Lesson: keep saved-plan data backward compatible with its stored shape.
 - **S-06: user (as admin) can view the list of registered users; a member cannot reach it.** — Archived 2026-10-31 → `context/archive/2026-10-31-admin-user-list/`. Lesson: —.
+- **S-07: user (as admin) can block a user, and a blocked user can no longer sign in or use the app, with no bypass path.** — Archived 2026-11-02 → `context/archive/2026-10-31-admin-block-user/`. Lesson: —.
