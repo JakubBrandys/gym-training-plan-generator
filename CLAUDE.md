@@ -33,55 +33,30 @@ Both packages use oxlint as the sole linter (no ESLint). `backend/` runs TypeScr
 
 No `.env` files exist in either package yet. `backend/.gitignore` already excludes `.env*` — add secrets there, never commit them. `frontend/.gitignore` has no env-file pattern yet if one is added later.
 
+### UI contract
+
+- Design tokens (colour, radius, widths) live in `@frontend/src/index.css`: `:root` plus the `prefers-color-scheme: dark` override. Views reference roles (`--accent`, `--on-accent`, `--text-muted`, `--surface`, `--radius`, `--content-width`, `--narrow-width`), never colour values or fixed widths.
+- Shared components live in `@frontend/src/components/` (`Button`, `ButtonLink`, each with `primary` / `secondary` variants; `Card` for a `--surface` container; `Chip` for a small pill; `PlanSummary`, `WeekSwitcher` and `WeekPager` for the plan view). Check this directory before creating a component and extend it instead of styling a second `<button>`, link-button or bordered box in a view.
+- Signed-in pages render inside `AppShell` (`AppHeader`, the page's own `<main>` through the Outlet, `AppFooter`); sign-in and sign-up render inside `AuthLayout`. Pages keep their own `<main>` and `<h1>`; do not add a "Back to home" link, and add a nav entry in `@frontend/src/components/nav-active.ts`, which also decides the active link. Read the signed-in user's email and role through `useProfile()` from `@frontend/src/profile/` instead of calling `/me` again.
+- A training plan is shown by `PlanView` (`@frontend/src/components/PlanView.tsx`): a summary card, a `WeekSwitcher`, one week of session cards with compact rows, and a `WeekPager`. The week lives in the URL hash (`#week-N`) through `@frontend/src/lib/week-hash.ts` (invalid hashes show week 1, switching replaces the history entry), summary numbers come from `@frontend/src/lib/plan-stats.ts`, and `PlanView` needs a router. Keep the week heading an `h2` named `Week N`; the saved page passes its details through the `details` prop, and the generation page passes none because the job view does not expose the form.
+- No literal colours (hex, `rgb()`, `hsl()`, `oklch()`) in views, components or `frontend/src/dev/`; add or adjust a token in `index.css` instead. `@frontend/src/ui-contract.spec.ts` fails `npm test` on a literal; its allowlist of known literals is empty and should stay empty.
+- Every state of a view (loading, ready, error, pending, disabled; empty when the view has a list) belongs in the dev-only kitchen sink at `/dev/kitchen-sink` (`@frontend/src/dev/KitchenSinkPage.tsx`, present only under `npm run dev`), which also shows the shell header and footer in every state and the plan view in its states (live hash, saved and generation page variants, edge-length content, no images, a failing image). After a visual change, screenshot it at desktop and 375 px in light and dark.
+
 <!-- BEGIN @przeprogramowani/10x-cli -->
 
-## 10xDevs AI Toolkit - Module 2, Lesson 4
+## 10xDevs AI Toolkit - Module 2, Lesson 5 (10xDevs 4.0 UI)
 
-Prepare for a harder implementation stream with the **research-backed planning chain**:
+**For UI work on a view that already renders, start with `/10x-ui <view>`.** It is the
+entry point: a short pre-audit, a suggested change-id and the `/10x-new` command for you to
+run, then the audit brief for `/10x-research`. The visual change goes through the same chain
+as any other change (`/10x-new` → `/10x-research` → `/10x-plan` → `/10x-implement` →
+`/10x-impl-review`); `/10x-ui <change-id>` resumes at the first step not yet done. It carries
+the rules:
+when to start and which view, the audit into charges, the design-system contract as
+this repo realises it, the component states, the screenshot gate, and the rule that
+keeps the next agent on the contract. Its `references/` hold the quality checklist.
 
-```
-internal research (/10x-research) + external research (exa.ai, Context7) -> /10x-plan -> /10x-implement -> success
-```
-
-The lesson focus is distinguishing internal from external research and using evidence to back planning decisions.
-
-### Task Router - Where to start
-
-| Skill | Use it when |
-| --- | --- |
-| **Internal research (lesson focus)** | |
-| `/10x-research <change-id>` | You need evidence from the existing codebase — patterns, conventions, integration points, or existing implementations. Runs parallel sub-agents over the repo and writes structured findings to `research.md`. |
-| **External research (lesson focus)** | |
-| exa.ai | You need AI-native web search for library comparisons, best practices, or ecosystem context that the codebase cannot answer. |
-| Context7 (`resolve-library-id` → `get-library-docs`) | You need live, current documentation for a specific library or framework. Resolves a library ID first, then fetches relevant doc pages. |
-| **Framing spare wheel** | |
-| `/10x-frame <change-id>` | The plan won't converge, the plan doesn't deliver expected results, or persistent drift keeps breaking the implementation. Use as an escape hatch on a separate problem (demonstrated on Space Explorers example), not as pre-research ritual. |
-| **Planning and execution** | |
-| `/10x-plan <change-id>` / `/10x-implement <change-id> phase <n>` | Use the same planning and execution chain from Lesson 2, now with upstream research evidence feeding the plan. |
-
-### Research discipline
-
-- Internal research (`/10x-research`) answers "what does our codebase already do?" — patterns, schemas, conventions, integration points.
-- External research (exa.ai, Context7) answers "what should we do?" — library capabilities, API docs, ecosystem best practices.
-- Combine both as evidence-backed input to `/10x-plan`. A plan without research evidence on a non-trivial stream is a guess.
-- Agent-friendly docs (`llms.txt`, markdown-for-agents, `/md` endpoints) are a quality signal for library selection — libraries that publish agent-readable docs integrate faster.
-
-### `/10x-frame` as spare wheel
-
-Three triggers for reaching for `/10x-frame`:
-1. The plan won't converge — research keeps opening more questions instead of narrowing to a contract.
-2. The plan doesn't deliver — implementation repeatedly fails to meet success criteria.
-3. Persistent drift — the implementation keeps diverging from the plan in ways that suggest the problem was mis-framed.
-
-Demonstrated on a Space Explorers example, not the SRS path. It is an escape hatch, not a mandatory step.
-
-### Paths used by this lesson
-
-- `context/changes/<change-id>/research.md` - internal research output
-- `context/changes/<change-id>/frame.md` - framing output when needed
-- `context/changes/<change-id>/plan.md` - evidence-backed implementation contract
-- `context/foundation/lessons.md` - recurring rules and pitfalls
-
-Skills must not write to `context/archive/`. Archived changes are immutable; if a resolved target path starts with `context/archive/`, abort with: "This change is archived. Open a new change with `/10x-new` instead."
+Building a view for the first time is not a `/10x-ui` job — build it through the
+ordinary chain, then come back to it with `/10x-ui`.
 
 <!-- END @przeprogramowani/10x-cli -->

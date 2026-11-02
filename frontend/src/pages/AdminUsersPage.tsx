@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import {
   blockAdminUser,
@@ -184,9 +183,6 @@ export const AdminUsersPage = () => {
         <p className="error" role="alert">
           Page not found
         </p>
-        <p>
-          <Link to="/">Back to home</Link>
-        </p>
       </main>
     )
   }
@@ -219,9 +215,6 @@ export const AdminUsersPage = () => {
           ))}
         </ul>
       )}
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </main>
   )
 }

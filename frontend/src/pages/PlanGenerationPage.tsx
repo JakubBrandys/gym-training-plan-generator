@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { Button } from '../components/Button'
 import { PlanView } from '../components/PlanView'
 import { useAuth } from '../auth/useAuth'
 import { handleAuthFailure } from '../lib/auth-failure'
@@ -121,9 +122,9 @@ const SavePlanControl = ({ jobId }: SavePlanControlProps) => {
           {error}
         </p>
       )}
-      <button type="button" disabled={saving} onClick={handleSave}>
+      <Button disabled={saving} onClick={handleSave}>
         {saving ? 'Saving…' : 'Save plan'}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -198,9 +199,6 @@ const PlanGenerationJob = ({ jobId }: PlanGenerationJobProps) => {
           <Link to="/plans/new">{state.status === 'completed' ? 'Create another plan' : 'Start again'}</Link>
         </p>
       )}
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </main>
   )
 }

@@ -62,9 +62,6 @@ export const SavedPlansPage = () => {
           ))}
         </ul>
       )}
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
     </main>
   )
 }

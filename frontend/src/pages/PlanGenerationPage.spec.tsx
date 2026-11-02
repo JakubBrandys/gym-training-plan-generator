@@ -111,6 +111,19 @@ describe('PlanGenerationPage save action', () => {
     expect(await screen.findByRole('button', { name: 'Save plan' })).toBeTruthy()
   })
 
+  it('renders Save plan as the shared primary button above the plan', async () => {
+    renderPage()
+
+    const save = await findSaveButton()
+
+    expect(save.className).toBe('btn')
+    expect(screen.getByRole('heading', { level: 2, name: 'Week 1' })).toBeTruthy()
+    expect(
+      save.compareDocumentPosition(screen.getByRole('heading', { level: 2, name: 'Week 1' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
   it('saves the route job and navigates to the saved plan', async () => {
     saveMock.mockResolvedValue({ kind: 'ok', plan: savedPlan })
     renderPage()

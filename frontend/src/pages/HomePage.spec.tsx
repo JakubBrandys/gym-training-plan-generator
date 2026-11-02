@@ -1,24 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAuth } from '../auth/useAuth'
-import { apiFetch } from '../lib/api'
+import { afterEach, describe, expect, it } from 'vitest'
 import { HomePage } from './HomePage'
-
-vi.mock('../lib/api', () => ({ apiFetch: vi.fn() }))
-vi.mock('../auth/useAuth', () => ({ useAuth: vi.fn() }))
-
-const apiFetchMock = vi.mocked(apiFetch)
-const useAuthMock = vi.mocked(useAuth)
-const signOut = vi.fn()
-
-const respondWithMe = (role: 'MEMBER' | 'ADMIN') =>
-  apiFetchMock.mockResolvedValue(
-    new Response(JSON.stringify({ id: 'user-1', email: 'someone@example.com', role }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    }),
-  )
 
 const renderPage = () =>
   render(
@@ -28,51 +11,35 @@ const renderPage = () =>
   )
 
 describe('HomePage', () => {
-  beforeEach(() => {
-    apiFetchMock.mockReset()
-    signOut.mockReset()
-    useAuthMock.mockReturnValue({
-      session: null,
-      loading: false,
-      signOutReason: null,
-      signOut,
-    })
-  })
-
   afterEach(() => {
     cleanup()
   })
 
-  it('shows the registered users link to an admin', async () => {
-    respondWithMe('ADMIN')
+  it('shows a Welcome heading and one sentence about the plan', () => {
     renderPage()
 
-    const link = await screen.findByRole('link', { name: 'Registered users' })
-    expect(link.getAttribute('href')).toBe('/admin/users')
+    expect(screen.getByRole('heading', { level: 1, name: 'Welcome' })).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Generate an AI-assisted 8-week training plan from your experience, schedule and goals.',
+      ),
+    ).toBeTruthy()
   })
 
-  it('does not show the registered users link to a member', async () => {
-    respondWithMe('MEMBER')
+  it('offers the primary action to create a training plan', () => {
     renderPage()
 
-    expect(await screen.findByText('MEMBER')).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Registered users' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'My plans' })).toBeTruthy()
+    const link = screen.getByRole('link', { name: 'Create a training plan' })
+    expect(link.getAttribute('href')).toBe('/plans/new')
+    expect(link.className).toBe('btn')
   })
 
-  it('does not show the registered users link while the profile is loading', () => {
-    apiFetchMock.mockReturnValue(new Promise(() => {}))
+  it('no longer carries the header controls', () => {
     renderPage()
 
-    expect(screen.getByText('Loading…')).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Registered users' })).toBeNull()
-  })
-
-  it('does not show the registered users link when the profile cannot be loaded', async () => {
-    apiFetchMock.mockResolvedValue(new Response('{}', { status: 500 }))
-    renderPage()
-
-    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Sign out' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'My plans' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Users' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Registered users' })).toBeNull()
   })
 })
