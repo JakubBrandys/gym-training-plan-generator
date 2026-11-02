@@ -49,7 +49,7 @@ An experienced lifter who trains five times a week currently self-programs, and 
 | S-04 | plan-review-with-images  | review the full 8-week plan with exercise images before deciding to save              | S-02, F-01    | FR-007, FR-011, US-01         | done |
 | S-05 | save-and-view-plan       | save a reviewed plan and find it under their account later                            | S-04          | FR-009, FR-010, US-01         | done |
 | S-06 | admin-user-list          | (as admin) view the list of registered users                                          | S-01          | FR-002                        | done |
-| S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | proposed |
+| S-07 | admin-block-user         | (as admin) block a user so they truly lose access                                     | S-06          | FR-003                        | in-progress |
 
 ## Streams
 
@@ -176,7 +176,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - How to stop the sign-in itself, not just API access? S-01 (`sign-up-and-login`) already returns 403 from every gated route when `Profile.blockedAt` is set (holds for live tokens), but Supabase still issues sessions to a blocked user. Options: a Supabase Admin API ban (`auth.admin.updateUserById` with `ban_duration`, needs `SUPABASE_SECRET_KEY`; blocks sign-in and refresh, not already-issued access tokens) or a Supabase Auth Hook reading `blockedAt` (verify it can reject issuance). The block action should set `blockedAt` and apply the chosen Supabase-side block. — Owner: user. Block: no.
 - **Risk:** The guardrail "a blocked user truly loses access" means enforcement must hold for already-issued sessions, not just new sign-ins; that is the one thing to plan carefully.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Backlog Handoff
 
