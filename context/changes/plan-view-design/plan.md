@@ -336,9 +336,9 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Automated
 
-- [x] 1.1 Stats and hash specs pass
-- [x] 1.2 No colour literals in the new data files
-- [x] 1.3 Full suite, build and lint pass
+- [x] 1.1 Stats and hash specs pass — b4c3df7
+- [x] 1.2 No colour literals in the new data files — b4c3df7
+- [x] 1.3 Full suite, build and lint pass — b4c3df7
 
 #### Manual
 
@@ -349,9 +349,9 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Automated
 
-- [x] 2.1 Component specs pass
-- [x] 2.2 Guard spec still passes, so the new CSS uses tokens only
-- [x] 2.3 Full suite, build and lint pass
+- [x] 2.1 Component specs pass — b4c3df7
+- [x] 2.2 Guard spec still passes, so the new CSS uses tokens only — b4c3df7
+- [x] 2.3 Full suite, build and lint pass — b4c3df7
 
 #### Manual
 
@@ -361,9 +361,9 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Automated
 
-- [x] 3.1 PlanView and page specs pass, including the Save plan assertions
-- [x] 3.2 The allowlisted literal is gone and the guard passes with an empty allowlist
-- [x] 3.3 Full suite, build and lint pass
+- [x] 3.1 PlanView and page specs pass, including the Save plan assertions — b4c3df7
+- [x] 3.2 The allowlisted literal is gone and the guard passes with an empty allowlist — b4c3df7
+- [x] 3.3 Full suite, build and lint pass — b4c3df7
 
 #### Manual
 
@@ -378,8 +378,8 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Automated
 
-- [x] 4.1 Production build contains no kitchen-sink code
-- [x] 4.2 Full suite and lint pass
+- [x] 4.1 Production build contains no kitchen-sink code — b4c3df7
+- [x] 4.2 Full suite and lint pass — b4c3df7
 
 #### Manual
 
@@ -392,9 +392,9 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Automated
 
-- [x] 5.1 Guard spec passes with the extended file list, the surface token and an empty allowlist
-- [x] 5.2 Full suite, build and lint pass
-- [x] 5.3 The CLI-managed block is unchanged by this phase
+- [x] 5.1 Guard spec passes with the extended file list, the surface token and an empty allowlist — b4c3df7
+- [x] 5.2 Full suite, build and lint pass — b4c3df7
+- [x] 5.3 The CLI-managed block is unchanged by this phase — b4c3df7
 
 #### Manual
 
