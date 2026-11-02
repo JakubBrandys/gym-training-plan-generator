@@ -342,17 +342,17 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Automated
 
-- [x] 1.1 Profile provider specs pass
-- [x] 1.2 No colour literals in the profile files
-- [x] 1.3 Full suite, build and lint pass
+- [x] 1.1 Profile provider specs pass — 1167b12
+- [x] 1.2 No colour literals in the profile files — 1167b12
+- [x] 1.3 Full suite, build and lint pass — 1167b12
 
 ### Phase 2: Shell components and tokens
 
 #### Automated
 
-- [x] 2.1 Nav rule and shell component specs pass
-- [x] 2.2 Guard spec still passes, so the shell CSS uses tokens only
-- [x] 2.3 Full suite, build and lint pass
+- [x] 2.1 Nav rule and shell component specs pass — 1167b12
+- [x] 2.2 Guard spec still passes, so the shell CSS uses tokens only — 1167b12
+- [x] 2.3 Full suite, build and lint pass — 1167b12
 
 #### Manual
 
@@ -363,10 +363,10 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Automated
 
-- [x] 3.1 Page and router specs pass, including the two that render the real router
-- [x] 3.2 No "Back to home" link remains in the source
-- [x] 3.3 `#root` no longer caps the width
-- [x] 3.4 Full suite, build and lint pass
+- [x] 3.1 Page and router specs pass, including the two that render the real router — 1167b12
+- [x] 3.2 No "Back to home" link remains in the source — 1167b12
+- [x] 3.3 `#root` no longer caps the width — 1167b12
+- [x] 3.4 Full suite, build and lint pass — 1167b12
 
 #### Manual
 
@@ -380,8 +380,8 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Automated
 
-- [x] 4.1 Production build contains no kitchen-sink code
-- [x] 4.2 Full suite and lint pass
+- [x] 4.1 Production build contains no kitchen-sink code — 1167b12
+- [x] 4.2 Full suite and lint pass — 1167b12
 
 #### Manual
 
@@ -394,9 +394,9 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Automated
 
-- [x] 5.1 Guard spec passes with the extended file list and width tokens
-- [x] 5.2 Full suite, build and lint pass
-- [x] 5.3 The CLI-managed block is unchanged by this phase
+- [x] 5.1 Guard spec passes with the extended file list and width tokens — 1167b12
+- [x] 5.2 Full suite, build and lint pass — 1167b12
+- [x] 5.3 The CLI-managed block is unchanged by this phase — 1167b12
 
 #### Manual
 
