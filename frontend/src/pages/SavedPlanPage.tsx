@@ -68,12 +68,10 @@ const SavedPlanDetail = ({ id }: SavedPlanDetailProps) => {
         </p>
       )}
       {state.status === 'ready' && (
-        <>
-          <p>
-            <SavedPlanDetails createdAt={state.plan.createdAt} form={state.plan.form} />
-          </p>
-          <PlanView plan={state.plan.plan} />
-        </>
+        <PlanView
+          plan={state.plan.plan}
+          details={<SavedPlanDetails createdAt={state.plan.createdAt} form={state.plan.form} />}
+        />
       )}
       <p>
         <Link to="/plans">My plans</Link>

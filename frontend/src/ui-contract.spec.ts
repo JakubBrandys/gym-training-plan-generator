@@ -14,19 +14,29 @@ const GUARDED_FILES = [
   './components/AppFooter.tsx',
   './components/AuthLayout.tsx',
   './components/nav-active.ts',
+  './components/Card.tsx',
+  './components/Chip.tsx',
+  './components/WeekSwitcher.tsx',
+  './components/WeekPager.tsx',
+  './components/PlanSummary.tsx',
+  './components/PlanView.tsx',
+  './lib/plan-stats.ts',
+  './lib/week-hash.ts',
   './profile/profile-context.ts',
   './profile/ProfileProvider.tsx',
   './profile/useProfile.ts',
   './dev/KitchenSinkPage.tsx',
+  './dev/sample-plan.ts',
   './dev/kitchen-sink.css',
 ]
 
-const ALLOWED_INDEX_CSS_LITERALS = ['background: #fff;']
+const ALLOWED_INDEX_CSS_LITERALS: string[] = []
 
 const REQUIRED_TOKENS = [
   '--accent',
   '--accent-hover',
   '--on-accent',
+  '--surface',
   '--radius',
   '--content-width',
   '--narrow-width',
