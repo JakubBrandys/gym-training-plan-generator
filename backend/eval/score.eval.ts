@@ -1,31 +1,18 @@
 import 'dotenv/config';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { loadEvalCatalog } from './eval-catalog.js';
 import { isJudgeSkipped, readConcurrency } from './eval-env.js';
 import { createOpenAiJudge, readJudgeConfig } from './eval-judge.js';
 import { judgeJobs } from './eval-judging.js';
+import { BASELINE_PATH, newestRunDir } from './eval-paths.js';
+import { buildReport, diffReports, formatReport } from './eval-report.js';
 import {
-  BASELINE_PATH,
-  GENERATED_FILE,
-  newestRunDir,
-  REPORT_FILE,
-} from './eval-paths.js';
-import {
-  buildReport,
-  diffReports,
-  formatReport,
-  type EvalReport,
-} from './eval-report.js';
-import type { GeneratedRun, JudgedJob } from './eval-types.js';
-
-const readBaseline = async (): Promise<EvalReport | null> => {
-  try {
-    return JSON.parse(await readFile(BASELINE_PATH, 'utf8')) as EvalReport;
-  } catch {
-    return null;
-  }
-};
+  readBaseline,
+  readRun,
+  writeJudgedFile,
+  writeReportFile,
+} from './eval-run-io.js';
+import type { JudgedJob } from './eval-types.js';
 
 describe('eval score', () => {
   it('scores a saved run, prints the report and diffs it against the baseline', async () => {
@@ -36,9 +23,7 @@ describe('eval score', () => {
     const runDir = process.env.EVAL_RUN_DIR
       ? resolve(process.env.EVAL_RUN_DIR)
       : await newestRunDir();
-    const run = JSON.parse(
-      await readFile(join(runDir, GENERATED_FILE), 'utf8'),
-    ) as GeneratedRun;
+    const run = await readRun(runDir);
     const catalog = await loadEvalCatalog();
 
     let judged: JudgedJob[] | null = null;
@@ -48,6 +33,7 @@ describe('eval score', () => {
         createOpenAiJudge(judgeConfig),
         concurrency,
       );
+      await writeJudgedFile(runDir, judged);
     }
 
     const report = buildReport({
@@ -56,14 +42,14 @@ describe('eval score', () => {
       judged,
       judgeModel: judgeConfig?.model ?? null,
     });
-    const baseline = await readBaseline();
+    const baseline = await readBaseline(BASELINE_PATH);
     console.log(
       `Run directory: ${runDir}\n${formatReport(report, baseline ? diffReports(report, baseline) : null)}`,
     );
 
-    const reportPath = join(runDir, REPORT_FILE);
-    await mkdir(dirname(reportPath), { recursive: true });
-    await writeFile(reportPath, JSON.stringify(report, null, 2));
-    expect(report.details.jobs.total).toBe(run.jobs.length);
+    await writeReportFile(runDir, report);
+    expect(report.details.jobs.total + report.details.outages.jobs).toBe(
+      run.jobs.length,
+    );
   });
 });

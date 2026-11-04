@@ -1,12 +1,12 @@
 {
   "meta": {
     "tier": "full",
-    "startedAt": "2026-11-04T20:00:47.403Z",
+    "startedAt": "2026-11-04T20:53:46.295Z",
     "draftModel": "gpt-5.6-luna",
     "reviewModel": "gpt-5.6-luna",
     "judgeModel": "gpt-6-luna",
-    "gitCommit": "e57466d690172271f20618187b4fc4149204ceb4",
-    "promptHash": "7a532bd1271e02898b242024175b4a3e463fd8ee49f6d53ce45f214a039517fa",
+    "gitCommit": "f4d3ca2954cc3497a24d2ef4e29c9e685049c27f",
+    "promptHash": "7cb4759d8a49265da55c44d47666b38eb5c073dd920d2f2937996f493e19289b",
     "inputIds": [
       "expert-5-5-strength",
       "beginner-2-4-general",
@@ -19,18 +19,18 @@
     ]
   },
   "metrics": {
-    "callValidity": 0.9791666666666666,
+    "callValidity": 0.9583333333333334,
     "jobFailureRate": 0,
-    "weekRepetition": 0.12499999999999999,
-    "distinctMuscles": 10.34375,
-    "aboveLevelShare": 0.01331934753687273,
-    "goalsFit": 3.9166666666666665,
-    "experienceFit": 4
+    "weekRepetition": 0.10714285714285714,
+    "distinctMuscles": 10.442708333333334,
+    "aboveLevelShare": 0.008267495449440379,
+    "goalsFit": 3.9583333333333335,
+    "experienceFit": 3.9583333333333335
   },
   "details": {
     "calls": {
       "drafting": {
-        "passed": 23,
+        "passed": 22,
         "total": 24
       },
       "reviewing": {
@@ -38,9 +38,13 @@
         "total": 24
       },
       "retries": {
-        "passed": 1,
-        "total": 1
+        "passed": 2,
+        "total": 2
       }
+    },
+    "outages": {
+      "calls": 0,
+      "jobs": 0
     },
     "jobs": {
       "total": 24,
@@ -48,14 +52,14 @@
       "byErrorCode": {}
     },
     "judge": {
-      "goalsFitPassShare": 0.8333333333333334,
+      "goalsFitPassShare": 0.75,
       "experienceFitPassShare": 0.9166666666666666,
       "unscored": 0,
       "errorNames": [],
       "calibration": {
-        "matchedMean": 3.8125,
-        "mismatchedMean": 2.4375,
-        "separation": 1.375,
+        "matchedMean": 3.9375,
+        "mismatchedMean": 2.3125,
+        "separation": 1.625,
         "discriminating": true
       }
     }
@@ -63,7 +67,7 @@
   "perInput": {
     "expert-5-5-strength": {
       "drafting": {
-        "passed": 3,
+        "passed": 2,
         "total": 3
       },
       "reviewing": {
@@ -71,8 +75,8 @@
         "total": 3
       },
       "retries": {
-        "passed": 0,
-        "total": 0
+        "passed": 1,
+        "total": 1
       },
       "jobs": {
         "passed": 3,
@@ -80,11 +84,11 @@
       },
       "errorCodes": {},
       "weekRepetition": {
-        "sum": 0.2857142857142857,
+        "sum": 0.7142857142857142,
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 33.5,
+        "sum": 34.5,
         "count": 3
       },
       "aboveLevel": {
@@ -112,11 +116,13 @@
         "count": 1
       },
       "mismatchedPaired": {
-        "sum": 1,
+        "sum": 1.5,
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "beginner-2-4-general": {
       "drafting": {
@@ -137,19 +143,19 @@
       },
       "errorCodes": {},
       "weekRepetition": {
-        "sum": 0.42857142857142855,
+        "sum": 0.2857142857142857,
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 29.875,
+        "sum": 30.625,
         "count": 3
       },
       "aboveLevel": {
-        "sum": 0.059138025095471905,
+        "sum": 0.026490066225165563,
         "count": 3
       },
       "goalsFit": {
-        "sum": 12,
+        "sum": 11,
         "count": 3
       },
       "experienceFit": {
@@ -157,7 +163,7 @@
         "count": 3
       },
       "goalsFitPass": {
-        "passed": 3,
+        "passed": 2,
         "total": 3
       },
       "experienceFitPass": {
@@ -173,11 +179,13 @@
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "intermediate-3-5-hypertrophy": {
       "drafting": {
-        "passed": 2,
+        "passed": 3,
         "total": 3
       },
       "reviewing": {
@@ -185,8 +193,8 @@
         "total": 3
       },
       "retries": {
-        "passed": 1,
-        "total": 1
+        "passed": 0,
+        "total": 0
       },
       "jobs": {
         "passed": 3,
@@ -198,7 +206,7 @@
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 30,
+        "sum": 30.125,
         "count": 3
       },
       "aboveLevel": {
@@ -206,11 +214,11 @@
         "count": 3
       },
       "goalsFit": {
-        "sum": 13,
+        "sum": 14,
         "count": 3
       },
       "experienceFit": {
-        "sum": 11,
+        "sum": 12,
         "count": 3
       },
       "goalsFitPass": {
@@ -218,11 +226,11 @@
         "total": 3
       },
       "experienceFitPass": {
-        "passed": 2,
+        "passed": 3,
         "total": 3
       },
       "matchedPaired": {
-        "sum": 4,
+        "sum": 4.5,
         "count": 1
       },
       "mismatchedPaired": {
@@ -230,7 +238,9 @@
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "expert-7-1-taper": {
       "drafting": {
@@ -255,7 +265,7 @@
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 29,
+        "sum": 29.125,
         "count": 3
       },
       "aboveLevel": {
@@ -263,7 +273,7 @@
         "count": 3
       },
       "goalsFit": {
-        "sum": 13,
+        "sum": 14,
         "count": 3
       },
       "experienceFit": {
@@ -279,19 +289,21 @@
         "total": 3
       },
       "matchedPaired": {
-        "sum": 4,
+        "sum": 4.5,
         "count": 1
       },
       "mismatchedPaired": {
-        "sum": 3,
+        "sum": 2,
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "intermediate-3-3-fatloss": {
       "drafting": {
-        "passed": 3,
+        "passed": 2,
         "total": 3
       },
       "reviewing": {
@@ -299,8 +311,8 @@
         "total": 3
       },
       "retries": {
-        "passed": 0,
-        "total": 0
+        "passed": 1,
+        "total": 1
       },
       "jobs": {
         "passed": 3,
@@ -308,11 +320,11 @@
       },
       "errorCodes": {},
       "weekRepetition": {
-        "sum": 1.1428571428571428,
+        "sum": 0.42857142857142855,
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 32,
+        "sum": 36,
         "count": 3
       },
       "aboveLevel": {
@@ -324,7 +336,7 @@
         "count": 3
       },
       "experienceFit": {
-        "sum": 14,
+        "sum": 13,
         "count": 3
       },
       "goalsFitPass": {
@@ -340,11 +352,13 @@
         "count": 1
       },
       "mismatchedPaired": {
-        "sum": 2.5,
+        "sum": 2,
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "beginner-3-3-back-sensitive": {
       "drafting": {
@@ -365,15 +379,15 @@
       },
       "errorCodes": {},
       "weekRepetition": {
-        "sum": 0.5714285714285714,
+        "sum": 0.42857142857142855,
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 33,
+        "sum": 29,
         "count": 3
       },
       "aboveLevel": {
-        "sum": 0,
+        "sum": 0.06666666666666667,
         "count": 3
       },
       "goalsFit": {
@@ -381,7 +395,7 @@
         "count": 3
       },
       "experienceFit": {
-        "sum": 12,
+        "sum": 11,
         "count": 3
       },
       "goalsFitPass": {
@@ -389,7 +403,7 @@
         "total": 3
       },
       "experienceFitPass": {
-        "passed": 3,
+        "passed": 2,
         "total": 3
       },
       "matchedPaired": {
@@ -397,11 +411,13 @@
         "count": 1
       },
       "mismatchedPaired": {
-        "sum": 4.5,
+        "sum": 4,
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "intermediate-1-7-return": {
       "drafting": {
@@ -422,11 +438,11 @@
       },
       "errorCodes": {},
       "weekRepetition": {
-        "sum": 0,
+        "sum": 0.14285714285714285,
         "count": 3
       },
       "distinctMuscles": {
-        "sum": 28.875,
+        "sum": 29.25,
         "count": 3
       },
       "aboveLevel": {
@@ -434,7 +450,7 @@
         "count": 3
       },
       "goalsFit": {
-        "sum": 13,
+        "sum": 14,
         "count": 3
       },
       "experienceFit": {
@@ -450,7 +466,7 @@
         "total": 3
       },
       "matchedPaired": {
-        "sum": 3.5,
+        "sum": 4,
         "count": 1
       },
       "mismatchedPaired": {
@@ -458,7 +474,9 @@
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     },
     "beginner-4-4-posture": {
       "drafting": {
@@ -487,11 +505,11 @@
         "count": 3
       },
       "aboveLevel": {
-        "sum": 0.26052631578947366,
+        "sum": 0.10526315789473684,
         "count": 3
       },
       "goalsFit": {
-        "sum": 11,
+        "sum": 10,
         "count": 3
       },
       "experienceFit": {
@@ -499,7 +517,7 @@
         "count": 3
       },
       "goalsFitPass": {
-        "passed": 2,
+        "passed": 1,
         "total": 3
       },
       "experienceFitPass": {
@@ -507,15 +525,17 @@
         "total": 3
       },
       "matchedPaired": {
-        "sum": 4,
+        "sum": 3.5,
         "count": 1
       },
       "mismatchedPaired": {
-        "sum": 1,
+        "sum": 1.5,
         "count": 1
       },
       "unscored": 0,
-      "judgeErrors": []
+      "judgeErrors": [],
+      "outageCalls": 0,
+      "outageJobs": 0
     }
   }
 }

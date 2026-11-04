@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import {
   buildDraftPrompt,
+  buildRetryPrompt,
   buildReviewPrompt,
   PLAN_SYSTEM_PROMPT,
 } from '../src/plan-generation/plan.prompts.js';
@@ -40,6 +41,8 @@ export interface InputAggregate {
   mismatchedPaired: Mean;
   unscored: number;
   judgeErrors: string[];
+  outageCalls: number;
+  outageJobs: number;
 }
 
 export type MetricName =
@@ -85,6 +88,7 @@ export interface JudgeDetails {
 
 export interface ReportDetails {
   calls: { drafting: Tally; reviewing: Tally; retries: Tally };
+  outages: { calls: number; jobs: number };
   jobs: {
     total: number;
     completed: number;
@@ -121,6 +125,8 @@ export interface ReportDiff {
   sharedInputIds: string[];
   metrics: MetricDiff[];
   judgeIncomplete: boolean;
+  warnings: string[];
+  promptChanged: boolean;
 }
 
 const emptyTally = (): Tally => ({ passed: 0, total: 0 });
@@ -143,6 +149,8 @@ const emptyAggregate = (): InputAggregate => ({
   mismatchedPaired: emptyMean(),
   unscored: 0,
   judgeErrors: [],
+  outageCalls: 0,
+  outageJobs: 0,
 });
 
 const addToTally = (tally: Tally, passed: boolean): void => {
@@ -189,12 +197,20 @@ const addJob = (
   job: RecordedJob,
   catalog: readonly EvalCatalogExercise[],
 ): void => {
-  addToTally(aggregate.jobs, job.status === 'completed');
+  if (job.errorCode === 'provider_unavailable') {
+    aggregate.outageJobs += 1;
+  } else {
+    addToTally(aggregate.jobs, job.status === 'completed');
+  }
   if (job.errorCode !== null) {
     aggregate.errorCodes[job.errorCode] =
       (aggregate.errorCodes[job.errorCode] ?? 0) + 1;
   }
   job.calls.forEach((call) => {
+    if (call.errorCode === 'unavailable') {
+      aggregate.outageCalls += 1;
+      return;
+    }
     if (call.attempt > 1) {
       addToTally(aggregate.retries, call.ok);
     } else if (call.stage === 'drafting') {
@@ -320,6 +336,7 @@ export const computePromptHash = (
   hash.update(PLAN_SYSTEM_PROMPT);
   inputs.forEach((input) => hash.update(buildDraftPrompt(input.form, catalog)));
   hash.update(buildReviewPrompt(inputs[0].form, catalog, { weeks: [] }));
+  hash.update(buildRetryPrompt('BASE', ['ISSUE']));
   return hash.digest('hex');
 };
 
@@ -371,6 +388,16 @@ export const buildReport = ({
         ),
         retries: mergeTally(aggregates.map((aggregate) => aggregate.retries)),
       },
+      outages: {
+        calls: aggregates.reduce(
+          (sum, aggregate) => sum + aggregate.outageCalls,
+          0,
+        ),
+        jobs: aggregates.reduce(
+          (sum, aggregate) => sum + aggregate.outageJobs,
+          0,
+        ),
+      },
       jobs: {
         total: jobsTally.total,
         completed: jobsTally.passed,
@@ -381,6 +408,13 @@ export const buildReport = ({
     perInput,
   };
 };
+
+const COMPARABLE_META = [
+  'tier',
+  'draftModel',
+  'reviewModel',
+  'judgeModel',
+] as const;
 
 const isRegressed = (
   metric: MetricName,
@@ -422,10 +456,18 @@ export const diffReports = (
         : false,
     };
   });
+  const warnings = COMPARABLE_META.filter(
+    (key) => current.meta[key] !== baseline.meta[key],
+  ).map(
+    (key) =>
+      `${key} differs from the baseline (${baseline.meta[key] ?? 'none'} -> ${current.meta[key] ?? 'none'}), deltas may not be comparable`,
+  );
   return {
     sharedInputIds,
     metrics,
     judgeIncomplete: (current.details.judge?.unscored ?? 0) > 0,
+    warnings,
+    promptChanged: current.meta.promptHash !== baseline.meta.promptHash,
   };
 };
 
@@ -444,6 +486,7 @@ export const formatReport = (
     `Inputs: ${meta.inputIds.join(', ')}`,
     `First-attempt validity: drafting ${formatTally(details.calls.drafting)}, reviewing ${formatTally(details.calls.reviewing)}`,
     `Retry calls: ${formatTally(details.calls.retries)} valid`,
+    `Provider outages excluded from the rates: ${details.outages.calls} calls, ${details.outages.jobs} jobs`,
     `Jobs: ${details.jobs.completed}/${details.jobs.total} completed, failures by code ${JSON.stringify(details.jobs.byErrorCode)}`,
   ];
   if (details.judge) {
@@ -464,6 +507,10 @@ export const formatReport = (
     return lines.join('\n');
   }
   lines.push(
+    ...diff.warnings.map((warning) => `WARNING: ${warning}`),
+    diff.promptChanged
+      ? 'Prompt hash differs from the baseline (prompt, catalog or inputs changed).'
+      : 'Prompt hash matches the baseline.',
     `Compared with baseline over shared inputs: ${diff.sharedInputIds.join(', ') || 'none'}`,
     ...diff.metrics.map(
       (entry) =>

@@ -5,6 +5,7 @@ import {
   PlanModelError,
   type PlanModelClient,
 } from '../src/plan-generation/plan-model.client.js';
+import { PlanPipelineService } from '../src/plan-generation/plan-pipeline.service.js';
 import type { GeneratedPlan } from '../src/plan-generation/plan.schema.js';
 import type { EvalCatalogExercise } from './eval-catalog.js';
 import { createRecordingClient } from './eval-record.js';
@@ -174,6 +175,24 @@ describe('runEvalJob', () => {
     expect(job.errorCode).toBe('provider_unavailable');
     expect(job.calls).toHaveLength(1);
     expect(job.calls[0].errorCode).toBe('unavailable');
+  });
+});
+
+describe('runEvalJob crash handling', () => {
+  it('logs only the error name and ends the job as runner_error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(PlanPipelineService.prototype, 'run').mockRejectedValueOnce(
+      new TypeError('secret detail'),
+    );
+    const { client } = scriptedClient([]);
+
+    const job = await runEvalJob(spec, { client, catalog, config });
+
+    expect(job.status).toBe('failed');
+    expect(job.errorCode).toBe('runner_error');
+    expect(warn).toHaveBeenCalledWith(
+      'eval job a#1 crashed outside the pipeline: TypeError',
+    );
   });
 });
 

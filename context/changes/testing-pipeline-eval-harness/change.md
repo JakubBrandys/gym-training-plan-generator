@@ -1,7 +1,7 @@
 ---
 change_id: testing-pipeline-eval-harness
 title: Pipeline eval harness for plan quality (test-plan Phase 4)
-status: implemented
+status: impl_reviewed
 created: 2026-11-04
 updated: 2026-11-04
 archived_at: null

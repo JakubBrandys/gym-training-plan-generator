@@ -1,4 +1,18 @@
 import type { EvalCatalogExercise } from './eval-catalog.js';
+
+const retryPromptSuffix = vi.hoisted(() => ({ value: '' }));
+
+vi.mock('../src/plan-generation/plan.prompts.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../src/plan-generation/plan.prompts.js')
+    >();
+  return {
+    ...actual,
+    buildRetryPrompt: (prompt: string, issues: readonly string[]) =>
+      actual.buildRetryPrompt(prompt, issues) + retryPromptSuffix.value,
+  };
+});
 import {
   buildReport,
   computePromptHash,
@@ -108,6 +122,8 @@ const aggregate = (
   mismatchedPaired: mean(0, 0),
   unscored: 0,
   judgeErrors: [],
+  outageCalls: 0,
+  outageJobs: 0,
   ...overrides,
 });
 
@@ -137,6 +153,7 @@ const reportOf = (perInput: Record<string, InputAggregate>): EvalReport => ({
       reviewing: tally(0, 0),
       retries: tally(0, 0),
     },
+    outages: { calls: 0, jobs: 0 },
     jobs: { total: 0, completed: 0, byErrorCode: {} },
     judge: null,
   },
@@ -168,7 +185,7 @@ describe('buildReport', () => {
     expect(report.metrics.jobFailureRate).toBe(0);
   });
 
-  it('reports failed jobs by error code', () => {
+  it('reports failed jobs by error code and keeps a provider outage out of the rate', () => {
     const report = buildReport({
       run: run([
         job(
@@ -189,11 +206,12 @@ describe('buildReport', () => {
     });
 
     expect(report.details.jobs).toEqual({
-      total: 3,
+      total: 2,
       completed: 1,
       byErrorCode: { invalid_output: 1, provider_unavailable: 1 },
     });
-    expect(report.metrics.jobFailureRate).toBeCloseTo(2 / 3);
+    expect(report.details.outages.jobs).toBe(1);
+    expect(report.metrics.jobFailureRate).toBe(0.5);
     expect(report.details.judge).toBeNull();
   });
 
@@ -311,6 +329,78 @@ describe('buildReport', () => {
   });
 });
 
+describe('provider outages', () => {
+  const outageCall = (stage: 'drafting' | 'reviewing') => ({
+    ...call(stage, 1, false),
+    errorCode: 'unavailable',
+    output: null,
+  });
+
+  it('keeps outage calls and jobs out of the validity and failure rates', () => {
+    const report = buildReport({
+      run: run([
+        job('a', 'completed', [
+          call('drafting', 1, true),
+          call('reviewing', 1, true),
+        ]),
+        job('a', 'failed', [outageCall('drafting')], 'provider_unavailable'),
+        job(
+          'a',
+          'failed',
+          [call('drafting', 1, true), outageCall('reviewing')],
+          'provider_unavailable',
+        ),
+      ]),
+      catalog,
+      judged: null,
+      judgeModel: null,
+    });
+
+    expect(report.details.calls.drafting).toEqual(tally(2, 2));
+    expect(report.details.calls.reviewing).toEqual(tally(1, 1));
+    expect(report.details.outages).toEqual({ calls: 2, jobs: 2 });
+    expect(report.metrics.callValidity).toBe(1);
+    expect(report.metrics.jobFailureRate).toBe(0);
+    expect(report.details.jobs.byErrorCode).toEqual({
+      provider_unavailable: 2,
+    });
+  });
+
+  it('still counts a real invalid_output failure next to an outage', () => {
+    const report = buildReport({
+      run: run([
+        job(
+          'a',
+          'failed',
+          [call('drafting', 1, false), call('drafting', 2, false)],
+          'invalid_output',
+        ),
+        job('a', 'failed', [outageCall('drafting')], 'provider_unavailable'),
+      ]),
+      catalog,
+      judged: null,
+      judgeModel: null,
+    });
+
+    expect(report.metrics.jobFailureRate).toBe(1);
+    expect(report.metrics.callValidity).toBe(0);
+  });
+
+  it('prints the excluded outages in the report text', () => {
+    const report = buildReport({
+      run: run([
+        job('a', 'failed', [outageCall('drafting')], 'provider_unavailable'),
+      ]),
+      catalog,
+      judged: null,
+      judgeModel: null,
+    });
+    expect(formatReport(report, null)).toContain(
+      'Provider outages excluded from the rates: 1 calls, 1 jobs',
+    );
+  });
+});
+
 describe('diffReports', () => {
   const baseline = reportOf({ a: validityOnly(20, 20) });
 
@@ -402,6 +492,41 @@ describe('diffReports', () => {
   });
 });
 
+describe('diffReports comparability', () => {
+  it('warns when the tier or a model differs from the baseline', () => {
+    const baseline = reportOf({ a: validityOnly(20, 20) });
+    const current = reportOf({ a: validityOnly(20, 20) });
+    current.meta.tier = 'smoke';
+    current.meta.draftModel = 'other-model';
+
+    const diff = diffReports(current, baseline);
+
+    expect(diff.warnings).toEqual([
+      'tier differs from the baseline (full -> smoke), deltas may not be comparable',
+      'draftModel differs from the baseline (d -> other-model), deltas may not be comparable',
+    ]);
+  });
+
+  it('has no warnings for matching runs and reports the prompt as unchanged', () => {
+    const diff = diffReports(
+      reportOf({ a: validityOnly(20, 20) }),
+      reportOf({ a: validityOnly(20, 20) }),
+    );
+    expect(diff.warnings).toEqual([]);
+    expect(diff.promptChanged).toBe(false);
+  });
+
+  it('reports a changed prompt hash', () => {
+    const current = reportOf({ a: validityOnly(20, 20) });
+    current.meta.promptHash = 'different';
+    const diff = diffReports(current, reportOf({ a: validityOnly(20, 20) }));
+    expect(diff.promptChanged).toBe(true);
+    expect(formatReport(current, diff)).toContain(
+      'Prompt hash differs from the baseline',
+    );
+  });
+});
+
 describe('formatReport', () => {
   it('names the regressed metric', () => {
     const current = reportOf({ a: validityOnly(18, 20) });
@@ -420,6 +545,14 @@ describe('formatReport', () => {
 });
 
 describe('computePromptHash', () => {
+  it('changes when the retry prompt template changes', () => {
+    const before = computePromptHash(EVAL_INPUTS, catalog);
+    retryPromptSuffix.value = ' changed';
+    const after = computePromptHash(EVAL_INPUTS, catalog);
+    retryPromptSuffix.value = '';
+    expect(after).not.toBe(before);
+  });
+
   it('is stable for the same inputs and changes with the catalog', () => {
     const first = computePromptHash(EVAL_INPUTS, catalog);
     expect(computePromptHash(EVAL_INPUTS, catalog)).toBe(first);

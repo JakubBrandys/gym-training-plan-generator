@@ -57,8 +57,11 @@ export const runEvalJob = async (
   let runnerFailed = false;
   try {
     await pipeline.run(job.id, spec.form);
-  } catch {
+  } catch (error) {
     runnerFailed = true;
+    console.warn(
+      `eval job ${spec.inputId}#${spec.repeat} crashed outside the pipeline: ${error instanceof Error ? error.name : 'unknown error'}`,
+    );
   }
   const finished = store.get(job.id, EVAL_OWNER);
   return {
@@ -74,10 +77,10 @@ export const runEvalJobs = (
   specs: readonly EvalJobSpec[],
   deps: EvalRunDeps,
   concurrency: number,
-  onJobDone?: (job: RecordedJob) => void,
+  onJobDone?: (job: RecordedJob) => void | Promise<void>,
 ): Promise<RecordedJob[]> =>
   mapPool(specs, concurrency, async (spec) => {
     const recorded = await runEvalJob(spec, deps);
-    onJobDone?.(recorded);
+    await onJobDone?.(recorded);
     return recorded;
   });

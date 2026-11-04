@@ -6,6 +6,9 @@ export const EVAL_DIR = dirname(fileURLToPath(import.meta.url));
 export const RUNS_DIR = join(EVAL_DIR, 'runs');
 export const BASELINE_PATH = join(EVAL_DIR, 'baseline', 'report.json');
 export const GENERATED_FILE = 'generated.json';
+export const META_FILE = 'meta.json';
+export const JOBS_DIR = 'jobs';
+export const JUDGED_FILE = 'judged.json';
 export const REPORT_FILE = 'report.json';
 
 export const newestRunDir = async (): Promise<string> => {
