@@ -443,14 +443,14 @@ None. No schema, API or persisted-shape change; the guard only reads the generat
 
 #### Automated
 
-- [x] 5.1 §6.1 no longer reads TBD: `sed -n '/### 6.1/,/### 6.2/p' context/foundation/test-plan.md` contains no `TBD`
-- [x] 5.2 `CLAUDE.md` no longer says the frontend has no test framework: `grep -n "no test framework" CLAUDE.md` returns nothing
-- [x] 5.3 Backend suite, lint and build pass: `cd backend && npm test && npm run lint && npm run build`
-- [x] 5.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build`
+- [x] 5.1 §6.1 no longer reads TBD: `sed -n '/### 6.1/,/### 6.2/p' context/foundation/test-plan.md` contains no `TBD` — fde39dc
+- [x] 5.2 `CLAUDE.md` no longer says the frontend has no test framework: `grep -n "no test framework" CLAUDE.md` returns nothing — fde39dc
+- [x] 5.3 Backend suite, lint and build pass: `cd backend && npm test && npm run lint && npm run build` — fde39dc
+- [x] 5.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build` — fde39dc
 
 #### Manual
 
-- [x] 5.5 Fly smoke 1: with a generation in the Drafting stage on the deployed app, restart the backend machine (`fly machines list`, then `fly machine restart <id>` for the project's Fly app); record which message the page shows and how long it takes
-- [x] 5.6 Fly smoke 2: if the page ended on `Something went wrong, try again`, press Retry once the machine is back and confirm it then shows `This plan could not be found or has expired.`
-- [x] 5.7 Fly smoke 3: with a completed plan on screen, restart the machine and click Save; the expiry message appears and the plan stays visible
-- [x] 5.8 Record the Fly observations in the Smoke result note and decide with the user whether the deploy-time wording needs a follow-up change
+- [x] 5.5 Fly smoke 1: with a generation in the Drafting stage on the deployed app, restart the backend machine (`fly machines list`, then `fly machine restart <id>` for the project's Fly app); record which message the page shows and how long it takes — fde39dc
+- [x] 5.6 Fly smoke 2: if the page ended on `Something went wrong, try again`, press Retry once the machine is back and confirm it then shows `This plan could not be found or has expired.` — fde39dc
+- [x] 5.7 Fly smoke 3: with a completed plan on screen, restart the machine and click Save; the expiry message appears and the plan stays visible — fde39dc
+- [x] 5.8 Record the Fly observations in the Smoke result note and decide with the user whether the deploy-time wording needs a follow-up change — fde39dc
