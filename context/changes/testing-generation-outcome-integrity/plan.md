@@ -413,29 +413,29 @@ None. No schema, API or persisted-shape change; the guard only reads the generat
 
 #### Automated
 
-- [x] 3.1 Guard and watch specs pass: `cd frontend && npx vitest run src/lib/plan-generation.spec.ts src/lib/plan-generation-watch.spec.tsx`
-- [x] 3.2 Frontend suite passes: `cd frontend && npm test`
-- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 3.4 Frontend build passes: `cd frontend && npm run build`
-- [x] 3.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 3.1 Guard and watch specs pass: `cd frontend && npx vitest run src/lib/plan-generation.spec.ts src/lib/plan-generation-watch.spec.tsx` — e7f0203
+- [x] 3.2 Frontend suite passes: `cd frontend && npm test` — e7f0203
+- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint` — e7f0203
+- [x] 3.4 Frontend build passes: `cd frontend && npm run build` — e7f0203
+- [x] 3.5 Each deliberate-break check listed above turns the named tests red and is restored — e7f0203
 
 #### Manual
 
-- [x] 3.6 A real generation in the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) completes and shows the plan with a Save button, confirming the guard accepts real server output
+- [x] 3.6 A real generation in the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) completes and shows the plan with a Save button, confirming the guard accepts real server output — e7f0203
 
 ### Phase 4: Page-level states (frontend, Risk #1 user-visible)
 
 #### Automated
 
-- [ ] 4.1 Page specs pass: `cd frontend && npx vitest run src/pages/PlanGenerationPage.spec.tsx src/pages/PlanGenerationPage.watch.spec.tsx`
-- [ ] 4.2 Frontend suite passes: `cd frontend && npm test`
-- [ ] 4.3 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 4.4 Frontend build passes: `cd frontend && npm run build`
-- [ ] 4.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 4.1 Page specs pass: `cd frontend && npx vitest run src/pages/PlanGenerationPage.spec.tsx src/pages/PlanGenerationPage.watch.spec.tsx`
+- [x] 4.2 Frontend suite passes: `cd frontend && npm test`
+- [x] 4.3 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 4.4 Frontend build passes: `cd frontend && npm run build`
+- [x] 4.5 Each deliberate-break check listed above turns the named tests red and is restored
 
 #### Manual
 
-- [ ] 4.6 Local outage: start a generation against a local backend, stop the backend mid-run, and the page ends on `Something went wrong, try again` with Retry; after restarting the backend, pressing Retry shows `This plan could not be found or has expired.` with `Start again`
+- [x] 4.6 Local outage: start a generation against a local backend, stop the backend mid-run, and the page ends on `Something went wrong, try again` with Retry; after restarting the backend, pressing Retry shows `This plan could not be found or has expired.` with `Start again`
 
 ### Phase 5: Manual deploy smoke and cookbook
 
