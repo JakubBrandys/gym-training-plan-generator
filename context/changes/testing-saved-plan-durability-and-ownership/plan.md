@@ -314,23 +314,23 @@ None. No schema, API or persisted-shape change; the guard only reads the saved-p
 
 #### Automated
 
-- [x] 1.1 E2E specs pass with the new cases: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/saved-plans.e2e-spec.ts test/plan-generation.e2e-spec.ts`
-- [x] 1.2 Backend e2e suite passes: `cd backend && npm run test:e2e`
-- [x] 1.3 Backend unit suite passes: `cd backend && npm test`
-- [x] 1.4 Backend lint passes: `cd backend && npm run lint`
-- [x] 1.5 Backend build passes: `cd backend && npm run build`
-- [x] 1.6 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 1.1 E2E specs pass with the new cases: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/saved-plans.e2e-spec.ts test/plan-generation.e2e-spec.ts` — 5c416cb
+- [x] 1.2 Backend e2e suite passes: `cd backend && npm run test:e2e` — 5c416cb
+- [x] 1.3 Backend unit suite passes: `cd backend && npm test` — 5c416cb
+- [x] 1.4 Backend lint passes: `cd backend && npm run lint` — 5c416cb
+- [x] 1.5 Backend build passes: `cd backend && npm run build` — 5c416cb
+- [x] 1.6 Each deliberate-break check listed above turns the named tests red and is restored — 5c416cb
 
 ### Phase 2: Persistence round trip and failed save (backend, Risk #3)
 
 #### Automated
 
-- [ ] 2.1 E2E spec passes with the new cases: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/saved-plans.e2e-spec.ts`
-- [ ] 2.2 Backend e2e suite passes: `cd backend && npm run test:e2e`
-- [ ] 2.3 Backend unit suite passes: `cd backend && npm test`
-- [ ] 2.4 Backend lint passes: `cd backend && npm run lint`
-- [ ] 2.5 Backend build passes: `cd backend && npm run build`
-- [ ] 2.6 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 2.1 E2E spec passes with the new cases: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/saved-plans.e2e-spec.ts`
+- [x] 2.2 Backend e2e suite passes: `cd backend && npm run test:e2e`
+- [x] 2.3 Backend unit suite passes: `cd backend && npm test`
+- [x] 2.4 Backend lint passes: `cd backend && npm run lint`
+- [x] 2.5 Backend build passes: `cd backend && npm run build`
+- [x] 2.6 Each deliberate-break check listed above turns the named tests red and is restored
 
 ### Phase 3: Saved-plan read guard and stored-shape render (frontend, Risk #3)
 

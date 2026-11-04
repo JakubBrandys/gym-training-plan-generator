@@ -798,4 +798,201 @@ describe('SavedPlansController (http)', () => {
       },
     );
   });
+
+  describe('persistence fidelity', () => {
+    const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+    const storedPlanJson = `{
+      "weeks": [
+        {
+          "week": 1,
+          "goal": "Build a base",
+          "sessions": [
+            {
+              "title": "Lower body",
+              "exercises": [
+                {
+                  "slug": "barbell-squat",
+                  "name": "Barbell Squat",
+                  "imageKey": "exercises/barbell-squat.jpg",
+                  "sets": 4,
+                  "reps": "6-8",
+                  "restSeconds": 120,
+                  "note": "Keep the chest up"
+                },
+                {
+                  "slug": "romanian-deadlift",
+                  "name": "Romanian Deadlift",
+                  "imageKey": "exercises/romanian-deadlift.jpg",
+                  "sets": 3,
+                  "reps": "8-10",
+                  "restSeconds": 90,
+                  "note": null
+                }
+              ]
+            },
+            {
+              "title": "Upper body",
+              "exercises": [
+                {
+                  "slug": "pushups",
+                  "name": "Pushups",
+                  "imageKey": "exercises/pushups.jpg",
+                  "sets": 3,
+                  "reps": "AMRAP",
+                  "restSeconds": 60,
+                  "note": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "week": 2,
+          "goal": "Add volume",
+          "sessions": [
+            {
+              "title": "Core and arms",
+              "exercises": [
+                {
+                  "slug": "plank",
+                  "name": "Plank",
+                  "imageKey": "exercises/plank.jpg",
+                  "sets": 3,
+                  "reps": "45 s",
+                  "restSeconds": 45,
+                  "note": "Squeeze the glutes"
+                },
+                {
+                  "slug": "hammer-curls",
+                  "name": "Hammer Curls",
+                  "imageKey": "exercises/hammer-curls.jpg",
+                  "sets": 3,
+                  "reps": "10-12",
+                  "restSeconds": 60,
+                  "note": "Slow on the way down"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }`;
+
+    const planWithImages: PlanResult = {
+      weeks: [
+        {
+          week: 1,
+          goal: 'Build a base',
+          sessions: [
+            {
+              title: 'Lower body',
+              exercises: [
+                {
+                  slug: 'barbell-squat',
+                  name: 'Barbell Squat',
+                  imageKey: 'exercises/barbell-squat.jpg',
+                  sets: 4,
+                  reps: '6-8',
+                  restSeconds: 120,
+                  note: 'Keep the chest up',
+                },
+                {
+                  slug: 'romanian-deadlift',
+                  name: 'Romanian Deadlift',
+                  imageKey: 'exercises/romanian-deadlift.jpg',
+                  sets: 3,
+                  reps: '8-10',
+                  restSeconds: 90,
+                  note: null,
+                },
+              ],
+            },
+            {
+              title: 'Upper body',
+              exercises: [
+                {
+                  slug: 'pushups',
+                  name: 'Pushups',
+                  imageKey: 'exercises/pushups.jpg',
+                  sets: 3,
+                  reps: 'AMRAP',
+                  restSeconds: 60,
+                  note: null,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          week: 2,
+          goal: 'Add volume',
+          sessions: [
+            {
+              title: 'Core and arms',
+              exercises: [
+                {
+                  slug: 'plank',
+                  name: 'Plank',
+                  imageKey: 'exercises/plank.jpg',
+                  sets: 3,
+                  reps: '45 s',
+                  restSeconds: 45,
+                  note: 'Squeeze the glutes',
+                },
+                {
+                  slug: 'hammer-curls',
+                  name: 'Hammer Curls',
+                  imageKey: 'exercises/hammer-curls.jpg',
+                  sets: 3,
+                  reps: '10-12',
+                  restSeconds: 60,
+                  note: 'Slow on the way down',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    it('returns a saved plan with images and notes exactly as it was stored', async () => {
+      const job = store.create('user-1', form);
+      store.complete(job.id, planWithImages);
+
+      const saved = await postSave('user-1', { jobId: job.id }).expect(201);
+      const { id, createdAt } = saved.body as { id: string; createdAt: string };
+      const response = await getPlan('user-1', id).expect(200);
+
+      const expectedPlan: unknown = JSON.parse(storedPlanJson);
+      expect(response.body).toEqual({
+        id,
+        createdAt,
+        form,
+        title: null,
+        plan: expectedPlan,
+      });
+      expect(createdAt).toMatch(ISO_TIMESTAMP);
+      expect(table.rows).toHaveLength(1);
+      expect(table.rows[0]!.plan).toEqual(expectedPlan);
+      expect(table.rows[0]!.form).toEqual(form);
+    });
+
+    it('answers 500 for a failed save without confirming it, stores nothing and saves on retry', async () => {
+      const jobId = completedJob('user-1');
+      table.create.mockRejectedValueOnce(new Error('connection lost'));
+
+      const failed = await postSave('user-1', { jobId });
+
+      expect(failed.status).toBe(500);
+      expect(JSON.stringify(failed.body)).not.toContain('connection lost');
+      expect(table.rows).toEqual([]);
+      expect(store.get(jobId, 'user-1')?.status).toBe('completed');
+
+      await postSave('user-1', { jobId }).expect(201);
+
+      expect(table.rows).toHaveLength(1);
+      expect(table.rows[0]!.sourceJobId).toBe(jobId);
+    });
+  });
 });
