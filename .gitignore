@@ -15,3 +15,6 @@ node_modules/
 
 # backend/ and frontend/ each carry their own .gitignore for their own
 # build artifacts, dependency caches, and env files.
+
+# Playwright MCP session output
+.playwright-mcp/
