@@ -383,29 +383,29 @@ None. No production code, schema or data changes.
 
 #### Automated
 
-- [x] 3.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation.e2e-spec.ts`
-- [x] 3.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [x] 3.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 3.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation.e2e-spec.ts` — 8862988
+- [x] 3.2 Full backend e2e suite passes: `cd backend && npm run test:e2e` — 8862988
+- [x] 3.3 Lint and type check pass: `cd backend && npm run lint && npm run build` — 8862988
 
 #### Manual
 
-- [x] 3.4 Deliberate-break check: remove the `hasActive` denial from `PlanLimiter.tryAcquire`; the concurrent-burst test goes red; restore the file
-- [x] 3.5 Deliberate-break check: make `PlanGenerationController.start` async with an `await` between `tryAcquire` and `store.create`; the concurrent-burst test goes red; restore the file
-- [x] 3.6 Deliberate-break check: make `startsByOwner` a `static` map in `PlanLimiter`; the restart test goes red; restore the file
+- [x] 3.4 Deliberate-break check: remove the `hasActive` denial from `PlanLimiter.tryAcquire`; the concurrent-burst test goes red; restore the file — 8862988
+- [x] 3.5 Deliberate-break check: make `PlanGenerationController.start` async with an `await` between `tryAcquire` and `store.create`; the concurrent-burst test goes red; restore the file — 8862988
+- [x] 3.6 Deliberate-break check: make `startsByOwner` a `static` map in `PlanLimiter`; the restart test goes red; restore the file — 8862988
 
 ### Phase 4: Injection fixture through the real pipeline (Risk #5)
 
 #### Automated
 
-- [ ] 4.1 New spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation-injection.e2e-spec.ts`
-- [ ] 4.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [ ] 4.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 4.1 New spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation-injection.e2e-spec.ts`
+- [x] 4.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
+- [x] 4.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 4.4 Deliberate-break check: remove the angle-bracket stripping from `sanitizeGoals` in `plan.prompts.ts`; the prompt-invariant test goes red for both prompts; restore the file
-- [ ] 4.5 Deliberate-break check: make `PlanPipelineService.tryAttempt` return the plan whether or not validation passed; the obeying-model table goes red; restore the file
-- [ ] 4.6 Deliberate-break check: make the review pass fall back to the draft when the review output is invalid; the review-only case goes red; restore the file
+- [x] 4.4 Deliberate-break check: remove the angle-bracket stripping from `sanitizeGoals` in `plan.prompts.ts`; the prompt-invariant test goes red for both prompts; restore the file
+- [x] 4.5 Deliberate-break check: make `PlanPipelineService.tryAttempt` return the plan whether or not validation passed; the obeying-model table goes red; restore the file
+- [x] 4.6 Deliberate-break check: make the review pass fall back to the draft when the review output is invalid; the review-only case goes red; restore the file
 
 ### Phase 5: Cookbook, known gaps and manual block smoke
 
