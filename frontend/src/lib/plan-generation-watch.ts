@@ -1,5 +1,6 @@
 import {
   fetchPlanGeneration,
+  isPlanResult,
   type PlanJobErrorCode,
   type PlanJobView,
   type PlanResult,
@@ -42,7 +43,7 @@ const toErrorCode = (code: unknown): PlanJobErrorCode =>
 
 const settleFromSnapshot = (job: PlanJobView): WatchState | null => {
   if (job.status === 'completed') {
-    return job.plan ? { status: 'completed', plan: job.plan } : { status: 'error' }
+    return isPlanResult(job.plan) ? { status: 'completed', plan: job.plan } : { status: 'error' }
   }
   if (job.status === 'failed') {
     return { status: 'failed', code: toErrorCode(job.error?.code) }

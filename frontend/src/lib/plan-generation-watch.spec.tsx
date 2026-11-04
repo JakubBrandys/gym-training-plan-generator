@@ -90,6 +90,18 @@ const validPlan: PlanResult = {
 
 const completedSnapshot = snapshot({ status: 'completed', stage: null, week: null, plan: validPlan })
 
+const malformedPlans: [string, unknown][] = [
+  ['an empty object', {}],
+  ['empty weeks', { weeks: [] }],
+  [
+    'a session without exercises',
+    { weeks: [{ week: 1, goal: 'Build a movement base', sessions: [{ title: 'Full body' }] }] },
+  ],
+]
+
+const completedSnapshotWith = (plan: unknown): Step =>
+  snapshot({ status: 'completed', stage: null, week: null, plan: plan as PlanJobView['plan'] })
+
 const nextStep = (steps: Step[]): Step => {
   if (steps.length === 0) {
     return () => {
@@ -266,6 +278,17 @@ describe('watchPlanGeneration outcomes', () => {
       expect(watch.lastState()).toEqual({ status: 'error' })
       expect(watch.isSettled()).toBe(true)
     })
+
+    it.each(malformedPlans)('reports error when the snapshot carries %s as its plan', async (_label, plan) => {
+      serve({ stream: [completedStream], snapshot: [completedSnapshotWith(plan)] })
+
+      const watch = startWatch()
+      await advance(0)
+
+      expect(watch.lastState()).toEqual({ status: 'error' })
+      expect(watch.statuses()).not.toContain('completed')
+      expect(watch.isSettled()).toBe(true)
+    })
   })
 
   describe('a server that fails', () => {
@@ -311,6 +334,17 @@ describe('watchPlanGeneration outcomes', () => {
       await advance(30_000)
 
       expect(watch.lastState()).toEqual({ status: 'completed', plan: validPlan })
+      expect(watch.isSettled()).toBe(true)
+    })
+
+    it.each(malformedPlans)('reports error when polling finds %s as the completed plan', async (_label, plan) => {
+      serve({ stream: [status(502)], snapshot: [snapshot(), completedSnapshotWith(plan)] })
+
+      const watch = startWatch()
+      await advance(30_000)
+
+      expect(watch.lastState()).toEqual({ status: 'error' })
+      expect(watch.statuses()).not.toContain('completed')
       expect(watch.isSettled()).toBe(true)
     })
   })

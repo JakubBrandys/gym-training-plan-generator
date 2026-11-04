@@ -77,6 +77,41 @@ export const authFailureOf = (status: number): AuthFailureResult | null => {
 const isLimitReason = (value: unknown): value is LimitReason =>
   value === 'active_job' || value === 'daily_limit'
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const isStringOrNull = (value: unknown): value is string | null =>
+  value === null || typeof value === 'string'
+
+const isPlanResultExercise = (value: unknown): value is PlanResultExercise =>
+  isRecord(value) &&
+  typeof value.slug === 'string' &&
+  typeof value.name === 'string' &&
+  typeof value.sets === 'number' &&
+  typeof value.reps === 'string' &&
+  typeof value.restSeconds === 'number' &&
+  isStringOrNull(value.note) &&
+  isStringOrNull(value.imageKey)
+
+const isPlanResultSession = (value: unknown): value is PlanResultSession =>
+  isRecord(value) &&
+  typeof value.title === 'string' &&
+  Array.isArray(value.exercises) &&
+  value.exercises.every(isPlanResultExercise)
+
+const isPlanResultWeek = (value: unknown): value is PlanResultWeek =>
+  isRecord(value) &&
+  typeof value.week === 'number' &&
+  typeof value.goal === 'string' &&
+  Array.isArray(value.sessions) &&
+  value.sessions.every(isPlanResultSession)
+
+export const isPlanResult = (value: unknown): value is PlanResult =>
+  isRecord(value) &&
+  Array.isArray(value.weeks) &&
+  value.weeks.length > 0 &&
+  value.weeks.every(isPlanResultWeek)
+
 export const startPlanGeneration = async (
   form: PlanForm,
 ): Promise<StartPlanGenerationResult> => {

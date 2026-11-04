@@ -227,6 +227,8 @@ Add `isPlanResult` and use it in the watch layer so a completed snapshot whose p
 
 **Deliberate-break checks:** make `isPlanResult` return `true` (the malformed cases go red); wire it only in `settleCompleted` and not in the poll path (the polling malformed case goes red); make it reject a null `note` (the minimal-plan acceptance case goes red).
 
+**Deviation (2026-11-04):** the guard sits in the shared `settleFromSnapshot`, so both paths use it and "wire it only in `settleCompleted`" is not a reachable state. The wiring break was run as a bypass on the poll path only (completed snapshot with a truthy plan accepted without the guard in `poll`); exactly the three polling malformed cases went red. The other two breaks went red as planned (always-true guard: 23 red; null `note` rejected: 5 red). The guard spec also covers extra reject cases beyond the contract list (undefined, a string, a string week number, a missing goal, a missing title, a valid week followed by a null week) and an extra-fields-accepted test.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -401,25 +403,25 @@ None. No schema, API or persisted-shape change; the guard only reads the generat
 
 #### Automated
 
-- [x] 2.1 Watch spec passes: `cd frontend && npx vitest run src/lib/plan-generation-watch.spec.tsx`
-- [x] 2.2 Frontend suite passes: `cd frontend && npm test`
-- [x] 2.3 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 2.4 Frontend build passes: `cd frontend && npm run build`
-- [x] 2.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 2.1 Watch spec passes: `cd frontend && npx vitest run src/lib/plan-generation-watch.spec.tsx` — cf24e47
+- [x] 2.2 Frontend suite passes: `cd frontend && npm test` — cf24e47
+- [x] 2.3 Frontend lint passes: `cd frontend && npm run lint` — cf24e47
+- [x] 2.4 Frontend build passes: `cd frontend && npm run build` — cf24e47
+- [x] 2.5 Each deliberate-break check listed above turns the named tests red and is restored — cf24e47
 
 ### Phase 3: Completed-plan shape guard (frontend, Risk #2 last mile)
 
 #### Automated
 
-- [ ] 3.1 Guard and watch specs pass: `cd frontend && npx vitest run src/lib/plan-generation.spec.ts src/lib/plan-generation-watch.spec.tsx`
-- [ ] 3.2 Frontend suite passes: `cd frontend && npm test`
-- [ ] 3.3 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 3.4 Frontend build passes: `cd frontend && npm run build`
-- [ ] 3.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 3.1 Guard and watch specs pass: `cd frontend && npx vitest run src/lib/plan-generation.spec.ts src/lib/plan-generation-watch.spec.tsx`
+- [x] 3.2 Frontend suite passes: `cd frontend && npm test`
+- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 3.4 Frontend build passes: `cd frontend && npm run build`
+- [x] 3.5 Each deliberate-break check listed above turns the named tests red and is restored
 
 #### Manual
 
-- [ ] 3.6 A real generation in the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) completes and shows the plan with a Save button, confirming the guard accepts real server output
+- [x] 3.6 A real generation in the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) completes and shows the plan with a Save button, confirming the guard accepts real server output
 
 ### Phase 4: Page-level states (frontend, Risk #1 user-visible)
 
