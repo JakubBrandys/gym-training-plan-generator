@@ -259,6 +259,32 @@ describe('SavedPlansController (http)', () => {
       .set(USER_HEADER, userId)
       .send(body as object);
 
+  const patchTitle = (userId: string, id: string, body: unknown) =>
+    request(app.getHttpServer())
+      .patch(`/saved-plans/${id}`)
+      .set(USER_HEADER, userId)
+      .send(body as object);
+
+  const deletePlan = (userId: string, id: string) =>
+    request(app.getHttpServer())
+      .delete(`/saved-plans/${id}`)
+      .set(USER_HEADER, userId);
+
+  const getPlan = (userId: string, id: string) =>
+    request(app.getHttpServer())
+      .get(`/saved-plans/${id}`)
+      .set(USER_HEADER, userId);
+
+  const listPlans = (userId: string) =>
+    request(app.getHttpServer()).get('/saved-plans').set(USER_HEADER, userId);
+
+  const savedId = async (userId: string): Promise<string> => {
+    const saved = await postSave(userId, {
+      jobId: completedJob(userId),
+    }).expect(201);
+    return (saved.body as { id: string }).id;
+  };
+
   beforeEach(async () => {
     table = new FakeSavedPlanTable();
     const moduleRef = await Test.createTestingModule({
@@ -534,19 +560,6 @@ describe('SavedPlansController (http)', () => {
   });
 
   describe('PATCH /saved-plans/:id', () => {
-    const patchTitle = (userId: string, id: string, body: unknown) =>
-      request(app.getHttpServer())
-        .patch(`/saved-plans/${id}`)
-        .set(USER_HEADER, userId)
-        .send(body as object);
-
-    const savedId = async (userId: string): Promise<string> => {
-      const saved = await postSave(userId, {
-        jobId: completedJob(userId),
-      }).expect(201);
-      return (saved.body as { id: string }).id;
-    };
-
     it('answers 200 with the summary carrying the new title', async () => {
       const id = await savedId('user-1');
 
@@ -647,18 +660,6 @@ describe('SavedPlansController (http)', () => {
   });
 
   describe('DELETE /saved-plans/:id', () => {
-    const deletePlan = (userId: string, id: string) =>
-      request(app.getHttpServer())
-        .delete(`/saved-plans/${id}`)
-        .set(USER_HEADER, userId);
-
-    const savedId = async (userId: string): Promise<string> => {
-      const saved = await postSave(userId, {
-        jobId: completedJob(userId),
-      }).expect(201);
-      return (saved.body as { id: string }).id;
-    };
-
     it('answers 204 for the owner and removes the row', async () => {
       const id = await savedId('user-1');
 
@@ -713,5 +714,88 @@ describe('SavedPlansController (http)', () => {
 
       expect(list.body).toEqual([]);
     });
+  });
+
+  describe('ownership matrix', () => {
+    interface IdRoute {
+      name: string;
+      call: (userId: string, id: string) => ReturnType<typeof getPlan>;
+      ownerStatus: number;
+    }
+
+    const idRoutes: IdRoute[] = [
+      { name: 'GET', call: getPlan, ownerStatus: 200 },
+      {
+        name: 'PATCH',
+        call: (userId, id) => patchTitle(userId, id, { title: 'Mine now' }),
+        ownerStatus: 200,
+      },
+      { name: 'DELETE', call: deletePlan, ownerStatus: 204 },
+    ];
+
+    it.each(idRoutes)(
+      '$name answers another owners saved plan exactly as an unknown id and leaves the plan unchanged',
+      async ({ call, ownerStatus }) => {
+        const id = await savedId('user-1');
+        const rowBefore = structuredClone(table.rows[0]);
+        const viewBefore = (await getPlan('user-1', id).expect(200)).body;
+
+        const foreign = await call('user-2', id);
+        const unknown = await call('user-2', UNKNOWN_ID);
+
+        expect(unknown.status).toBe(404);
+        expect(foreign.status).toBe(unknown.status);
+        expect(foreign.body).toEqual(unknown.body);
+        expect(table.rows).toHaveLength(1);
+        expect(table.rows[0]).toEqual(rowBefore);
+        const viewAfter = await getPlan('user-1', id).expect(200);
+        expect(viewAfter.body).toEqual(viewBefore);
+        await call('user-1', id).expect(ownerStatus);
+      },
+    );
+
+    it('POST answers another owners unsaved job exactly as an unknown job and leaves the job savable', async () => {
+      const jobId = completedJob('user-1');
+
+      const foreign = await postSave('user-2', { jobId });
+      const unknown = await postSave('user-2', { jobId: UNKNOWN_ID });
+
+      expect(unknown.status).toBe(404);
+      expect(foreign.status).toBe(unknown.status);
+      expect(foreign.body).toEqual(unknown.body);
+      expect(table.rows).toEqual([]);
+      expect(store.get(jobId, 'user-1')?.status).toBe('completed');
+      await postSave('user-1', { jobId }).expect(201);
+    });
+
+    it('POST answers a job the owner already saved exactly as an unknown job and changes nothing', async () => {
+      const jobId = completedJob('user-1');
+      await postSave('user-1', { jobId }).expect(201);
+      const rowBefore = structuredClone(table.rows[0]);
+
+      const foreign = await postSave('user-2', { jobId });
+      const unknown = await postSave('user-2', { jobId: UNKNOWN_ID });
+
+      expect(unknown.status).toBe(404);
+      expect(foreign.status).toBe(unknown.status);
+      expect(foreign.body).toEqual(unknown.body);
+      expect(table.rows).toEqual([rowBefore]);
+      const list = await listPlans('user-2').expect(200);
+      expect(list.body).toEqual([]);
+    });
+
+    it.each(idRoutes)(
+      '$name answers 404 without row data for a malformed id',
+      async ({ call }) => {
+        await savedId('user-1');
+
+        const response = await call('user-2', 'not-a-uuid');
+
+        expect(response.status).toBe(404);
+        expect(response.body).toMatchObject({ statusCode: 404 });
+        expect(response.text).not.toContain('Build strength');
+        expect(response.text).not.toContain('Squat');
+      },
+    );
   });
 });

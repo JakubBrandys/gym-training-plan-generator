@@ -48,6 +48,8 @@ const validForm: PlanForm = {
   goals: 'Build strength',
 };
 
+const UNKNOWN_JOB_ID = '00000000-0000-4000-8000-000000000000';
+
 const EVENTS_PATH = (jobId: string): string =>
   `/plan-generations/${jobId}/events`;
 
@@ -208,6 +210,30 @@ describe('PlanGenerationController (http)', () => {
       .get(`/plan-generations/${jobId}`)
       .set(USER_HEADER, 'user-2')
       .expect(404);
+  });
+
+  it('answers a job owned by another user exactly as an unknown job and leaves the job unchanged', async () => {
+    const started = await request(app.getHttpServer())
+      .post('/plan-generations')
+      .set(USER_HEADER, 'user-1')
+      .send(validForm)
+      .expect(202);
+    const { jobId } = started.body as { jobId: string };
+    const getSnapshot = (userId: string, id: string) =>
+      request(app.getHttpServer())
+        .get(`/plan-generations/${id}`)
+        .set(USER_HEADER, userId);
+    const snapshotBefore = (await getSnapshot('user-1', jobId).expect(200))
+      .body;
+
+    const foreign = await getSnapshot('user-2', jobId);
+    const unknown = await getSnapshot('user-2', UNKNOWN_JOB_ID);
+
+    expect(unknown.status).toBe(404);
+    expect(foreign.status).toBe(unknown.status);
+    expect(foreign.body).toEqual(unknown.body);
+    const snapshotAfter = await getSnapshot('user-1', jobId).expect(200);
+    expect(snapshotAfter.body).toEqual(snapshotBefore);
   });
 
   describe('GET /plan-generations/:jobId/events', () => {
@@ -376,6 +402,40 @@ describe('PlanGenerationController (http)', () => {
       expect(response.headers['content-type']).toContain('application/json');
       expect(response.text).not.toContain('event:');
     });
+
+    it.each([
+      { name: 'without Last-Event-ID', headers: {} },
+      { name: 'with Last-Event-ID 0', headers: { 'Last-Event-ID': '0' } },
+    ])(
+      'answers another users finished job exactly as an unknown job $name and leaves the job unchanged',
+      async ({ headers }) => {
+        const jobId = finishedJob('user-1');
+        const streamAs = (userId: string, id: string) =>
+          request(app.getHttpServer())
+            .get(EVENTS_PATH(id))
+            .set(USER_HEADER, userId)
+            .set(headers);
+        const getSnapshot = () =>
+          request(app.getHttpServer())
+            .get(`/plan-generations/${jobId}`)
+            .set(USER_HEADER, 'user-1');
+        const snapshotBefore = (await getSnapshot().expect(200)).body;
+
+        const foreign = await streamAs('user-2', jobId);
+        const unknown = await streamAs('user-2', UNKNOWN_JOB_ID);
+
+        expect(unknown.status).toBe(404);
+        expect(foreign.status).toBe(unknown.status);
+        expect(foreign.headers['content-type']).toBe(
+          unknown.headers['content-type'],
+        );
+        expect(foreign.body).toEqual(unknown.body);
+        expect(foreign.text).toBe(unknown.text);
+        expect(foreign.text).not.toContain('event:');
+        const snapshotAfter = await getSnapshot().expect(200);
+        expect(snapshotAfter.body).toEqual(snapshotBefore);
+      },
+    );
 
     it('answers 404 for an unknown job', async () => {
       await request(app.getHttpServer())
