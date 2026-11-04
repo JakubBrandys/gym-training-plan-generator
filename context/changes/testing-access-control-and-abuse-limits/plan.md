@@ -199,6 +199,8 @@ Prove over HTTP what the limiter does under a burst, at its daily boundary and a
 
 **Contract**: After `user-1` is refused with `daily_limit` on the first app instance, a second instance built by `createApp()` answers that user's start with 202 and calls its own `pipelineRun`; the first instance still answers 429. The test title states that the reset is the in-memory design, so a future persisted limit knowingly turns it red.
 
+**Deviation (2026-11-04):** The burst test listens on a real port (`app.listen(0, '127.0.0.1')`) and sends the requests with `request(baseUrl)`, because plain supertest per-request listen failed with `read ECONNRESET` under concurrency (the plan's allowed fallback). Its burst includes the `user-2` request, so `pipelineRun` is asserted twice (one start per user), not once. Break check 3.5 as written (a bare `await` between `tryAcquire` and `store.create`) stayed green: `await Promise.resolve()` and a `setImmediate` yield resume before the next request reaches the handler, so nothing interleaves. A real time-yielding await (`setTimeout` of 5 ms or 25 ms, standing in for a database call) turns the burst test red; that is the break to use for 3.5.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -367,29 +369,29 @@ None. No production code, schema or data changes.
 
 #### Automated
 
-- [x] 2.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/access-control.e2e-spec.ts`
-- [x] 2.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [x] 2.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 2.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/access-control.e2e-spec.ts` — d845e96
+- [x] 2.2 Full backend e2e suite passes: `cd backend && npm run test:e2e` — d845e96
+- [x] 2.3 Lint and type check pass: `cd backend && npm run lint && npm run build` — d845e96
 
 #### Manual
 
-- [x] 2.4 Deliberate-break check: skip the `blockedAt` write in `AdminUsersService.block` (keep the ban); the block-then-refused test goes red; restore the file
-- [x] 2.5 Deliberate-break check: make `AdminUsersService.block` swallow a ban failure and return the summary; the 502 test goes red; restore the file
-- [x] 2.6 Deliberate-break check: add `blockedAt: null` to the email update in `ProfilesService.resolve`; the changed-email test goes red; restore the file
+- [x] 2.4 Deliberate-break check: skip the `blockedAt` write in `AdminUsersService.block` (keep the ban); the block-then-refused test goes red; restore the file — d845e96
+- [x] 2.5 Deliberate-break check: make `AdminUsersService.block` swallow a ban failure and return the summary; the 502 test goes red; restore the file — d845e96
+- [x] 2.6 Deliberate-break check: add `blockedAt: null` to the email update in `ProfilesService.resolve`; the changed-email test goes red; restore the file — d845e96
 
 ### Phase 3: Limits at HTTP level (Risk #5)
 
 #### Automated
 
-- [ ] 3.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation.e2e-spec.ts`
-- [ ] 3.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [ ] 3.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 3.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation.e2e-spec.ts`
+- [x] 3.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
+- [x] 3.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 3.4 Deliberate-break check: remove the `hasActive` denial from `PlanLimiter.tryAcquire`; the concurrent-burst test goes red; restore the file
-- [ ] 3.5 Deliberate-break check: make `PlanGenerationController.start` async with an `await` between `tryAcquire` and `store.create`; the concurrent-burst test goes red; restore the file
-- [ ] 3.6 Deliberate-break check: make `startsByOwner` a `static` map in `PlanLimiter`; the restart test goes red; restore the file
+- [x] 3.4 Deliberate-break check: remove the `hasActive` denial from `PlanLimiter.tryAcquire`; the concurrent-burst test goes red; restore the file
+- [x] 3.5 Deliberate-break check: make `PlanGenerationController.start` async with an `await` between `tryAcquire` and `store.create`; the concurrent-burst test goes red; restore the file
+- [x] 3.6 Deliberate-break check: make `startsByOwner` a `static` map in `PlanLimiter`; the restart test goes red; restore the file
 
 ### Phase 4: Injection fixture through the real pipeline (Risk #5)
 

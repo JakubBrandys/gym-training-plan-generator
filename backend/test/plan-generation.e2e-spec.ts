@@ -66,14 +66,19 @@ describe('PlanGenerationController (http)', () => {
   let app: INestApplication;
   let pipelineRun: ReturnType<typeof vi.fn>;
   let streamConfig: PlanStreamConfig;
+  let extraApps: INestApplication[];
 
-  beforeEach(async () => {
-    streamConfig = {
+  const createApp = async (): Promise<{
+    app: INestApplication;
+    pipelineRun: ReturnType<typeof vi.fn>;
+    streamConfig: PlanStreamConfig;
+  }> => {
+    const createdStreamConfig: PlanStreamConfig = {
       heartbeatMs: 3_600_000,
       windowMs: 3_600_000,
       maxStreamsPerJob: 3,
     };
-    pipelineRun = vi.fn(() => new Promise<void>(() => undefined));
+    const createdPipelineRun = vi.fn(() => new Promise<void>(() => undefined));
     const moduleRef = await Test.createTestingModule({
       controllers: [PlanGenerationController],
       providers: [
@@ -88,18 +93,36 @@ describe('PlanGenerationController (http)', () => {
             dailyLimit: 5,
           },
         },
-        { provide: PLAN_STREAM_CONFIG, useValue: streamConfig },
-        { provide: PlanPipelineService, useValue: { run: pipelineRun } },
+        { provide: PLAN_STREAM_CONFIG, useValue: createdStreamConfig },
+        { provide: PlanPipelineService, useValue: { run: createdPipelineRun } },
         { provide: APP_GUARD, useClass: HeaderUserGuard },
       ],
     }).compile();
-    app = moduleRef.createNestApplication();
-    await app.init();
+    const createdApp = moduleRef.createNestApplication();
+    await createdApp.init();
+    return {
+      app: createdApp,
+      pipelineRun: createdPipelineRun,
+      streamConfig: createdStreamConfig,
+    };
+  };
+
+  beforeEach(async () => {
+    extraApps = [];
+    ({ app, pipelineRun, streamConfig } = await createApp());
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     await app.close();
+    await Promise.all(extraApps.map(async (extra) => extra.close()));
   });
+
+  const startAs = (target: INestApplication, userId: string): request.Test =>
+    request(target.getHttpServer())
+      .post('/plan-generations')
+      .set(USER_HEADER, userId)
+      .send(validForm);
 
   it('answers 202 with a job id and starts the pipeline', async () => {
     const response = await request(app.getHttpServer())
@@ -145,6 +168,103 @@ describe('PlanGenerationController (http)', () => {
       .set(USER_HEADER, 'user-2')
       .send(validForm)
       .expect(202);
+  });
+
+  describe('abuse limits', () => {
+    const FIVE_STARTS_PER_DAY = 5;
+    const HOUR_MS = 60 * 60 * 1000;
+
+    const startAndFinish = async (
+      target: INestApplication,
+      userId: string,
+      outcome: 'complete' | 'fail',
+    ): Promise<void> => {
+      const started = await startAs(target, userId).expect(202);
+      const { jobId } = started.body as { jobId: string };
+      const store = target.get(PlanJobStore);
+      if (outcome === 'complete') {
+        store.complete(jobId, { weeks: [] });
+      } else {
+        store.fail(jobId, 'invalid_output');
+      }
+    };
+
+    const exhaustDailyLimit = async (
+      target: INestApplication,
+      userId: string,
+    ): Promise<void> => {
+      for (let index = 0; index < FIVE_STARTS_PER_DAY; index += 1) {
+        await startAndFinish(
+          target,
+          userId,
+          index % 2 === 0 ? 'complete' : 'fail',
+        );
+      }
+    };
+
+    it('answers exactly one 202 and five active_job 429 to six simultaneous starts by one user, without touching another user', async () => {
+      await app.listen(0, '127.0.0.1');
+      const baseUrl = await app.getUrl();
+      const startOverNetwork = (userId: string): request.Test =>
+        request(baseUrl)
+          .post('/plan-generations')
+          .set(USER_HEADER, userId)
+          .send(validForm);
+
+      const burst = await Promise.all([
+        ...Array.from({ length: 6 }, () => startOverNetwork('user-1')),
+        startOverNetwork('user-2'),
+      ]);
+
+      const userOne = burst.slice(0, 6);
+      expect(userOne.filter(({ status }) => status === 202)).toHaveLength(1);
+      const refused = userOne.filter(({ status }) => status === 429);
+      expect(refused).toHaveLength(5);
+      for (const response of refused) {
+        expect(response.body).toEqual({ code: 'active_job' });
+      }
+      expect(burst[6]!.status).toBe(202);
+      expect(pipelineRun).toHaveBeenCalledTimes(2);
+    });
+
+    it('answers daily_limit to the sixth start in 24 hours, counting failed jobs, and leaves another user unaffected', async () => {
+      await exhaustDailyLimit(app, 'user-1');
+
+      const sixth = await startAs(app, 'user-1').expect(429);
+
+      expect(sixth.body).toEqual({ code: 'daily_limit' });
+      expect(pipelineRun).toHaveBeenCalledTimes(5);
+      await startAs(app, 'user-2').expect(202);
+    });
+
+    it('slides the daily window so starts older than 24 hours stop counting', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      const firstStart = new Date('2026-11-04T10:00:00Z').getTime();
+      vi.setSystemTime(firstStart);
+      await exhaustDailyLimit(app, 'user-1');
+
+      vi.setSystemTime(firstStart + 24 * HOUR_MS - 60_000);
+      const stillLimited = await startAs(app, 'user-1').expect(429);
+      expect(stillLimited.body).toEqual({ code: 'daily_limit' });
+
+      vi.setSystemTime(firstStart + 24 * HOUR_MS + 5_000);
+      await startAs(app, 'user-1').expect(202);
+      expect(pipelineRun).toHaveBeenCalledTimes(6);
+    });
+
+    it('resets the quota on restart because limiter state is in memory (accepted MVP behaviour)', async () => {
+      await exhaustDailyLimit(app, 'user-1');
+      const refused = await startAs(app, 'user-1').expect(429);
+      expect(refused.body).toEqual({ code: 'daily_limit' });
+
+      const restarted = await createApp();
+      extraApps.push(restarted.app);
+
+      await startAs(restarted.app, 'user-1').expect(202);
+      expect(restarted.pipelineRun).toHaveBeenCalledTimes(1);
+      const stale = await startAs(app, 'user-1').expect(429);
+      expect(stale.body).toEqual({ code: 'daily_limit' });
+    });
   });
 
   it('answers 400 without echoing the rejected value or starting a job', async () => {
