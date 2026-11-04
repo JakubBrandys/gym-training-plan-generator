@@ -413,11 +413,11 @@ None. No production code, schema or data changes.
 
 #### Automated
 
-- [x] 5.1 Backend unit and e2e suites pass: `cd backend && npm test && npm run test:e2e`
-- [x] 5.2 Section 6.4 no longer contains a `TBD`: `awk '/### 6.4/,/### 6.5/' context/foundation/test-plan.md | grep -c TBD` prints 0
+- [x] 5.1 Backend unit and e2e suites pass: `cd backend && npm test && npm run test:e2e` — 5ee78d3
+- [x] 5.2 Section 6.4 no longer contains a `TBD`: `awk '/### 6.4/,/### 6.5/' context/foundation/test-plan.md | grep -c TBD` prints 0 — 5ee78d3
 
 #### Manual
 
-- [x] 5.3 Manual block smoke executed against a real Supabase project and its result recorded under this phase
-- [x] 5.4 Known gaps in section 6.4 read and confirmed by the human as the intended stance
-- [x] 5.5 The test account used in the smoke is unblocked and signs in again
+- [x] 5.3 Manual block smoke executed against a real Supabase project and its result recorded under this phase — 5ee78d3
+- [x] 5.4 Known gaps in section 6.4 read and confirmed by the human as the intended stance — 5ee78d3
+- [x] 5.5 The test account used in the smoke is unblocked and signs in again — 5ee78d3
