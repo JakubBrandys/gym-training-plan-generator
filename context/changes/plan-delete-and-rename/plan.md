@@ -348,12 +348,12 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Automated
 
-- [x] 1.1 Prisma client generates with the title field: `cd backend && npm run prisma:generate`
-- [x] 1.2 Migration SQL holds the single column add: `grep -c 'ADD COLUMN "title" TEXT' backend/prisma/migrations/*_add_saved_plan_title/migration.sql` prints 1
-- [x] 1.3 Backend unit tests pass: `cd backend && npm test`
-- [x] 1.4 Backend e2e tests pass: `cd backend && npm run test:e2e`
-- [x] 1.5 Backend build passes: `cd backend && npm run build`
-- [x] 1.6 Backend lint passes: `cd backend && npm run lint`
+- [x] 1.1 Prisma client generates with the title field: `cd backend && npm run prisma:generate` — 5066027
+- [x] 1.2 Migration SQL holds the single column add: `grep -c 'ADD COLUMN "title" TEXT' backend/prisma/migrations/*_add_saved_plan_title/migration.sql` prints 1 — 5066027
+- [x] 1.3 Backend unit tests pass: `cd backend && npm test` — 5066027
+- [x] 1.4 Backend e2e tests pass: `cd backend && npm run test:e2e` — 5066027
+- [x] 1.5 Backend build passes: `cd backend && npm run build` — 5066027
+- [x] 1.6 Backend lint passes: `cd backend && npm run lint` — 5066027
 
 #### Manual
 
@@ -365,11 +365,11 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Automated
 
-- [x] 2.1 Frontend unit and component tests pass: `cd frontend && npm test`
-- [x] 2.2 Frontend build passes: `cd frontend && npm run build`
-- [x] 2.3 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 2.4 The production build does not contain the kitchen sink: `cd frontend && ! grep -rl "kitchen-sink" dist`
-- [x] 2.5 The 10x-cli block of CLAUDE.md is unchanged: `git diff -U0 -- CLAUDE.md | grep -c 'przeprogramowani'` prints 0
+- [x] 2.1 Frontend unit and component tests pass: `cd frontend && npm test` — 5066027
+- [x] 2.2 Frontend build passes: `cd frontend && npm run build` — 5066027
+- [x] 2.3 Frontend lint passes: `cd frontend && npm run lint` — 5066027
+- [x] 2.4 The production build does not contain the kitchen sink: `cd frontend && ! grep -rl "kitchen-sink" dist` — 5066027
+- [x] 2.5 The 10x-cli block of CLAUDE.md is unchanged: `git diff -U0 -- CLAUDE.md | grep -c 'przeprogramowani'` prints 0 — 5066027
 
 #### Manual
 
@@ -380,10 +380,10 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Automated
 
-- [x] 3.1 Saved plan page spec passes: `cd frontend && npx vitest run src/pages/SavedPlanPage.spec.tsx`
-- [x] 3.2 Frontend unit and component tests pass: `cd frontend && npm test`
-- [x] 3.3 Frontend build passes: `cd frontend && npm run build`
-- [x] 3.4 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 3.1 Saved plan page spec passes: `cd frontend && npx vitest run src/pages/SavedPlanPage.spec.tsx` — 5066027
+- [x] 3.2 Frontend unit and component tests pass: `cd frontend && npm test` — 5066027
+- [x] 3.3 Frontend build passes: `cd frontend && npm run build` — 5066027
+- [x] 3.4 Frontend lint passes: `cd frontend && npm run lint` — 5066027
 
 #### Manual
 
@@ -397,10 +397,10 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Automated
 
-- [x] 4.1 List page spec passes: `cd frontend && npx vitest run src/pages/SavedPlansPage.spec.tsx`
-- [x] 4.2 Frontend unit and component tests pass: `cd frontend && npm test`
-- [x] 4.3 Frontend build passes: `cd frontend && npm run build`
-- [x] 4.4 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 4.1 List page spec passes: `cd frontend && npx vitest run src/pages/SavedPlansPage.spec.tsx` — 5066027
+- [x] 4.2 Frontend unit and component tests pass: `cd frontend && npm test` — 5066027
+- [x] 4.3 Frontend build passes: `cd frontend && npm run build` — 5066027
+- [x] 4.4 Frontend lint passes: `cd frontend && npm run lint` — 5066027
 
 #### Manual
 
