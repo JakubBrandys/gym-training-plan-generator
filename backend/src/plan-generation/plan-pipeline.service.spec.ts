@@ -73,6 +73,42 @@ const WEEKS_STREAMED_PER_PLAN = 8;
 
 const rampViolation = (): GeneratedPlan => buildPlan([3, 3, 3, 3, 3, 3, 3, 4]);
 
+const OFF_CATALOG_SLUG = 'moon-walk';
+
+const buildPlanWith = (
+  change: (plan: GeneratedPlan) => void,
+): GeneratedPlan => {
+  const plan = buildPlan();
+  change(plan);
+  return plan;
+};
+
+const offCatalogPlan = (): GeneratedPlan =>
+  buildPlanWith((plan) => {
+    plan.weeks[2].sessions[1].exercises[0].slug = OFF_CATALOG_SLUG;
+  });
+
+const badPlans: [string, () => GeneratedPlan][] = [
+  ['an exercise that is not in the catalog', offCatalogPlan],
+  ['7 weeks', () => buildPlan(Array(7).fill(3))],
+  ['9 weeks', () => buildPlan(Array(9).fill(3))],
+  ['no weeks', () => buildPlan([])],
+  [
+    'a week without sessions',
+    () =>
+      buildPlanWith((plan) => {
+        plan.weeks[3].sessions = [];
+      }),
+  ],
+  [
+    'a session with 2 exercises',
+    () =>
+      buildPlanWith((plan) => {
+        plan.weeks[0].sessions[0].exercises.pop();
+      }),
+  ],
+];
+
 interface FailingReply {
   error: Error;
   weeksBeforeError: number;
@@ -214,6 +250,41 @@ describe('PlanPipelineService', () => {
         ['bench-press', 'bench-press.png'],
         ['barbell-row', 'barbell-row.png'],
       ]);
+    });
+
+    it('resolves every exercise of a completed plan to its catalog entry across 8 numbered weeks', async () => {
+      const reviewed = buildPlan();
+      reviewed.weeks.forEach((week, weekIndex) => {
+        week.sessions.forEach((session) => {
+          session.exercises.forEach((exercise, position) => {
+            exercise.slug =
+              CATALOG[(weekIndex + position) % CATALOG.length].slug;
+          });
+        });
+      });
+      const { job, run } = setup([buildPlan(), reviewed]);
+
+      await run();
+
+      expect(job.status).toBe('completed');
+      expect(job.plan?.weeks.map((week) => week.week)).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8,
+      ]);
+      const exercises =
+        job.plan?.weeks.flatMap((week) =>
+          week.sessions.flatMap((session) => session.exercises),
+        ) ?? [];
+      expect(new Set(exercises.map(({ slug }) => slug)).size).toBe(
+        CATALOG.length,
+      );
+      expect(
+        exercises.map(({ slug, name, imageKey }) => ({ slug, name, imageKey })),
+      ).toEqual(
+        exercises.map(({ slug }) => {
+          const entry = CATALOG.find((candidate) => candidate.slug === slug);
+          return { slug, name: entry?.name, imageKey: entry?.imageKey };
+        }),
+      );
     });
 
     it('makes exactly two calls, draft then review, and completes with names joined', async () => {
@@ -595,6 +666,77 @@ describe('PlanPipelineService', () => {
       expect(job.status).toBe('failed');
       expect(job.error).toEqual({ code: 'invalid_output' });
       expect(job.plan).toBeNull();
+    });
+  });
+
+  describe('unusable model output', () => {
+    const passes: {
+      name: string;
+      leadingReplies: () => GeneratedPlan[];
+      expectedCalls: number;
+    }[] = [
+      { name: 'drafting', leadingReplies: () => [], expectedCalls: 2 },
+      {
+        name: 'reviewing',
+        leadingReplies: () => [buildPlan()],
+        expectedCalls: 3,
+      },
+    ];
+
+    describe.each(passes)(
+      'in the $name pass',
+      ({ leadingReplies, expectedCalls }) => {
+        it.each(badPlans)(
+          'fails with invalid_output and no plan for %s',
+          async (_label, buildBadPlan) => {
+            const { client, job, run } = setup([
+              ...leadingReplies(),
+              buildBadPlan(),
+              buildBadPlan(),
+            ]);
+
+            await run();
+
+            expect(client.calls).toHaveLength(expectedCalls);
+            expect(job.status).toBe('failed');
+            expect(job.error).toEqual({ code: 'invalid_output' });
+            expect(job.plan).toBeNull();
+            expect(job.events.at(-1)).toMatchObject({
+              type: 'failed',
+              code: 'invalid_output',
+            });
+          },
+        );
+
+        it('tells the model which slug was off the catalog on the retry', async () => {
+          const { client, run } = setup([
+            ...leadingReplies(),
+            offCatalogPlan(),
+            offCatalogPlan(),
+          ]);
+
+          await run();
+
+          expect(client.calls[expectedCalls - 1].prompt).toContain(
+            OFF_CATALOG_SLUG,
+          );
+        });
+      },
+    );
+
+    it('completes when the retry after an off-catalog draft is valid', async () => {
+      const { client, job, run } = setup([
+        offCatalogPlan(),
+        buildPlan(),
+        buildPlan(),
+      ]);
+
+      await run();
+
+      expect(client.calls).toHaveLength(3);
+      expect(job.status).toBe('completed');
+      expect(job.error).toBeNull();
+      expect(job.plan).not.toBeNull();
     });
   });
 
