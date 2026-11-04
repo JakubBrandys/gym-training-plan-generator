@@ -352,30 +352,30 @@ None. No production code, schema or data changes.
 
 #### Automated
 
-- [x] 1.1 New spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/access-control.e2e-spec.ts`
-- [x] 1.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [x] 1.3 Backend unit suite passes: `cd backend && npm test`
-- [x] 1.4 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 1.1 New spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/access-control.e2e-spec.ts` — 8c165b6
+- [x] 1.2 Full backend e2e suite passes: `cd backend && npm run test:e2e` — 8c165b6
+- [x] 1.3 Backend unit suite passes: `cd backend && npm test` — 8c165b6
+- [x] 1.4 Lint and type check pass: `cd backend && npm run lint && npm run build` — 8c165b6
 
 #### Manual
 
-- [x] 1.5 Deliberate-break check: remove the `blockedAt` check from `backend/src/auth/auth.guard.ts`; the blocked-member test goes red and names every gated route; restore the file
-- [x] 1.6 Deliberate-break check: add `@Public()` to `MeController`; the public-allowlist test goes red naming `GET /me`; restore the file
-- [x] 1.7 Read the red output of the first break and confirm each failure line names a route and a status, not a bare mismatch
+- [x] 1.5 Deliberate-break check: remove the `blockedAt` check from `backend/src/auth/auth.guard.ts`; the blocked-member test goes red and names every gated route; restore the file — 8c165b6
+- [x] 1.6 Deliberate-break check: add `@Public()` to `MeController`; the public-allowlist test goes red naming `GET /me`; restore the file — 8c165b6
+- [x] 1.7 Read the red output of the first break and confirm each failure line names a route and a status, not a bare mismatch — 8c165b6
 
 ### Phase 2: Block takes effect and half-applied block (Risk #6)
 
 #### Automated
 
-- [ ] 2.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/access-control.e2e-spec.ts`
-- [ ] 2.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [ ] 2.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 2.1 Spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/access-control.e2e-spec.ts`
+- [x] 2.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
+- [x] 2.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 2.4 Deliberate-break check: skip the `blockedAt` write in `AdminUsersService.block` (keep the ban); the block-then-refused test goes red; restore the file
-- [ ] 2.5 Deliberate-break check: make `AdminUsersService.block` swallow a ban failure and return the summary; the 502 test goes red; restore the file
-- [ ] 2.6 Deliberate-break check: add `blockedAt: null` to the email update in `ProfilesService.resolve`; the changed-email test goes red; restore the file
+- [x] 2.4 Deliberate-break check: skip the `blockedAt` write in `AdminUsersService.block` (keep the ban); the block-then-refused test goes red; restore the file
+- [x] 2.5 Deliberate-break check: make `AdminUsersService.block` swallow a ban failure and return the summary; the 502 test goes red; restore the file
+- [x] 2.6 Deliberate-break check: add `blockedAt: null` to the email update in `ProfilesService.resolve`; the changed-email test goes red; restore the file
 
 ### Phase 3: Limits at HTTP level (Risk #5)
 

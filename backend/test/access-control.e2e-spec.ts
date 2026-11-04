@@ -5,6 +5,7 @@ import { AppModule } from '../src/app.module.js';
 import type { AuthUser } from '../src/auth/auth-user.js';
 import { SupabaseJwtVerifier } from '../src/auth/supabase-jwt.verifier.js';
 import type { ProfileRole } from '../src/generated/prisma/client.js';
+import { PlanJobStore } from '../src/plan-generation/plan-job.store.js';
 import { PlanPipelineService } from '../src/plan-generation/plan-pipeline.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { SupabaseAdminClient } from '../src/supabase-admin/supabase-admin.client.js';
@@ -167,6 +168,7 @@ const ACTIVE_ADMIN_TOKEN = 'active-admin-token';
 const OTHER_MEMBER_TOKEN = 'other-member-token';
 const FORGED_TOKEN = 'forged-token';
 const EXPIRED_BLOCKED_MEMBER_TOKEN = 'expired-blocked-member-token';
+const BLOCKED_MEMBER_NEW_EMAIL_TOKEN = 'blocked-member-new-email-token';
 
 const TOKEN_OWNERS: Record<string, AuthUser> = {
   [ACTIVE_MEMBER_TOKEN]: {
@@ -185,6 +187,21 @@ const TOKEN_OWNERS: Record<string, AuthUser> = {
     id: OTHER_MEMBER_ID,
     email: 'other-member@example.com',
   },
+  [BLOCKED_MEMBER_NEW_EMAIL_TOKEN]: {
+    id: BLOCKED_MEMBER_ID,
+    email: 'changed@example.com',
+  },
+};
+
+const BLOCKED_MEMBER_SEEDED_AT = new Date('2026-03-01T00:00:00Z');
+
+const VALID_GENERATION_BODY = {
+  experience: 'intermediate',
+  currentFrequency: 3,
+  desiredFrequency: 4,
+  heightCm: 180,
+  weightKg: 80,
+  goals: 'Build strength',
 };
 
 const PUBLIC_ROUTES = ['GET /', 'GET /health'];
@@ -297,6 +314,7 @@ describe('Access control across every route (http, real AppModule and AuthGuard)
   let savedPlans: FakeSavedPlanTable;
   let pipelineRun: ReturnType<typeof vi.fn>;
   let banUser: ReturnType<typeof vi.fn>;
+  let verify: ReturnType<typeof vi.fn>;
   let routes: DiscoveredRoute[];
   let gatedRoutes: DiscoveredRoute[];
 
@@ -308,7 +326,7 @@ describe('Access control across every route (http, real AppModule and AuthGuard)
     table.seed({
       id: BLOCKED_MEMBER_ID,
       email: 'blocked-member@example.com',
-      blockedAt: new Date('2026-03-01T00:00:00Z'),
+      blockedAt: BLOCKED_MEMBER_SEEDED_AT,
     });
     table.seed({
       id: ACTIVE_ADMIN_ID,
@@ -338,7 +356,7 @@ describe('Access control across every route (http, real AppModule and AuthGuard)
     seedProfiles();
     pipelineRun = vi.fn(() => new Promise<void>(() => undefined));
     banUser = vi.fn().mockResolvedValue(undefined);
-    const verify = vi.fn((token: string) => {
+    verify = vi.fn((token: string) => {
       const owner = TOKEN_OWNERS[token];
       return owner
         ? Promise.resolve(owner)
@@ -404,6 +422,141 @@ describe('Access control across every route (http, real AppModule and AuthGuard)
       await probeRoutes(app, gatedRoutes, BLOCKED_MEMBER_TOKEN);
 
       expectNoWrites();
+    });
+  });
+
+  describe('a block applied through the real admin endpoint', () => {
+    const postBlock = (memberId: string, token: string): request.Test =>
+      request(app.getHttpServer())
+        .post(`/admin/users/${memberId}/block`)
+        .set('Authorization', `Bearer ${token}`);
+
+    const memberRow = (id: string): ProfileRow =>
+      table.rows.find((row) => row.id === id)!;
+
+    it('refuses the same still-valid token on every gated route from the next request', async () => {
+      await request(app.getHttpServer())
+        .get('/me')
+        .set('Authorization', `Bearer ${ACTIVE_MEMBER_TOKEN}`)
+        .expect(200);
+
+      const blocked = await postBlock(
+        ACTIVE_MEMBER_ID,
+        ACTIVE_ADMIN_TOKEN,
+      ).expect(200);
+      const outcomes = await probeRoutes(app, gatedRoutes, ACTIVE_MEMBER_TOKEN);
+
+      expect((blocked.body as { blockedAt: unknown }).blockedAt).not.toBeNull();
+      expect(memberRow(ACTIVE_MEMBER_ID).blockedAt).toBeInstanceOf(Date);
+      expect(refusedEverywhere(outcomes, 403, BLOCKED_MESSAGE)).toEqual([]);
+    });
+
+    it('is refused by the profile, not by token invalidation: the verifier still accepts the token', async () => {
+      await postBlock(ACTIVE_MEMBER_ID, ACTIVE_ADMIN_TOKEN).expect(200);
+      verify.mockClear();
+
+      await request(app.getHttpServer())
+        .get('/me')
+        .set('Authorization', `Bearer ${ACTIVE_MEMBER_TOKEN}`)
+        .expect(403);
+
+      expect(verify).toHaveBeenCalledWith(ACTIVE_MEMBER_TOKEN);
+      await expect(verify.mock.results[0]!.value).resolves.toEqual({
+        id: ACTIVE_MEMBER_ID,
+        email: 'active-member@example.com',
+      });
+    });
+
+    it('leaves a second member with a valid token unaffected', async () => {
+      await postBlock(ACTIVE_MEMBER_ID, ACTIVE_ADMIN_TOKEN).expect(200);
+
+      await request(app.getHttpServer())
+        .get('/me')
+        .set('Authorization', `Bearer ${OTHER_MEMBER_TOKEN}`)
+        .expect(200);
+      expect(memberRow(OTHER_MEMBER_ID).blockedAt).toBeNull();
+    });
+
+    describe('when the Supabase ban fails', () => {
+      it('answers 502 without the upstream detail, keeps the block and refuses the member everywhere', async () => {
+        banUser.mockRejectedValueOnce(new Error('supabase-detail-xyz'));
+
+        const failed = await postBlock(
+          ACTIVE_MEMBER_ID,
+          ACTIVE_ADMIN_TOKEN,
+        ).expect(502);
+        const outcomes = await probeRoutes(
+          app,
+          gatedRoutes,
+          ACTIVE_MEMBER_TOKEN,
+        );
+
+        expect(JSON.stringify(failed.body)).not.toContain(
+          'supabase-detail-xyz',
+        );
+        expect(failed.text).not.toContain('supabase-detail-xyz');
+        expect(memberRow(ACTIVE_MEMBER_ID).blockedAt).toBeInstanceOf(Date);
+        expect(refusedEverywhere(outcomes, 403, BLOCKED_MESSAGE)).toEqual([]);
+      });
+
+      it('shows the half-applied block to the admin as a non-null blockedAt in the user list', async () => {
+        banUser.mockRejectedValueOnce(new Error('supabase-detail-xyz'));
+        await postBlock(ACTIVE_MEMBER_ID, ACTIVE_ADMIN_TOKEN).expect(502);
+
+        const list = await request(app.getHttpServer())
+          .get('/admin/users')
+          .set('Authorization', `Bearer ${ACTIVE_ADMIN_TOKEN}`)
+          .expect(200);
+
+        const listed = (
+          list.body as Array<{ id: string; blockedAt: string | null }>
+        ).find((user) => user.id === ACTIVE_MEMBER_ID);
+        expect(listed).toBeDefined();
+        expect(listed!.blockedAt).not.toBeNull();
+      });
+
+      it('is repaired by repeating the block: 200, original blockedAt kept, ban retried', async () => {
+        banUser.mockRejectedValueOnce(new Error('supabase-detail-xyz'));
+        await postBlock(ACTIVE_MEMBER_ID, ACTIVE_ADMIN_TOKEN).expect(502);
+        const keptBlockedAt = memberRow(ACTIVE_MEMBER_ID).blockedAt!.getTime();
+
+        await postBlock(ACTIVE_MEMBER_ID, ACTIVE_ADMIN_TOKEN).expect(200);
+
+        expect(memberRow(ACTIVE_MEMBER_ID).blockedAt!.getTime()).toBe(
+          keptBlockedAt,
+        );
+        expect(banUser).toHaveBeenCalledTimes(2);
+        expect(banUser).toHaveBeenNthCalledWith(2, ACTIVE_MEMBER_ID);
+      });
+    });
+  });
+
+  describe('edges around the guard for a blocked member', () => {
+    it('refuses three generation starts without running the pipeline or holding a job', async () => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const response = await request(app.getHttpServer())
+          .post('/plan-generations')
+          .set('Authorization', `Bearer ${BLOCKED_MEMBER_TOKEN}`)
+          .send(VALID_GENERATION_BODY);
+
+        expect(response.status).toBe(403);
+      }
+
+      expect(pipelineRun).not.toHaveBeenCalled();
+      expect(app.get(PlanJobStore).hasActive(BLOCKED_MEMBER_ID)).toBe(false);
+    });
+
+    it('stays blocked when the token carries a different email than the stored row', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/me')
+        .set('Authorization', `Bearer ${BLOCKED_MEMBER_NEW_EMAIL_TOKEN}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body).toMatchObject({ message: BLOCKED_MESSAGE });
+      const row = table.rows.find(
+        (candidate) => candidate.id === BLOCKED_MEMBER_ID,
+      );
+      expect(row!.blockedAt).toEqual(BLOCKED_MEMBER_SEEDED_AT);
     });
   });
 
