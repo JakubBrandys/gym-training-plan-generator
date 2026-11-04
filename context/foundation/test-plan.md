@@ -1,0 +1,201 @@
+# Test Plan
+
+> Phased test rollout for this project. Strategy is frozen at the top
+> (§1–§5); cookbook patterns at the bottom (§6) fill in as phases ship.
+> Read before writing any new test.
+>
+> Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
+>
+> Last updated: 2026-11-04
+
+## 1. Strategy
+
+Tests follow three non-negotiable principles for this project:
+
+1. **Cost × signal.** The cheapest test that gives a real signal for the
+   risk wins. Do not promote to e2e because e2e "feels safer." Do not put a
+   vision model on top of a deterministic visual diff that already catches
+   the regression.
+2. **User concerns are first-class evidence.** Risks anchored in "<the
+   team is worried about X, and the failure would surface somewhere in
+   <area>>" carry the same weight as PRD lines or hot-spot data.
+3. **Risks are scenarios, not code locations.** This plan documents *what
+   could fail* and *why we believe it's likely* — drawn from documents,
+   interview, and codebase *signal* (churn, structure, test base). It does
+   NOT claim to know which line owns the failure. That knowledge is
+   produced by `/10x-research` during each rollout phase. If the plan and
+   research disagree about where the failure lives, research is the
+   ground truth.
+
+Hot-spot scope used for likelihood weighting: `backend/src`, `frontend/src`
+(specs, lockfiles, docs, archive and build output excluded; 32 commits in the
+last 30 days as of 2026-11-04).
+
+Test base profile: meaningful — Vitest configured in both packages, about 61
+spec files, no browser e2e, and no test gate in CI.
+
+## 2. Risk Map
+
+The top failure scenarios this project must protect against, ordered by
+risk = impact × likelihood. Risks are failure scenarios in user / business
+terms, not test names. The Source column cites the *evidence that surfaced
+this risk* — never a specific file as "where the failure lives" (that is
+research's job, see §1 principle #3).
+
+| # | Risk (failure scenario) | Impact | Likelihood | Source (evidence — not anchor) |
+|---|-------------------------|--------|------------|--------------------------------|
+| 1 | The server restarts or deploys mid-generation and the user is left on endless progress, a blank screen or a dead job instead of being told clearly to start again. | High | High | interview Q1, Q4; PRD non-functional requirement "no dead air"; archive/2026-10-14-first-plan-generation (jobs held in memory); tech-stack CI flow (auto-deploy on every backend merge). |
+| 2 | An unusable pipeline result reaches the user as a normal plan: malformed output, off-catalog exercises, wrong shape, or a failed or retry-exhausted model call. | High | High | interview Q1, Q2 (burned before), Q3; PRD US-01 acceptance criteria and guardrail 2; hot-spot dir `backend/src/plan-generation` (39 file touches/30d). |
+| 3 | A saved plan does not reload intact, or shows garbage, in a later session. | High | Medium | interview Q1; PRD guardrail 1; lessons.md (saved shape is a persisted contract); archive/2026-10-27-save-and-view-plan. |
+| 4 | One user reads, streams, saves, renames or deletes another user's job or saved plan. | High | Medium | abuse lens (authorization); PRD Access Control ("Member manages own plans only"); user question during plan-delete-and-rename ("can another user open plans that were not saved?"); change plan-delete-and-rename (new write endpoints on saved plans). |
+| 5 | A user abuses the generation form: injected instructions in free text change the output, or more generations than the limits allow are triggered. | Medium | Medium | abuse lens (untrusted input, resource abuse); PRD FR-003 note and Access Control (prompt-injection abuse); archive/2026-10-14-first-plan-generation (one generation at a time, 5 per rolling 24 hours). |
+| 6 | A blocked user keeps access: an already-issued token still works on some route, or sign-in and refresh still succeed. | High | Low | PRD guardrail 3 and FR-003; archive/2026-10-31-admin-block-user; hot-spot dir `backend/src/auth` (11 file touches/30d). |
+| 7 | A prompt or pipeline tweak silently degrades plan quality and nothing signals it before deploy. | Medium | High | interview Q3 ("every tweak is guesswork"); hot-spot dir `backend/src/plan-generation` (39 file touches/30d). |
+
+**Impact × Likelihood rubric.** Both axes use a coarse High / Medium / Low scale.
+
+| Rating | Impact | Likelihood |
+|--------|--------|------------|
+| High   | user loses access, data, or money; failure is publicly visible | area changes weekly, or we have already been burned here |
+| Medium | feature degrades, a workaround exists, only some users affected | touched occasionally, has been a source of bugs |
+| Low    | cosmetic, easily reverted, no data effect | stable code, rarely touched |
+
+Considered and not on the map: secret and PII leakage (no evidence beyond the
+generic abuse lens; candidate for `--refresh`), UI regressions (only evidence
+is churn from the settled redesign, and an existing UI-contract spec already
+guards it), and provider outages (observability, not a test).
+
+### Risk Response Guidance
+
+| Risk | What would prove protection | Must challenge | Context `/10x-research` must ground | Likely cheapest layer | Anti-pattern to avoid |
+|------|-----------------------------|----------------|--------------------------------------|-----------------------|-----------------------|
+| #1 | After a restart or a vanished job, a refresh, an open progress stream and a save attempt all end in an honest state ("start again"), never endless progress or a half plan; a not-found response shows "start again", and a non-404 failure (5xx or refused connection) ends bounded in a generic retry state, which the test either proves acceptable or flags. | That "refresh resumes the same job" still holds after a restart; that a not-found job means the user is told. | Job lifetime, how the stream and snapshot behave when the job is gone, client handling of not-found and closed streams, restart behaviour on the host. | Frontend watch-loop tests with a faked fetch (a backend job-store reset repeats existing unknown-id tests), plus one manual smoke on a real deploy. | Asserting a mocked stream error that mirrors production; testing only that a missing job returns nothing, without checking what the user sees. |
+| #2 | For each failure mode (malformed JSON, schema-valid but off-catalog exercise, wrong week count, empty plan, invalid output after retries, provider error or timeout) the job ends failed with no plan and one of three failure codes (invalid output, provider unavailable, internal), never a completed plan containing invalid exercises; a provider error or timeout fails without a pipeline retry. | That schema-valid means catalog-valid; that the review pass fixes the draft so validating the draft suffices; that a successful retry implies a valid result. | The catalog's source of truth, what the second pass may change, retry rules, where "completed" is decided, error translation, and whether the client checks the shape of a completed plan (research found no shape check and no error boundary). | Integration with a fake model driven by a table of bad outputs. | Deriving the bad outputs from the validator's own branches; happy-path-only; asserting only the error copy. |
+| #3 | A plan saved from a completed generation reloads identically, images included, in a later session; an older stored shape still renders; a failed save is surfaced, not confirmed. | That "save returned success" means intact; that a round trip built with the same builder proves anything. | The persisted shape versus what the plan view consumes, the read path, idempotency, and whether persistence is tested against a real database or a fake. | Integration round trip (fixture written independently of the serializer) plus a frontend render of the stored shape; one e2e for the whole path if research shows nothing cheaper covers it. | The oracle problem (expected value copied from the code under test); mocking the database so persistence is never exercised. |
+| #4 | User B cannot read, stream, save, rename or delete user A's job or plan; the answer matches a nonexistent id, and A's data survives B's attempt. | That a scoped list implies a scoped get; that an unguessable id is a control; that owning the job implies owning the save. | Every endpoint that takes an id, how ownership is enforced, the not-found-for-unauthorized convention, the stream endpoint. | Integration, two-user matrix per endpoint. | Single-user tests; checking only the status code and not that A's data survived. |
+| #5 | Instruction-laden goals text cannot produce output that violates catalog or structure rules because output validation still gates; the N+1th parallel generation is refused; behaviour of the limit across a restart is known. | That output validation covers injection (it covers shape, not intent); that the limit is exact under concurrency. | Where user text enters the prompt, where limit state lives and for how long (Phase 1 research found it in memory, reset on restart), whether check-and-start is atomic. | Integration: parallel submissions plus an injection fixture against the fake model. | Asserting that the model refuses an injection (non-deterministic) instead of asserting the invariant. |
+| #6 | A blocked profile is refused on every gated route, including with a still-valid token; a block takes effect immediately; a half-applied block is visible, not silent. | That a refusal on one route means all routes; that a provider-side ban kills already-issued tokens. | Guard order, the public routes, the stream route, the two-part block action and its partial failure. | Integration over a table of all gated routes. | Testing the guard alone; copying the route list from the controllers so a new route can bypass it unnoticed. |
+| #7 | A prompt or pipeline change that makes the real model emit more invalid or less personalised plans shows up before merge as a pass rate over a small fixed set of inputs. | That a fake-model unit test says anything about prompt quality; that one good sample is evidence. | Provider and model configuration, cost and minutes per run, non-determinism, what "personalised" means per the PRD. | AI-native: a small on-demand eval, deterministic validity checks first, an LLM judge only for the personalisation rubric. | An LLM judge over what a validator already catches; snapshotting model text. |
+
+## 3. Phased Rollout
+
+Each row is a discrete rollout phase that will open its own change folder
+via `/10x-new`. Status moves left-to-right through the values below; the
+orchestrator updates Status as artifacts appear on disk. Phases are ordered by
+risk and bundle the feature areas each risk touches.
+
+| # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
+|---|------------|-----------------|---------------|------------|--------|---------------|
+| 1 | Generation outcome integrity | A generation never ends as a silently bad or vanished plan: every pipeline failure mode and a mid-generation restart end in an honest user-facing state. | #2, #1 | backend pipeline-level tests (fake-model failure table), frontend watch-loop and page state tests, one manual deploy smoke | researched | testing-generation-outcome-integrity |
+| 2 | Saved-plan durability and ownership | What the user saves reloads intact, and only its owner can read or change it. | #3, #4 | integration round trip, two-user matrix per id-taking endpoint, frontend stored-shape render | not started | — |
+| 3 | Access control and abuse limits | Blocked users stay out on every gated route, and generation limits and free-text injection cannot be gamed. | #6, #5 | integration route table, parallel-request limit test, injection fixture | not started | — |
+| 4 | Pipeline eval harness (AI-native) | A prompt or pipeline change that hurts plan quality is visible before merge. | #7 | on-demand eval: deterministic checks first, LLM judge for the personalisation rubric only | not started | — |
+| 5 | Quality-gates wiring | A merge cannot deploy untested code. | cross-cutting | CI gates (lint, build and typecheck, unit, backend e2e) | not started | — |
+
+**Status vocabulary** (fixed — parser literals): `not started`, `change opened`,
+`researched`, `planned`, `implementing`, `complete`.
+
+## 4. Stack
+
+The classic test base for this project. AI-native tools carry a `checked:`
+date so future readers can see which lines need re-verification.
+
+| Layer | Tool | Version | Notes |
+|-------|------|---------|-------|
+| unit + integration (backend) | Vitest with `@nestjs/testing` | vitest ^4.1.2 | Specs beside source as `*.spec.ts`. Run: `cd backend && npm test`. |
+| HTTP e2e (backend) | Vitest with supertest | supertest ^7.0.0 | Specs in `backend/test/` as `*.e2e-spec.ts`; HTTP level, not a browser. Run: `cd backend && npm run test:e2e`. |
+| unit + component (frontend) | Vitest with Testing Library and jsdom | vitest ^4.1.12, @testing-library/react ^16.3.3, jsdom ^30.1.3 | Two projects: node for `*.spec.ts`, jsdom for `*.spec.tsx`. Run: `cd frontend && npm test`. |
+| lint | oxlint | ^1.58.0 backend, ^1.81.0 frontend | Backend runs type-aware. Run: `npm run lint` in each package. |
+| API / model mocking | none as a library | n/a | Model calls go through an injectable client faked in specs; persistence in e2e specs uses in-test fakes. Whether that is enough is Phase 1 and 2 research. |
+| browser e2e | none yet | n/a | No Playwright configuration. Not planned unless Phase 2 research shows no cheaper layer covers risk #3. |
+| accessibility | none yet | n/a | No rollout phase targets it. |
+| AI-native: pipeline eval | LLM-judge eval over a fixed input set; tool chosen in Phase 4 research — checked: 2026-11-04 | n/a | When NOT to use: for anything a deterministic validator can assert; as a CI gate (cost, minutes per run, non-determinism); on changes that do not touch prompts or the pipeline. |
+
+**Stack grounding tools (current session):**
+- Docs: Context7 available — not queried in discovery because Vitest is already detected in both packages; use it in each phase's research for version-specific setup; checked: 2026-11-04
+- Search: Exa not available in current session; built-in web search available; checked: 2026-11-04
+- Runtime/browser: Playwright MCP and chrome-devtools MCP available — possible verification layer, not used; checked: 2026-11-04
+- Provider/platform: `gh` CLI available for CI status; Sentry, Atlassian and Figma integrations are installed but not relevant to quality gates; checked: 2026-11-04
+
+## 5. Quality Gates
+
+The full set of gates that must pass before a change reaches production.
+"Required after §3 Phase N" means the gate is enforced once that rollout
+phase lands; before that, the gate is `planned`. Today the CI workflows only
+deploy: the backend workflow installs, migrates and deploys, and the frontend
+workflow installs, builds and deploys. Frontend typecheck runs only as part of
+that build.
+
+| Gate | Where | Required? | Catches |
+|------|-------|-----------|---------|
+| lint + typecheck (both packages) | local + CI | required after §3 Phase 5 | syntactic and type drift |
+| unit + integration (both packages) | local + CI | required after §3 Phase 5 | logic regressions in the risks covered by Phases 1–3 |
+| backend HTTP e2e | local + CI | required after §3 Phase 5 | broken ownership, gating and persistence paths |
+| manual deploy smoke (restart mid-generation) | between merge and production | recommended after §3 Phase 1 | restart behaviour no automated test reproduces cheaply |
+| on-demand pipeline eval | local, before merging prompt or pipeline changes | recommended after §3 Phase 4 | quality drift from prompt changes |
+
+## 6. Cookbook Patterns
+
+How to add new tests in this project. Each sub-section is filled in once the
+relevant rollout phase ships; before that, the sub-section reads "TBD — see
+§3 Phase N." Run commands that work today are in §4.
+
+### 6.1 Testing a generation failure mode or a lost job
+
+- **Location**: backend pipeline failures beside the service, `backend/src/plan-generation/`; client watch loop in `frontend/src/lib/`; page states in `frontend/src/pages/`, each spec next to the unit it covers.
+- **Naming**: `<unit>.spec.ts` runs in the node environment and `<unit>.spec.tsx` under jsdom (`frontend/vite.config.ts` routes by extension). `plan-generation-watch.spec.tsx` is `.tsx` only because the watch loop calls `window.setTimeout`, which the node project does not have; a spec for a pure guard stays `.spec.ts`. A page spec that uses the real watch layer is `<Page>.watch.spec.tsx`, apart from the canned-state `<Page>.spec.tsx`.
+- **Pattern, bad pipeline output**: one table of bad plans (off-catalog slug, 7 weeks, 9 weeks, no weeks, a week without sessions, a session with 2 exercises), each built by a function so every call gets a fresh object, run through both the drafting and the reviewing pass with `describe.each` and `it.each`. Assert the job fails with `invalid_output` and no plan, not the error copy. A clean run asserts every exercise resolves to the spec's own `CATALOG` fixture, so the table cannot drift from the validator's branches.
+- **Pattern, lost job on the client**: mock only the network edge with `vi.mock('./api', () => ({ apiFetch: vi.fn() }))` and keep `watchPlanGeneration`, `streamPlanEvents` and `fetchPlanGeneration` real. Route by URL: a path ending in `/events` is the stream, anything else the snapshot. A stream that stays open must error its controller when `init.signal` aborts. Use `vi.useFakeTimers()` in `beforeEach` and `vi.useRealTimers()` in `afterEach`.
+- **Pattern, time caps**: record `settled` through `.then` on the watch promise, advance time with `vi.advanceTimersByTimeAsync`, and assert both the flag and the last state, so a missing time cap fails the test instead of hanging it. `AbortSignal.timeout` (the 10 s snapshot timeout) is not driven by fake timers, so every mocked response must resolve.
+- **Pattern, page states**: `PlanGenerationPage.spec.tsx` feeds canned watch states and checks rendering only; `PlanGenerationPage.watch.spec.tsx` mocks `apiFetch` and `useAuth`, keeps the real watch layer and advances time inside `act`. Assert what the user sees (the not-found message with `Start again`, the generic retry state), not the internal state name.
+- **Mocking policy**: pipeline specs fake the model client and the catalog; frontend specs mock `apiFetch` (or the watch module, for rendering-only specs). Never mock the guard or the watch loop in a spec that claims to cover them. Break the production code in the worktree, confirm the named tests go red, then restore, before trusting a new test.
+- **Reference tests**: `backend/src/plan-generation/plan-pipeline.service.spec.ts` (bad-output table), `frontend/src/lib/plan-generation-watch.spec.tsx` (lost job, outage, time cap), `frontend/src/lib/plan-generation.spec.ts` (`isPlanResult` guard, node environment, dev sample plan plus hand-written literals), `frontend/src/pages/PlanGenerationPage.watch.spec.tsx` (what the user sees after a restart).
+- **Run locally**: backend `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts` (all: `npm test`); frontend `cd frontend && npx vitest run <path>` (all: `npm test`).
+- **Not automated**: a restart mid-generation on a real deploy is a manual smoke (§5), not a spec.
+
+### 6.2 Testing that saved data round-trips
+
+- TBD — see §3 Phase 2 (independent fixture, stored-shape render, failed-save visibility).
+
+### 6.3 Testing ownership on a new id-taking endpoint
+
+- TBD — see §3 Phase 2 (two-user matrix, not-found-for-unauthorized, victim data survives).
+
+### 6.4 Testing gated routes and abuse limits
+
+- TBD — see §3 Phase 3 (route table for blocked users, parallel-request limit, injection fixture).
+
+### 6.5 Running the pipeline eval
+
+- TBD — see §3 Phase 4 (input set, deterministic checks, judge rubric, when to run).
+
+### 6.6 Per-rollout-phase notes
+
+(Appended by `/10x-implement` after each phase lands: two or three lines on
+anything the phase taught that later tests should reuse.)
+
+## 7. What We Deliberately Don't Test
+
+Interview Q5 was skipped, so these exclusions are inferred from the PRD
+non-goals and the archive rather than stated by the team. Confirm or edit them
+in the first `--refresh`.
+
+- **Progress tracking, team features, fetching images from the web** — PRD non-goals; none of it is built. Re-evaluate if the PRD changes. (Source: PRD Non-Goals.)
+- **Visual and styling snapshot tests** — the UI is still moving and an existing UI-contract spec already guards tokens and shared components. Re-evaluate if a visual regression reaches production. (Source: inferred.)
+- **Admin user-list screen** — one trusted admin, low blast radius; only its access control is covered, under risk #6. Re-evaluate when more admins exist. (Source: inferred from PRD Access Control.)
+- **The auth provider's own behaviour** — we test our reaction to it, not Supabase. Re-evaluate if we move providers. (Source: inferred.)
+- **The catalog seed script** — idempotency is already covered by an existing spec. Re-evaluate if the catalog grows past the minimal seed. (Source: archive/2026-10-04-exercise-catalog-seed.)
+- **FR-008 (edit or regenerate part of a plan)** — not built, so nothing to test. Re-evaluate when it is planned. (Source: roadmap Parked.)
+
+## 8. Freshness Ledger
+
+- Strategy (§1–§5) last reviewed: 2026-11-04
+- Stack versions last verified: 2026-11-04
+- AI-native tool references last verified: 2026-11-04
+
+Refresh (`/10x-test-plan --refresh`) when:
+
+- a new top-3 risk surfaces from the roadmap or archive,
+- a recommended tool's `checked:` date is older than three months,
+- the project's tech stack changes (new framework, new test runner),
+- §7 negative-space no longer matches what the team believes.

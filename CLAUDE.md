@@ -19,7 +19,7 @@ Gym Training Plan Generator: an AI-assisted 8-week training-plan app with a Nest
 ### Build, Test, and Development Commands
 
 From `backend/`: `npm run start:dev` (watch mode), `npm run build`, `npm run lint` (oxlint, type-aware), `npm run test` / `npm run test:e2e` (Vitest).
-From `frontend/`: `npm run dev`, `npm run build` (`tsc -b` then Vite build), `npm run lint` (oxlint).
+From `frontend/`: `npm run dev`, `npm run build` (`tsc -b` then Vite build), `npm run lint` (oxlint), `npm test` (Vitest).
 
 ### Coding Style & Naming Conventions
 
@@ -27,7 +27,7 @@ Both packages use oxlint as the sole linter (no ESLint). `backend/` runs TypeScr
 
 ### Testing Guidelines
 
-`backend/` uses Vitest; run a single file with `npx vitest run <path>` from `backend/`. `frontend/` has no test framework configured yet — set one up deliberately rather than assuming Vitest defaults from the backend.
+`backend/` uses Vitest; run a single file with `npx vitest run <path>` from `backend/`. `frontend/` uses Vitest 4 with Testing Library (`*.spec.ts` run in the node environment, `*.spec.tsx` under jsdom, per `@frontend/vite.config.ts`); before writing a test, read the cookbook in `@context/foundation/test-plan.md` (§6).
 
 ### Security & Configuration Tips
 

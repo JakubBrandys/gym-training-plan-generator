@@ -331,6 +331,8 @@ Measure what the user sees on the real Fly deployment, and record the patterns t
 
 **Contract**: A "Smoke result" note stating: which message appeared (not-found or generic error), after how long, what Fly returned if visible, and the decision taken with the user.
 
+**Smoke result (2026-11-04):** restarting the backend machine mid-generation on the deployed app ended on the not-found alert, "This plan could not be found or has expired.", with a "Start again" link (screenshot taken by the user). The page never showed the generic "Something went wrong, try again" state, so smoke 2 (Retry after the generic error) did not apply. With a completed plan on screen, a restart followed by Save showed the expiry message and the plan stayed visible. Not recorded: how long the not-found page took to appear (not timed) and what Fly returned during the swap (not inspected). Decision with the user: no deploy-time wording or behaviour change; the real deploy produced the honest path, and the outage-then-Retry path stays pinned by `PlanGenerationPage.watch.spec.tsx`.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -427,28 +429,28 @@ None. No schema, API or persisted-shape change; the guard only reads the generat
 
 #### Automated
 
-- [x] 4.1 Page specs pass: `cd frontend && npx vitest run src/pages/PlanGenerationPage.spec.tsx src/pages/PlanGenerationPage.watch.spec.tsx`
-- [x] 4.2 Frontend suite passes: `cd frontend && npm test`
-- [x] 4.3 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 4.4 Frontend build passes: `cd frontend && npm run build`
-- [x] 4.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 4.1 Page specs pass: `cd frontend && npx vitest run src/pages/PlanGenerationPage.spec.tsx src/pages/PlanGenerationPage.watch.spec.tsx` — 87a841c
+- [x] 4.2 Frontend suite passes: `cd frontend && npm test` — 87a841c
+- [x] 4.3 Frontend lint passes: `cd frontend && npm run lint` — 87a841c
+- [x] 4.4 Frontend build passes: `cd frontend && npm run build` — 87a841c
+- [x] 4.5 Each deliberate-break check listed above turns the named tests red and is restored — 87a841c
 
 #### Manual
 
-- [x] 4.6 Local outage: start a generation against a local backend, stop the backend mid-run, and the page ends on `Something went wrong, try again` with Retry; after restarting the backend, pressing Retry shows `This plan could not be found or has expired.` with `Start again`
+- [x] 4.6 Local outage: start a generation against a local backend, stop the backend mid-run, and the page ends on `Something went wrong, try again` with Retry; after restarting the backend, pressing Retry shows `This plan could not be found or has expired.` with `Start again` — 87a841c
 
 ### Phase 5: Manual deploy smoke and cookbook
 
 #### Automated
 
-- [ ] 5.1 §6.1 no longer reads TBD: `sed -n '/### 6.1/,/### 6.2/p' context/foundation/test-plan.md` contains no `TBD`
-- [ ] 5.2 `CLAUDE.md` no longer says the frontend has no test framework: `grep -n "no test framework" CLAUDE.md` returns nothing
-- [ ] 5.3 Backend suite, lint and build pass: `cd backend && npm test && npm run lint && npm run build`
-- [ ] 5.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build`
+- [x] 5.1 §6.1 no longer reads TBD: `sed -n '/### 6.1/,/### 6.2/p' context/foundation/test-plan.md` contains no `TBD`
+- [x] 5.2 `CLAUDE.md` no longer says the frontend has no test framework: `grep -n "no test framework" CLAUDE.md` returns nothing
+- [x] 5.3 Backend suite, lint and build pass: `cd backend && npm test && npm run lint && npm run build`
+- [x] 5.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 5.5 Fly smoke 1: with a generation in the Drafting stage on the deployed app, restart the backend machine (`fly machines list`, then `fly machine restart <id>` for the project's Fly app); record which message the page shows and how long it takes
-- [ ] 5.6 Fly smoke 2: if the page ended on `Something went wrong, try again`, press Retry once the machine is back and confirm it then shows `This plan could not be found or has expired.`
-- [ ] 5.7 Fly smoke 3: with a completed plan on screen, restart the machine and click Save; the expiry message appears and the plan stays visible
-- [ ] 5.8 Record the Fly observations in the Smoke result note and decide with the user whether the deploy-time wording needs a follow-up change
+- [x] 5.5 Fly smoke 1: with a generation in the Drafting stage on the deployed app, restart the backend machine (`fly machines list`, then `fly machine restart <id>` for the project's Fly app); record which message the page shows and how long it takes
+- [x] 5.6 Fly smoke 2: if the page ended on `Something went wrong, try again`, press Retry once the machine is back and confirm it then shows `This plan could not be found or has expired.`
+- [x] 5.7 Fly smoke 3: with a completed plan on screen, restart the machine and click Save; the expiry message appears and the plan stays visible
+- [x] 5.8 Record the Fly observations in the Smoke result note and decide with the user whether the deploy-time wording needs a follow-up change
