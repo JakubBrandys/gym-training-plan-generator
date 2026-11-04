@@ -89,8 +89,7 @@ risk and bundle the feature areas each risk touches.
 | 1 | Generation outcome integrity | A generation never ends as a silently bad or vanished plan: every pipeline failure mode and a mid-generation restart end in an honest user-facing state. | #2, #1 | backend pipeline-level tests (fake-model failure table), frontend watch-loop and page state tests, one manual deploy smoke | complete | testing-generation-outcome-integrity |
 | 2 | Saved-plan durability and ownership | What the user saves reloads intact, and only its owner can read or change it. | #3, #4 | integration round trip, two-user matrix per id-taking endpoint, frontend stored-shape render | complete | testing-saved-plan-durability-and-ownership |
 | 3 | Access control and abuse limits | Blocked users stay out on every gated route, and generation limits and free-text injection cannot be gamed. | #6, #5 | integration route table, parallel-request limit test, injection fixture | complete | testing-access-control-and-abuse-limits |
-| 4 | Pipeline eval harness (AI-native) | A prompt or pipeline change that hurts plan quality is visible before merge. | #7 | on-demand eval: deterministic checks first, LLM judge for the personalisation rubric only | not started | — |
-| 5 | Quality-gates wiring | A merge cannot deploy untested code. | cross-cutting | CI gates (lint, build and typecheck, unit, backend e2e) | not started | — |
+| 4 | Pipeline eval harness (AI-native) | A prompt or pipeline change that hurts plan quality is visible before merge. | #7 | on-demand eval: deterministic checks first, LLM judge for the personalisation rubric only | complete | testing-pipeline-eval-harness |
 
 **Status vocabulary** (fixed — parser literals): `not started`, `change opened`,
 `researched`, `planned`, `implementing`, `complete`.
@@ -120,17 +119,18 @@ date so future readers can see which lines need re-verification.
 ## 5. Quality Gates
 
 The full set of gates that must pass before a change reaches production.
-"Required after §3 Phase N" means the gate is enforced once that rollout
-phase lands; before that, the gate is `planned`. Today the CI workflows only
+"Recommended after §3 Phase N" means the gate is advised once that rollout
+phase lands. A gate marked `not scheduled` has no rollout phase: CI gates are
+deliberately deferred for now. Today the CI workflows only
 deploy: the backend workflow installs, migrates and deploys, and the frontend
 workflow installs, builds and deploys. Frontend typecheck runs only as part of
 that build.
 
 | Gate | Where | Required? | Catches |
 |------|-------|-----------|---------|
-| lint + typecheck (both packages) | local + CI | required after §3 Phase 5 | syntactic and type drift |
-| unit + integration (both packages) | local + CI | required after §3 Phase 5 | logic regressions in the risks covered by Phases 1–3 |
-| backend HTTP e2e | local + CI | required after §3 Phase 5 | broken ownership, gating and persistence paths |
+| lint + typecheck (both packages) | local + CI | not scheduled (no CI gates for now) | syntactic and type drift |
+| unit + integration (both packages) | local + CI | not scheduled (no CI gates for now) | logic regressions in the risks covered by Phases 1–3 |
+| backend HTTP e2e | local + CI | not scheduled (no CI gates for now) | broken ownership, gating and persistence paths |
 | manual deploy smoke (restart mid-generation) | between merge and production | recommended after §3 Phase 1 | restart behaviour no automated test reproduces cheaply |
 | on-demand pipeline eval | local, before merging prompt or pipeline changes | recommended after §3 Phase 4 | quality drift from prompt changes |
 
@@ -193,7 +193,23 @@ relevant rollout phase ships; before that, the sub-section reads "TBD — see
 
 ### 6.5 Running the pipeline eval
 
-- TBD — see §3 Phase 4 (input set, deterministic checks, judge rubric, when to run).
+- **Location**: `backend/eval/`, outside `src/` on purpose: `tsconfig.build.json` compiles all of `src` and the Dockerfile copies only `src`, so nothing here reaches `dist` or the image. Lint covers it (`npm run lint`). Generated plans go to the gitignored `backend/eval/runs/<timestamp>/`; the committed baseline `backend/eval/baseline/report.json` holds numbers and metadata only, never plan text.
+- **Naming**: pure modules and their specs are `eval-*.ts` and `eval-*.spec.ts` and run under `npm test` with no key. The real-model entry points are `generate.eval.ts` and `score.eval.ts`, run through `vitest.eval.config.ts`; neither `npm test` nor `npm run test:e2e` picks them up.
+- **Run locally** (from `backend/`; needs `OPENAI_API_KEY`, `PLAN_DRAFT_MODEL`, `PLAN_REVIEW_MODEL` in `backend/.env`, loaded with `dotenv`, plus `EVAL_JUDGE_MODEL` for the judge, which has no default):
+  - `npm run eval:generate` runs the real pipeline, `EVAL_TIER=smoke` (default, first 3 inputs once) or `EVAL_TIER=full` (8 inputs x 3 repeats = 24 jobs); `EVAL_CONCURRENCY` (default 4).
+  - `EVAL_RUN_DIR=<dir> npm run eval:score` scores a saved run (default: the newest); `EVAL_SKIP_JUDGE=1` skips the judge. It re-runs on saved plans without regenerating.
+  - `npm run eval:baseline -- <run-dir>` copies that run's `report.json` to the baseline.
+  - Both scripts use `--reporter=verbose` because Vitest hides `console.log` from passing tests otherwise, and the report is printed with `console.log`.
+- **Pattern, headline metric**: per model call, first attempt of each pass only. A recording wrapper (`eval-record.ts`) sits around `PlanModelClient.generate` per job, reads the stage from the job store at call time, and judges each output with the production `validateGeneratedPlan`; an unparseable answer is a failed call. Draft and review are reported separately; retry calls (attempt 2) are reported apart and never in the headline, because the pipeline's retry would otherwise hide a prompt that gets worse on the first try. Never read the headline off job status.
+- **Pattern, deterministic quality metrics**: week repetition (a week repeats when its sessions have the same slugs in order and the same sets as the previous week, reps and notes ignored, so the 2026-10-24 plank case counts), mean distinct muscle groups per week, and the share of exercises above the trainee's level. They are reported with deltas and never counted in the validity pass rate.
+- **Pattern, judge**: one `generateText` call with `Output.object` (installed `ai` 7.0.140) scores goals fit and experience fit, 1 to 5 each; a score of 4 or more (4 included) is a pass. It never scores frequency, counts, catalog or formats (the validator and the metrics decide those). A failed judge call or a job with no plan is `unscored`, never a pass. Calibration: on the first repeat of each input the same plan is also judged against the next input's form; separation (matched mean minus mismatched mean) under 1.0 marks the judge `not discriminating`.
+- **Pattern, reading the report**: it prints deltas against the baseline over the input ids both runs share and marks a metric `REGRESSED` past its margin; the process always exits 0. Initial margins (fixed, not fitted to data, revisit after the first baseline): call validity drop over 0.05, job failure rate rise over 0.05, week repetition rise over 0.15, judge mean drop over 0.3, mean distinct muscles drop over 1.0, above-level share rise over 0.10. A drop of exactly a margin is not marked. Read the report before merging a prompt, model or pipeline change; a green report over a small set only bounds a validity failure rate loosely (0 failures in n runs bounds it near 3/n at 95%).
+- **Mocking policy**: the unit specs fake only the model client and the judge and make no claim about the real model's quality; the real-model checks are your smoke and full runs. Break the production code in the worktree and confirm the named specs go red before trusting a new case.
+- **Known gaps**: no CI gate (cost, minutes per run, non-determinism); the judge is the same vendor scoring its own output, so it is only as trustworthy as the calibration check and a hand read of about ten judged plans; level fit is weak by construction (the catalog is 26 beginner, 5 intermediate and 1 expert exercise); the catalog is the seed file, not the production database; client constants (`reasoningEffort`, token limits) are not part of the prompt hash, so the report records the git commit instead; provider rate limits at concurrency 4 and `gpt-6-luna` pricing are unverified. Whether a worse prompt actually moves a metric was not shown by a real run when this was written (2026-11-04); the two deliberate-break runs in `context/changes/testing-pipeline-eval-harness/plan.md` Phase 4 decide that.
+- **Tool choice (checked: 2026-11-04)**: a plain Vitest runner with no new dependency. evalite 0.19.0 depends on `@ai-sdk/provider` ^2.0.0 (an older AI SDK generation than this repo's `ai` 7), vitest-evals 0.17.0 has no repeat or pass-rate feature (its `ai` peer is `>=4 <7` and optional), promptfoo is about 33 MB (reported) with a prompt-string provider interface, and autoevals only duplicates the judge call.
+- **Reference tests**: `backend/eval/eval-metrics.spec.ts` (plank case, boundaries), `backend/eval/eval-report.spec.ts` (first-attempt counting, margin boundaries, score 4, calibration), `backend/eval/eval-runner.spec.ts` (draft retried, unparseable answer, provider error, failing job, pool limit), `backend/eval/eval-judging.spec.ts` (unscored, mismatched call only on repeat 1).
+- **Run the specs**: `cd backend && npx vitest run eval/` (all: `npm test`).
+- **Not automated**: every real-model run, the baseline, and the two deliberate-break runs are manual (the agent cannot read `.env*`).
 
 ### 6.6 Per-rollout-phase notes
 
