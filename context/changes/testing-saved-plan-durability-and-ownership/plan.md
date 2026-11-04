@@ -352,14 +352,14 @@ None. No schema, API or persisted-shape change; the guard only reads the saved-p
 
 #### Automated
 
-- [x] 4.1 §6.2 and §6.3 no longer read TBD: `sed -n '/### 6.2/,/### 6.4/p' context/foundation/test-plan.md | grep -c TBD` prints `0`
-- [x] 4.2 §6.4 and §6.5 still read TBD: `sed -n '/### 6.4/,/### 6.6/p' context/foundation/test-plan.md | grep -c TBD` prints `2`
-- [x] 4.3 Backend suites, lint and build pass: `cd backend && npm test && npm run test:e2e && npm run lint && npm run build`
-- [x] 4.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build`
+- [x] 4.1 §6.2 and §6.3 no longer read TBD: `sed -n '/### 6.2/,/### 6.4/p' context/foundation/test-plan.md | grep -c TBD` prints `0` — 6210bc7
+- [x] 4.2 §6.4 and §6.5 still read TBD: `sed -n '/### 6.4/,/### 6.6/p' context/foundation/test-plan.md | grep -c TBD` prints `2` — 6210bc7
+- [x] 4.3 Backend suites, lint and build pass: `cd backend && npm test && npm run test:e2e && npm run lint && npm run build` — 6210bc7
+- [x] 4.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build` — 6210bc7
 
 #### Manual
 
-- [x] 4.5 Smoke 1 (durability): with account A on the dev app (local backend and frontend, the real hosted database), generate a plan, review it, click Save, sign out, sign back in, open the plan from My plans; all 8 weeks and the exercise images show, and the plan matches what was reviewed before saving
-- [x] 4.6 Smoke 2 (ownership in the UI): sign in as a second account B and open A's `/plans/<A's id>` directly; the page shows "This saved plan could not be found." and A's plan is absent from B's My plans
-- [x] 4.7 Smoke 3 (ownership over the API): with B's bearer token (copied from the browser's network tab) send `GET`, `PATCH` (with a title) and `DELETE` for A's plan id to the local API, and the same three for a well-formed unknown UUID; each pair answers the same status and body (404), and afterwards A's plan still opens unchanged with its original title
-- [x] 4.8 Record the observations in the Smoke result note
+- [x] 4.5 Smoke 1 (durability): with account A on the dev app (local backend and frontend, the real hosted database), generate a plan, review it, click Save, sign out, sign back in, open the plan from My plans; all 8 weeks and the exercise images show, and the plan matches what was reviewed before saving — 6210bc7
+- [x] 4.6 Smoke 2 (ownership in the UI): sign in as a second account B and open A's `/plans/<A's id>` directly; the page shows "This saved plan could not be found." and A's plan is absent from B's My plans — 6210bc7
+- [x] 4.7 Smoke 3 (ownership over the API): with B's bearer token (copied from the browser's network tab) send `GET`, `PATCH` (with a title) and `DELETE` for A's plan id to the local API, and the same three for a well-formed unknown UUID; each pair answers the same status and body (404), and afterwards A's plan still opens unchanged with its original title — 6210bc7
+- [x] 4.8 Record the observations in the Smoke result note — 6210bc7
