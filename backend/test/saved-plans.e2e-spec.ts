@@ -44,6 +44,7 @@ interface SavedPlanRow {
   sourceJobId: string;
   form: unknown;
   plan: unknown;
+  title: string | null;
   createdAt: Date;
 }
 
@@ -71,6 +72,7 @@ class FakeSavedPlanTable {
       sourceJobId: randomUUID(),
       form: {},
       plan: { weeks: [] },
+      title: null,
       createdAt: new Date(),
       ...row,
     });
@@ -119,6 +121,7 @@ class FakeSavedPlanTable {
       }
       const row: SavedPlanRow = {
         id: randomUUID(),
+        title: null,
         createdAt: new Date(),
         ...structuredClone(data),
       };
@@ -171,6 +174,34 @@ class FakeSavedPlanTable {
           candidate.id === where.id && candidate.ownerId === where.ownerId,
       );
       return Promise.resolve(row ? project(row, select) : null);
+    },
+  );
+
+  deleteMany = vi.fn(
+    ({ where }: { where: { id: string; ownerId: string } }) => {
+      const before = this.rows.length;
+      this.rows = this.rows.filter(
+        (row) => !(row.id === where.id && row.ownerId === where.ownerId),
+      );
+      return Promise.resolve({ count: before - this.rows.length });
+    },
+  );
+
+  updateMany = vi.fn(
+    ({
+      where,
+      data,
+    }: {
+      where: { id: string; ownerId: string };
+      data: { title: string | null };
+    }) => {
+      const matched = this.rows.filter(
+        (row) => row.id === where.id && row.ownerId === where.ownerId,
+      );
+      for (const row of matched) {
+        row.title = data.title;
+      }
+      return Promise.resolve({ count: matched.length });
     },
   );
 }
@@ -259,6 +290,7 @@ describe('SavedPlansController (http)', () => {
         id: expect.any(String),
         createdAt: expect.any(String),
         form,
+        title: null,
       });
       expect(response.body).not.toHaveProperty('plan');
       expect(table.rows).toHaveLength(1);
@@ -313,6 +345,7 @@ describe('SavedPlansController (http)', () => {
         id: '11111111-1111-4111-8111-111111111111',
         createdAt: '2026-01-01T00:00:00.000Z',
         form,
+        title: null,
       });
       expect(table.rows).toHaveLength(1);
     });
@@ -389,6 +422,7 @@ describe('SavedPlansController (http)', () => {
         id: table.rows[0]!.id,
         createdAt: expect.any(String),
         form,
+        title: null,
       });
     });
 
@@ -461,6 +495,7 @@ describe('SavedPlansController (http)', () => {
         id,
         createdAt: (saved.body as { createdAt: string }).createdAt,
         form,
+        title: null,
         plan,
       });
     });
@@ -495,6 +530,188 @@ describe('SavedPlansController (http)', () => {
       await request(app.getHttpServer())
         .get(`/saved-plans/${UNKNOWN_ID}`)
         .expect(401);
+    });
+  });
+
+  describe('PATCH /saved-plans/:id', () => {
+    const patchTitle = (userId: string, id: string, body: unknown) =>
+      request(app.getHttpServer())
+        .patch(`/saved-plans/${id}`)
+        .set(USER_HEADER, userId)
+        .send(body as object);
+
+    const savedId = async (userId: string): Promise<string> => {
+      const saved = await postSave(userId, {
+        jobId: completedJob(userId),
+      }).expect(201);
+      return (saved.body as { id: string }).id;
+    };
+
+    it('answers 200 with the summary carrying the new title', async () => {
+      const id = await savedId('user-1');
+
+      const response = await patchTitle('user-1', id, {
+        title: '  Summer cut  ',
+      }).expect(200);
+
+      expect(response.body).toEqual({
+        id,
+        createdAt: expect.any(String),
+        form,
+        title: 'Summer cut',
+      });
+      expect(response.body).not.toHaveProperty('plan');
+      expect(table.rows[0]!.title).toBe('Summer cut');
+    });
+
+    it('stores null for a whitespace-only title', async () => {
+      const id = await savedId('user-1');
+      await patchTitle('user-1', id, { title: 'Cut' }).expect(200);
+
+      const response = await patchTitle('user-1', id, {
+        title: '   ',
+      }).expect(200);
+
+      expect((response.body as { title: unknown }).title).toBeNull();
+      expect(table.rows[0]!.title).toBeNull();
+    });
+
+    it('clears the title with null', async () => {
+      const id = await savedId('user-1');
+      await patchTitle('user-1', id, { title: 'Cut' }).expect(200);
+
+      const response = await patchTitle('user-1', id, {
+        title: null,
+      }).expect(200);
+
+      expect((response.body as { title: unknown }).title).toBeNull();
+    });
+
+    it('answers 404 for another owners saved plan and leaves it unchanged', async () => {
+      const id = await savedId('user-1');
+
+      await patchTitle('user-2', id, { title: 'Mine now' }).expect(404);
+
+      expect(table.rows[0]!.title).toBeNull();
+    });
+
+    it('answers 404 for an unknown id', async () => {
+      await patchTitle('user-1', UNKNOWN_ID, { title: 'Cut' }).expect(404);
+    });
+
+    it('answers 404 for a malformed id', async () => {
+      await patchTitle('user-1', 'not-a-uuid', { title: 'Cut' }).expect(404);
+      expect(table.updateMany).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {},
+      { title: 5 },
+      { title: 'a'.repeat(81) },
+      { title: 'Cut\u0000plan' },
+    ])('answers 400 for the invalid body %j', async (body) => {
+      const id = await savedId('user-1');
+
+      await patchTitle('user-1', id, body).expect(400);
+
+      expect(table.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('answers 401 without a user', async () => {
+      await request(app.getHttpServer())
+        .patch(`/saved-plans/${UNKNOWN_ID}`)
+        .send({ title: 'Cut' })
+        .expect(401);
+    });
+
+    it('shows the new title in the view and the list', async () => {
+      const id = await savedId('user-1');
+      await patchTitle('user-1', id, { title: 'Summer cut' }).expect(200);
+
+      const view = await request(app.getHttpServer())
+        .get(`/saved-plans/${id}`)
+        .set(USER_HEADER, 'user-1')
+        .expect(200);
+      const list = await request(app.getHttpServer())
+        .get('/saved-plans')
+        .set(USER_HEADER, 'user-1')
+        .expect(200);
+
+      expect((view.body as { title: unknown }).title).toBe('Summer cut');
+      expect(
+        (list.body as Array<{ id: string; title: unknown }>).map(
+          ({ id: listedId, title }) => [listedId, title],
+        ),
+      ).toEqual([[id, 'Summer cut']]);
+    });
+  });
+
+  describe('DELETE /saved-plans/:id', () => {
+    const deletePlan = (userId: string, id: string) =>
+      request(app.getHttpServer())
+        .delete(`/saved-plans/${id}`)
+        .set(USER_HEADER, userId);
+
+    const savedId = async (userId: string): Promise<string> => {
+      const saved = await postSave(userId, {
+        jobId: completedJob(userId),
+      }).expect(201);
+      return (saved.body as { id: string }).id;
+    };
+
+    it('answers 204 for the owner and removes the row', async () => {
+      const id = await savedId('user-1');
+
+      const response = await deletePlan('user-1', id).expect(204);
+
+      expect(response.body).toEqual({});
+      expect(table.rows).toHaveLength(0);
+    });
+
+    it('answers 404 for another owners saved plan and keeps the row', async () => {
+      const id = await savedId('user-1');
+
+      await deletePlan('user-2', id).expect(404);
+
+      expect(table.rows).toHaveLength(1);
+    });
+
+    it('answers 404 for an unknown id', async () => {
+      await deletePlan('user-1', UNKNOWN_ID).expect(404);
+    });
+
+    it('answers 404 for a malformed id', async () => {
+      await deletePlan('user-1', 'not-a-uuid').expect(404);
+      expect(table.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('answers 404 for a second delete of the same id', async () => {
+      const id = await savedId('user-1');
+      await deletePlan('user-1', id).expect(204);
+
+      await deletePlan('user-1', id).expect(404);
+    });
+
+    it('answers 401 without a user', async () => {
+      await request(app.getHttpServer())
+        .delete(`/saved-plans/${UNKNOWN_ID}`)
+        .expect(401);
+    });
+
+    it('answers 404 on GET afterwards and drops the plan from the list', async () => {
+      const id = await savedId('user-1');
+      await deletePlan('user-1', id).expect(204);
+
+      await request(app.getHttpServer())
+        .get(`/saved-plans/${id}`)
+        .set(USER_HEADER, 'user-1')
+        .expect(404);
+      const list = await request(app.getHttpServer())
+        .get('/saved-plans')
+        .set(USER_HEADER, 'user-1')
+        .expect(200);
+
+      expect(list.body).toEqual([]);
     });
   });
 });

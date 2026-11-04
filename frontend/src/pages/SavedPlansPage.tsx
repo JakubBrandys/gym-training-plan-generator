@@ -1,19 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/useAuth'
-import { SavedPlanDetails } from '../components/SavedPlanDetails'
+import { SavedPlanListItem } from '../components/SavedPlanListItem'
 import { handleAuthFailure } from '../lib/auth-failure'
 import { GENERIC_PLAN_ERROR } from '../lib/error-messages'
-import { listSavedPlans, type SavedPlanSummary } from '../lib/saved-plans'
+import { deleteSavedPlan, listSavedPlans, type SavedPlanSummary } from '../lib/saved-plans'
 
 type SavedPlansState =
   | { status: 'loading' }
   | { status: 'ready'; plans: SavedPlanSummary[] }
   | { status: 'error' }
 
+type DeletingState = { id: string; phase: 'confirming' | 'pending' } | null
+
 export const SavedPlansPage = () => {
   const { signOut } = useAuth()
   const [state, setState] = useState<SavedPlansState>({ status: 'loading' })
+  const [deleting, setDeleting] = useState<DeletingState>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [headingFocusRequest, setHeadingFocusRequest] = useState(0)
+  const mountedRef = useRef(true)
+  const deleteAttemptRef = useRef(0)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    mountedRef.current = true
+
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (headingFocusRequest > 0) headingRef.current?.focus()
+  }, [headingFocusRequest])
 
   useEffect(() => {
     let cancelled = false
@@ -37,13 +57,74 @@ export const SavedPlansPage = () => {
     }
   }, [signOut])
 
+  const refreshPlans = async (attempt: number) => {
+    const result = await listSavedPlans()
+    if (!mountedRef.current || attempt !== deleteAttemptRef.current) return
+
+    if (result.kind === 'unauthorized' || result.kind === 'blocked') {
+      await handleAuthFailure(result.status, signOut)
+      return
+    }
+
+    if (result.kind === 'ok') setState({ status: 'ready', plans: result.plans })
+  }
+
+  const startDelete = (id: string) => {
+    setNotice(null)
+    setDeleting({ id, phase: 'confirming' })
+  }
+
+  const cancelDelete = () => {
+    setDeleting(null)
+  }
+
+  const confirmDelete = async (id: string) => {
+    deleteAttemptRef.current += 1
+    const attempt = deleteAttemptRef.current
+
+    setNotice(null)
+    setDeleting({ id, phase: 'pending' })
+
+    const result = await deleteSavedPlan(id)
+    if (!mountedRef.current) return
+
+    setDeleting(null)
+
+    if (result.kind === 'unauthorized' || result.kind === 'blocked') {
+      await handleAuthFailure(result.status, signOut)
+      return
+    }
+
+    if (result.kind === 'ok' || result.kind === 'not-found') {
+      setState((current) =>
+        current.status === 'ready'
+          ? { status: 'ready', plans: current.plans.filter((plan) => plan.id !== id) }
+          : current,
+      )
+      setHeadingFocusRequest((request) => request + 1)
+      return
+    }
+
+    setNotice(GENERIC_PLAN_ERROR)
+    await refreshPlans(attempt)
+  }
+
+  const anotherActive = (id: string) => deleting !== null && deleting.id !== id
+
   return (
     <main className="saved-plans">
-      <h1>My plans</h1>
+      <h1 ref={headingRef} tabIndex={-1}>
+        My plans
+      </h1>
       {state.status === 'loading' && <p className="status">Loading…</p>}
       {state.status === 'error' && (
         <p className="error" role="alert">
           {GENERIC_PLAN_ERROR}
+        </p>
+      )}
+      {state.status === 'ready' && notice !== null && (
+        <p className="error" role="alert">
+          {notice}
         </p>
       )}
       {state.status === 'ready' && state.plans.length === 0 && (
@@ -54,11 +135,15 @@ export const SavedPlansPage = () => {
       {state.status === 'ready' && state.plans.length > 0 && (
         <ul className="saved-plans-list">
           {state.plans.map((plan) => (
-            <li key={plan.id}>
-              <Link to={`/plans/${encodeURIComponent(plan.id)}`}>
-                <SavedPlanDetails createdAt={plan.createdAt} form={plan.form} />
-              </Link>
-            </li>
+            <SavedPlanListItem
+              key={plan.id}
+              plan={plan}
+              deletePhase={deleting?.id === plan.id ? deleting.phase : 'idle'}
+              deleteDisabled={anotherActive(plan.id)}
+              onDeleteStart={() => startDelete(plan.id)}
+              onDeleteConfirm={() => void confirmDelete(plan.id)}
+              onDeleteCancel={cancelDelete}
+            />
           ))}
         </ul>
       )}

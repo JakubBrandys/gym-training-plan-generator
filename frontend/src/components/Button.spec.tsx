@@ -20,6 +20,12 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Cancel' }).className).toBe('btn btn-secondary')
   })
 
+  it('adds the danger class for the danger variant', () => {
+    render(<Button variant="danger">Delete</Button>)
+
+    expect(screen.getByRole('button', { name: 'Delete' }).className).toBe('btn btn-danger')
+  })
+
   it('keeps a caller class next to the variant classes', () => {
     render(
       <Button variant="secondary" className="extra">

@@ -45,6 +45,7 @@ model SavedPlan {
   sourceJobId String   @db.Uuid
   form        Json
   plan        Json
+  title       String?
   createdAt   DateTime @default(now())
 
   @@unique([ownerId, sourceJobId])

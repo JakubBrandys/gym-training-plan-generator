@@ -2,8 +2,12 @@ import type { ReactNode } from 'react'
 import { AppFooter } from '../components/AppFooter'
 import { AppHeader } from '../components/AppHeader'
 import { Button } from '../components/Button'
+import { DeletePlanControl } from '../components/DeletePlanControl'
 import { PlanView, PlanViewContent } from '../components/PlanView'
+import { RenamePlanForm } from '../components/RenamePlanForm'
 import { SavedPlanDetails } from '../components/SavedPlanDetails'
+import { SavedPlanListItem } from '../components/SavedPlanListItem'
+import type { SavedPlanSummary } from '../lib/saved-plans'
 import { HomePage } from '../pages/HomePage'
 import type { ProfileState } from '../profile/profile-context'
 import {
@@ -49,6 +53,22 @@ const savedForm = {
   goals: 'Run a faster 5k and keep my strength while training five times a week',
 } as const
 
+const LONG_TITLE = 'Twelve-week strength and conditioning block before the summer racing season ahea'
+
+const LONG_LABEL =
+  'Twelve-week strength and conditioning block before the summer racing season with a very long name'
+
+const savedSummary: SavedPlanSummary = {
+  id: 'plan-1',
+  createdAt: '2026-11-02T10:00:00Z',
+  form: savedForm,
+  title: null,
+}
+
+const titledSummary: SavedPlanSummary = { ...savedSummary, id: 'plan-2', title: 'Spring cut' }
+
+const longTitledSummary: SavedPlanSummary = { ...savedSummary, id: 'plan-3', title: LONG_TITLE }
+
 type CaseProps = {
   title: string
   children: ReactNode
@@ -88,6 +108,22 @@ export const KitchenSinkPage = () => (
             plan={samplePlan}
             week={1}
             details={<SavedPlanDetails createdAt="2026-11-02T10:00:00Z" form={savedForm} />}
+          />
+        </main>
+        <AppFooter />
+      </div>
+    </Case>
+    <Case title="Plan: saved page with a title, week 1">
+      <div className="app-shell kitchen-sink-frame">
+        <AppHeader profile={member} pathname="/plans/abc" signingOut={false} onSignOut={noop} />
+        <main className="saved-plan">
+          <h1>Saved plan</h1>
+          <PlanViewContent
+            plan={samplePlan}
+            week={1}
+            details={
+              <SavedPlanDetails createdAt="2026-11-02T10:00:00Z" form={savedForm} title="Spring cut" />
+            }
           />
         </main>
         <AppFooter />
@@ -148,6 +184,136 @@ export const KitchenSinkPage = () => (
           Secondary disabled
         </Button>
       </div>
+    </Case>
+    <Case title="Buttons: danger (default, hover to see the error tint, disabled)">
+      <div className="kitchen-sink-buttons">
+        <Button variant="danger">Delete</Button>
+        <Button variant="danger" disabled>
+          Delete disabled
+        </Button>
+      </div>
+    </Case>
+    <Case title="Delete control: idle">
+      <div className="saved-plans-actions">
+        <DeletePlanControl label="Spring cut" phase="idle" onStart={noop} onConfirm={noop} onCancel={noop} />
+      </div>
+    </Case>
+    <Case title="Delete control: idle, disabled (another item is deleting)">
+      <div className="saved-plans-actions">
+        <DeletePlanControl
+          label="Spring cut"
+          phase="idle"
+          disabled
+          onStart={noop}
+          onConfirm={noop}
+          onCancel={noop}
+        />
+      </div>
+    </Case>
+    <Case title="Delete control: confirming">
+      <div className="saved-plans-actions">
+        <DeletePlanControl label="Spring cut" phase="confirming" onStart={noop} onConfirm={noop} onCancel={noop} />
+      </div>
+    </Case>
+    <Case title="Delete control: pending">
+      <div className="saved-plans-actions">
+        <DeletePlanControl label="Spring cut" phase="pending" onStart={noop} onConfirm={noop} onCancel={noop} />
+      </div>
+    </Case>
+    <Case title="Delete control: very long label (confirming)">
+      <div className="saved-plans-actions">
+        <DeletePlanControl label={LONG_LABEL} phase="confirming" onStart={noop} onConfirm={noop} onCancel={noop} />
+      </div>
+    </Case>
+    <Case title="Rename form: editing a plan without a title">
+      <RenamePlanForm initialTitle={null} pending={false} error={null} onSave={noop} onCancel={noop} />
+    </Case>
+    <Case title="Rename form: editing a plan with a title">
+      <RenamePlanForm initialTitle="Spring cut" pending={false} error={null} onSave={noop} onCancel={noop} />
+    </Case>
+    <Case title="Rename form: saving (pending, disabled)">
+      <RenamePlanForm initialTitle="Spring cut" pending error={null} onSave={noop} onCancel={noop} />
+    </Case>
+    <Case title="Rename form: error">
+      <RenamePlanForm
+        initialTitle="Spring cut"
+        pending={false}
+        error="Something went wrong, try again"
+        onSave={noop}
+        onCancel={noop}
+      />
+    </Case>
+    <Case title="Rename form: 80-character title">
+      <RenamePlanForm initialTitle={LONG_TITLE} pending={false} error={null} onSave={noop} onCancel={noop} />
+    </Case>
+    <Case title="Saved plan details: with a title">
+      <SavedPlanDetails createdAt="2026-11-02T10:00:00Z" form={savedForm} title="Spring cut" />
+    </Case>
+    <Case title="Saved plan details: 80-character title">
+      <SavedPlanDetails createdAt="2026-11-02T10:00:00Z" form={savedForm} title={LONG_TITLE} />
+    </Case>
+    <Case title="Saved plan details: no title">
+      <SavedPlanDetails createdAt="2026-11-02T10:00:00Z" form={savedForm} title={null} />
+    </Case>
+    <Case title="Saved plan list item: without a title, with a title, with an 80-character title">
+      <ul className="saved-plans-list">
+        <SavedPlanListItem
+          plan={savedSummary}
+          deletePhase="idle"
+          deleteDisabled={false}
+          onDeleteStart={noop}
+          onDeleteConfirm={noop}
+          onDeleteCancel={noop}
+        />
+        <SavedPlanListItem
+          plan={titledSummary}
+          deletePhase="idle"
+          deleteDisabled={false}
+          onDeleteStart={noop}
+          onDeleteConfirm={noop}
+          onDeleteCancel={noop}
+        />
+        <SavedPlanListItem
+          plan={longTitledSummary}
+          deletePhase="idle"
+          deleteDisabled={false}
+          onDeleteStart={noop}
+          onDeleteConfirm={noop}
+          onDeleteCancel={noop}
+        />
+      </ul>
+    </Case>
+    <Case title="Saved plan list item: confirming, then another item pending (idle disabled)">
+      <ul className="saved-plans-list">
+        <SavedPlanListItem
+          plan={titledSummary}
+          deletePhase="confirming"
+          deleteDisabled={false}
+          onDeleteStart={noop}
+          onDeleteConfirm={noop}
+          onDeleteCancel={noop}
+        />
+        <SavedPlanListItem
+          plan={savedSummary}
+          deletePhase="idle"
+          deleteDisabled
+          onDeleteStart={noop}
+          onDeleteConfirm={noop}
+          onDeleteCancel={noop}
+        />
+      </ul>
+    </Case>
+    <Case title="Saved plan list item: pending">
+      <ul className="saved-plans-list">
+        <SavedPlanListItem
+          plan={titledSummary}
+          deletePhase="pending"
+          deleteDisabled={false}
+          onDeleteStart={noop}
+          onDeleteConfirm={noop}
+          onDeleteCancel={noop}
+        />
+      </ul>
     </Case>
     <Case title="Shell: empty">
       <p className="hint">N/A: the shell shows no list, so it has no empty state.</p>

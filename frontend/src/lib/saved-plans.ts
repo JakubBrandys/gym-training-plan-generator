@@ -10,6 +10,7 @@ export type SavedPlanSummary = {
   id: string
   createdAt: string
   form: PlanForm
+  title: string | null
 }
 
 export type SavedPlan = SavedPlanSummary & {
@@ -34,8 +35,23 @@ export type SaveGeneratedPlanResult =
   | { kind: 'not-completed' }
   | { kind: 'error' }
 
+export type DeleteSavedPlanResult =
+  | { kind: 'ok' }
+  | AuthFailureResult
+  | { kind: 'not-found' }
+  | { kind: 'error' }
+
+export type RenameSavedPlanResult =
+  | { kind: 'ok'; plan: SavedPlanSummary }
+  | AuthFailureResult
+  | { kind: 'not-found' }
+  | { kind: 'error' }
+
+export const MAX_PLAN_TITLE_LENGTH = 80
+
 const SAVE_REQUEST_TIMEOUT_MS = 30_000
 const READ_REQUEST_TIMEOUT_MS = 15_000
+const WRITE_REQUEST_TIMEOUT_MS = 15_000
 
 export const saveGeneratedPlan = async (jobId: string): Promise<SaveGeneratedPlanResult> => {
   try {
@@ -94,6 +110,50 @@ export const fetchSavedPlan = async (id: string): Promise<FetchSavedPlanResult> 
     if (!response.ok) return { kind: 'error' }
 
     const plan = (await response.json()) as SavedPlan | null
+    return typeof plan?.id === 'string' ? { kind: 'ok', plan } : { kind: 'error' }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+
+export const deleteSavedPlan = async (id: string): Promise<DeleteSavedPlanResult> => {
+  try {
+    const response = await apiFetch(`/saved-plans/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      signal: AbortSignal.timeout(WRITE_REQUEST_TIMEOUT_MS),
+    })
+
+    const authFailure = authFailureOf(response.status)
+    if (authFailure) return authFailure
+
+    if (response.status === 404) return { kind: 'not-found' }
+
+    return response.ok ? { kind: 'ok' } : { kind: 'error' }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+
+export const renameSavedPlan = async (
+  id: string,
+  title: string | null,
+): Promise<RenameSavedPlanResult> => {
+  try {
+    const response = await apiFetch(`/saved-plans/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+      signal: AbortSignal.timeout(WRITE_REQUEST_TIMEOUT_MS),
+    })
+
+    const authFailure = authFailureOf(response.status)
+    if (authFailure) return authFailure
+
+    if (response.status === 404) return { kind: 'not-found' }
+
+    if (!response.ok) return { kind: 'error' }
+
+    const plan = (await response.json()) as SavedPlanSummary | null
     return typeof plan?.id === 'string' ? { kind: 'ok', plan } : { kind: 'error' }
   } catch {
     return { kind: 'error' }

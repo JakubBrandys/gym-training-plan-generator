@@ -139,6 +139,18 @@ button:disabled {
   color: var(--accent);
 }
 
+.btn-danger {
+  border-color: var(--error);
+  background: transparent;
+  color: var(--error);
+}
+
+.btn-danger:hover:not(:disabled) {
+  border-color: var(--error);
+  background: var(--error-bg);
+  color: var(--error);
+}
+
 .home-actions {
   display: flex;
   flex-wrap: wrap;
@@ -462,6 +474,11 @@ dd {
   gap: 0.25rem;
 }
 
+.saved-plans-title {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
 .saved-plans-date {
   font-weight: 600;
 }
@@ -469,6 +486,55 @@ dd {
 .saved-plans-goals {
   color: var(--text-muted);
   overflow-wrap: anywhere;
+}
+
+.saved-plans-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.saved-plans-actions .btn {
+  margin: 0;
+}
+
+.saved-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.saved-plan-actions .btn {
+  margin: 0;
+}
+
+.saved-plan-actions .rename-form {
+  flex: 1 1 100%;
+}
+
+.rename-form {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+}
+
+.rename-form label {
+  flex: 1 0 100%;
+}
+
+.rename-form input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.rename-form .error {
+  flex: 1 0 100%;
+  margin: 0;
 }
 
 .admin-users-list {
