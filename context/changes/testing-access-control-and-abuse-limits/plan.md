@@ -293,6 +293,8 @@ Write down how to add these tests and what they deliberately do not cover, and r
 
 **Contract**: With one admin account and one member account on the deployed app: sign the member in and keep the session open; as admin block the member on `/admin/users` and confirm the row shows `Status: Blocked`; in the member's still-open session reload or navigate and observe the sign-out with the blocked banner; send `GET /me` with the member's still-valid access token and observe 403 `Account is blocked`; try to sign in again as the member and record the exact rejection wording; then clean up by clearing `blockedAt` in SQL and lifting the Supabase ban. Record the outcome as a dated result note.
 
+**Result (2026-11-04, manual block smoke):** Run by the human against the deployed app with an admin account (`testtest3@test.com`) and a member account (`testtest@test.com`). The admin page showed the member as `Status: Blocked` with the `Re-apply block` button after the block (screenshot seen in the session). The human reported that every remaining step worked as expected: the already-open member session was refused, a fresh sign-in was rejected, and the member was unblocked afterwards. The exact Supabase rejection wording and the optional `curl` token check were not recorded.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -397,25 +399,25 @@ None. No production code, schema or data changes.
 
 #### Automated
 
-- [x] 4.1 New spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation-injection.e2e-spec.ts`
-- [x] 4.2 Full backend e2e suite passes: `cd backend && npm run test:e2e`
-- [x] 4.3 Lint and type check pass: `cd backend && npm run lint && npm run build`
+- [x] 4.1 New spec passes: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/plan-generation-injection.e2e-spec.ts` — 98187b2
+- [x] 4.2 Full backend e2e suite passes: `cd backend && npm run test:e2e` — 98187b2
+- [x] 4.3 Lint and type check pass: `cd backend && npm run lint && npm run build` — 98187b2
 
 #### Manual
 
-- [x] 4.4 Deliberate-break check: remove the angle-bracket stripping from `sanitizeGoals` in `plan.prompts.ts`; the prompt-invariant test goes red for both prompts; restore the file
-- [x] 4.5 Deliberate-break check: make `PlanPipelineService.tryAttempt` return the plan whether or not validation passed; the obeying-model table goes red; restore the file
-- [x] 4.6 Deliberate-break check: make the review pass fall back to the draft when the review output is invalid; the review-only case goes red; restore the file
+- [x] 4.4 Deliberate-break check: remove the angle-bracket stripping from `sanitizeGoals` in `plan.prompts.ts`; the prompt-invariant test goes red for both prompts; restore the file — 98187b2
+- [x] 4.5 Deliberate-break check: make `PlanPipelineService.tryAttempt` return the plan whether or not validation passed; the obeying-model table goes red; restore the file — 98187b2
+- [x] 4.6 Deliberate-break check: make the review pass fall back to the draft when the review output is invalid; the review-only case goes red; restore the file — 98187b2
 
 ### Phase 5: Cookbook, known gaps and manual block smoke
 
 #### Automated
 
-- [ ] 5.1 Backend unit and e2e suites pass: `cd backend && npm test && npm run test:e2e`
-- [ ] 5.2 Section 6.4 no longer contains a `TBD`: `awk '/### 6.4/,/### 6.5/' context/foundation/test-plan.md | grep -c TBD` prints 0
+- [x] 5.1 Backend unit and e2e suites pass: `cd backend && npm test && npm run test:e2e`
+- [x] 5.2 Section 6.4 no longer contains a `TBD`: `awk '/### 6.4/,/### 6.5/' context/foundation/test-plan.md | grep -c TBD` prints 0
 
 #### Manual
 
-- [ ] 5.3 Manual block smoke executed against a real Supabase project and its result recorded under this phase
-- [ ] 5.4 Known gaps in section 6.4 read and confirmed by the human as the intended stance
-- [ ] 5.5 The test account used in the smoke is unblocked and signs in again
+- [x] 5.3 Manual block smoke executed against a real Supabase project and its result recorded under this phase
+- [x] 5.4 Known gaps in section 6.4 read and confirmed by the human as the intended stance
+- [x] 5.5 The test account used in the smoke is unblocked and signs in again
