@@ -325,26 +325,26 @@ None. No schema, API or persisted-shape change; the guard only reads the saved-p
 
 #### Automated
 
-- [x] 2.1 E2E spec passes with the new cases: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/saved-plans.e2e-spec.ts`
-- [x] 2.2 Backend e2e suite passes: `cd backend && npm run test:e2e`
-- [x] 2.3 Backend unit suite passes: `cd backend && npm test`
-- [x] 2.4 Backend lint passes: `cd backend && npm run lint`
-- [x] 2.5 Backend build passes: `cd backend && npm run build`
-- [x] 2.6 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 2.1 E2E spec passes with the new cases: `cd backend && npx vitest run --config ./vitest.config.e2e.ts test/saved-plans.e2e-spec.ts` — 446da75
+- [x] 2.2 Backend e2e suite passes: `cd backend && npm run test:e2e` — 446da75
+- [x] 2.3 Backend unit suite passes: `cd backend && npm test` — 446da75
+- [x] 2.4 Backend lint passes: `cd backend && npm run lint` — 446da75
+- [x] 2.5 Backend build passes: `cd backend && npm run build` — 446da75
+- [x] 2.6 Each deliberate-break check listed above turns the named tests red and is restored — 446da75
 
 ### Phase 3: Saved-plan read guard and stored-shape render (frontend, Risk #3)
 
 #### Automated
 
-- [ ] 3.1 Specs pass: `cd frontend && npx vitest run src/lib/saved-plans.spec.ts src/pages/SavedPlanPage.stored.spec.tsx src/pages/PlanGenerationPage.spec.tsx`
-- [ ] 3.2 Frontend suite passes: `cd frontend && npm test`
-- [ ] 3.3 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 3.4 Frontend build passes: `cd frontend && npm run build`
-- [ ] 3.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 3.1 Specs pass: `cd frontend && npx vitest run src/lib/saved-plans.spec.ts src/pages/SavedPlanPage.stored.spec.tsx src/pages/PlanGenerationPage.spec.tsx`
+- [x] 3.2 Frontend suite passes: `cd frontend && npm test`
+- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 3.4 Frontend build passes: `cd frontend && npm run build`
+- [x] 3.5 Each deliberate-break check listed above turns the named tests red and is restored
 
 #### Manual
 
-- [ ] 3.6 In the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) an existing saved plan opens at `/plans/<id>` and renders as before, with its images, confirming the guard accepts real stored data
+- [x] 3.6 In the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) an existing saved plan opens at `/plans/<id>` and renders as before, with its images, confirming the guard accepts real stored data
 
 ### Phase 4: Cookbook, known gaps and manual two-account smoke
 

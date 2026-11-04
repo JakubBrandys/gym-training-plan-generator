@@ -264,6 +264,129 @@ describe('fetchSavedPlan', () => {
     expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
   })
 
+  describe('stored body shape', () => {
+    const storedForm = {
+      experience: 'beginner',
+      currentFrequency: 2,
+      desiredFrequency: 4,
+      heightCm: 180,
+      weightKg: 80,
+      goals: 'Build strength',
+    }
+
+    const storedExercise = {
+      slug: 'goblet-squat',
+      name: 'Goblet squat',
+      sets: 3,
+      reps: '8-10',
+      restSeconds: 90,
+      note: 'Keep your chest up',
+      imageKey: 'exercises/goblet-squat.jpg',
+    }
+
+    const stored = (plan: unknown) => ({
+      id: 'plan-1',
+      createdAt: '2026-10-27T10:00:00.000Z',
+      form: storedForm,
+      title: null,
+      plan,
+    })
+
+    const planWith = (week: unknown) => ({ weeks: [week] })
+
+    const accepted: [string, unknown][] = [
+      [
+        'a full plan',
+        stored(
+          planWith({
+            week: 1,
+            goal: 'Build a base',
+            sessions: [{ title: 'Full body', exercises: [storedExercise] }],
+          }),
+        ),
+      ],
+      [
+        'exercises without imageKey and note',
+        stored(
+          planWith({
+            week: 1,
+            goal: 'Build a base',
+            sessions: [
+              {
+                title: 'Full body',
+                exercises: [
+                  { slug: 'goblet-squat', name: 'Goblet squat', sets: 3, reps: '8-10', restSeconds: 90 },
+                ],
+              },
+            ],
+          }),
+        ),
+      ],
+      ['a plan with no weeks', stored({ weeks: [] })],
+      [
+        'a body without a title',
+        {
+          id: 'plan-1',
+          createdAt: '2026-10-27T10:00:00.000Z',
+          form: storedForm,
+          plan: planWith({
+            week: 1,
+            goal: 'Build a base',
+            sessions: [{ title: 'Full body', exercises: [storedExercise] }],
+          }),
+        },
+      ],
+    ]
+
+    const rejected: [string, unknown][] = [
+      ['null', null],
+      ['an array', []],
+      [
+        'a body without form',
+        { id: 'plan-1', createdAt: '2026-10-27T10:00:00.000Z', title: null, plan: { weeks: [] } },
+      ],
+      [
+        'a null form',
+        { id: 'plan-1', createdAt: '2026-10-27T10:00:00.000Z', form: null, title: null, plan: { weeks: [] } },
+      ],
+      [
+        'a body without plan',
+        { id: 'plan-1', createdAt: '2026-10-27T10:00:00.000Z', form: storedForm, title: null },
+      ],
+      ['a null plan', stored(null)],
+      ['a plan without weeks', stored({})],
+      ['weeks as an object', stored({ weeks: { week: 1 } })],
+      ['a null week', stored({ weeks: [null] })],
+      ['a week without sessions', stored(planWith({ week: 1, goal: 'Build a base' }))],
+      [
+        'a session without exercises',
+        stored(planWith({ week: 1, goal: 'Build a base', sessions: [{ title: 'Full body' }] })),
+      ],
+      [
+        'a null exercise',
+        stored(
+          planWith({
+            week: 1,
+            goal: 'Build a base',
+            sessions: [{ title: 'Full body', exercises: [null] }],
+          }),
+        ),
+      ],
+    ]
+
+    it.each(accepted)('accepts %s', async (_name, body) => {
+      respondWith(200, body)
+
+      expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'ok', plan: body })
+    })
+
+    it.each(rejected)('maps %s to error', async (_name, body) => {
+      respondWith(200, body)
+
+      expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
+    })
+  })
+
   it('passes an abort signal to apiFetch', async () => {
     respondWith(200, fullPlan)
 

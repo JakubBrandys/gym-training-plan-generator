@@ -96,6 +96,23 @@ export const listSavedPlans = async (): Promise<ListSavedPlansResult> => {
   }
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const hasRenderableExercises = (session: unknown): boolean =>
+  isRecord(session) && Array.isArray(session.exercises) && session.exercises.every(isRecord)
+
+const hasRenderableSessions = (week: unknown): boolean =>
+  isRecord(week) && Array.isArray(week.sessions) && week.sessions.every(hasRenderableExercises)
+
+const isRenderableSavedPlan = (value: unknown): value is SavedPlan =>
+  isRecord(value) &&
+  typeof value.id === 'string' &&
+  isRecord(value.form) &&
+  isRecord(value.plan) &&
+  Array.isArray(value.plan.weeks) &&
+  value.plan.weeks.every(hasRenderableSessions)
+
 export const fetchSavedPlan = async (id: string): Promise<FetchSavedPlanResult> => {
   try {
     const response = await apiFetch(`/saved-plans/${encodeURIComponent(id)}`, {
@@ -109,8 +126,8 @@ export const fetchSavedPlan = async (id: string): Promise<FetchSavedPlanResult> 
 
     if (!response.ok) return { kind: 'error' }
 
-    const plan = (await response.json()) as SavedPlan | null
-    return typeof plan?.id === 'string' ? { kind: 'ok', plan } : { kind: 'error' }
+    const plan: unknown = await response.json()
+    return isRenderableSavedPlan(plan) ? { kind: 'ok', plan } : { kind: 'error' }
   } catch {
     return { kind: 'error' }
   }

@@ -192,6 +192,21 @@ describe('PlanGenerationPage save action', () => {
     },
   )
 
+  it('shows the generic message, keeps the plan and re-enables Save when the save call rejects', async () => {
+    saveMock.mockRejectedValue(new Error('network down'))
+    renderPage()
+
+    fireEvent.click(await findSaveButton())
+
+    const alert = await screen.findByRole('alert')
+    expect(alert.textContent).toBe('Something went wrong, try again')
+    expect(screen.getByRole('heading', { level: 2, name: 'Week 1' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Create another plan' })).toBeTruthy()
+    await waitFor(() =>
+      expect((screen.getByRole('button', { name: 'Save plan' }) as HTMLButtonElement).disabled).toBe(false),
+    )
+  })
+
   it('allows a retry after a failed save', async () => {
     saveMock.mockResolvedValueOnce({ kind: 'error' })
     saveMock.mockResolvedValueOnce({ kind: 'ok', plan: savedPlan })
