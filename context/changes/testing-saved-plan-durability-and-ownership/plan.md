@@ -251,6 +251,8 @@ Record the patterns this change shipped so the next contributor can add similar 
 
 **Contract**: A "Smoke result" note stating what each of the three manual checks showed, and anything that differed from the expectation.
 
+**Smoke result (2026-11-04):** run against the dev app with the real hosted database. Smoke 1 (durability, save then sign out and in and reopen) and Smoke 2 (second account opens the first account's plan address) were reported done by the user as expected, without further detail recorded. Smoke 3 (ownership over the API) was run by the assistant with the second account's bearer token (`testtest1@test.com`), which the user supplied; the token was used only for these requests and not stored. Against the local API (`http://localhost:3000`), `GET`, `PATCH` (title `Mine now`) and `DELETE` for the first account's plan `6dbff844-9de7-4d8f-8c98-75e50cf5d5aa` each answered 404 with the body `{"message":"Not Found","statusCode":404}`, identical to the answer for the well-formed unknown UUID `00000000-0000-4000-8000-000000000000`; `GET` and `PATCH` for a second plan, `13024119-87cc-48bb-99d8-7c15d38db36d`, answered the same. A `GET` for `6dbff844-…` against the deployed Fly API answered the same 404 body. The body is the handler's own not-found, not a missing-route message, so the PATCH and DELETE routes exist. `DELETE` was sent only after every `PATCH` was refused identically. Afterwards the user reopened both plans as their owner and both still opened (the user reported them unchanged; the title and week count were not itemised). Nothing differed from the expectation. Not covered: B's `PATCH` and `DELETE` against the deployed API were not sent, and the first account's token was not available, so unchanged state rests on the user's check in the app.
+
 ### Success Criteria:
 
 #### Automated Verification:
@@ -336,28 +338,28 @@ None. No schema, API or persisted-shape change; the guard only reads the saved-p
 
 #### Automated
 
-- [x] 3.1 Specs pass: `cd frontend && npx vitest run src/lib/saved-plans.spec.ts src/pages/SavedPlanPage.stored.spec.tsx src/pages/PlanGenerationPage.spec.tsx`
-- [x] 3.2 Frontend suite passes: `cd frontend && npm test`
-- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint`
-- [x] 3.4 Frontend build passes: `cd frontend && npm run build`
-- [x] 3.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 3.1 Specs pass: `cd frontend && npx vitest run src/lib/saved-plans.spec.ts src/pages/SavedPlanPage.stored.spec.tsx src/pages/PlanGenerationPage.spec.tsx` — a0d800c
+- [x] 3.2 Frontend suite passes: `cd frontend && npm test` — a0d800c
+- [x] 3.3 Frontend lint passes: `cd frontend && npm run lint` — a0d800c
+- [x] 3.4 Frontend build passes: `cd frontend && npm run build` — a0d800c
+- [x] 3.5 Each deliberate-break check listed above turns the named tests red and is restored — a0d800c
 
 #### Manual
 
-- [x] 3.6 In the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) an existing saved plan opens at `/plans/<id>` and renders as before, with its images, confirming the guard accepts real stored data
+- [x] 3.6 In the dev app (`cd backend && npm run start:dev`, `cd frontend && npm run dev`) an existing saved plan opens at `/plans/<id>` and renders as before, with its images, confirming the guard accepts real stored data — a0d800c
 
 ### Phase 4: Cookbook, known gaps and manual two-account smoke
 
 #### Automated
 
-- [ ] 4.1 §6.2 and §6.3 no longer read TBD: `sed -n '/### 6.2/,/### 6.4/p' context/foundation/test-plan.md | grep -c TBD` prints `0`
-- [ ] 4.2 §6.4 and §6.5 still read TBD: `sed -n '/### 6.4/,/### 6.6/p' context/foundation/test-plan.md | grep -c TBD` prints `2`
-- [ ] 4.3 Backend suites, lint and build pass: `cd backend && npm test && npm run test:e2e && npm run lint && npm run build`
-- [ ] 4.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build`
+- [x] 4.1 §6.2 and §6.3 no longer read TBD: `sed -n '/### 6.2/,/### 6.4/p' context/foundation/test-plan.md | grep -c TBD` prints `0`
+- [x] 4.2 §6.4 and §6.5 still read TBD: `sed -n '/### 6.4/,/### 6.6/p' context/foundation/test-plan.md | grep -c TBD` prints `2`
+- [x] 4.3 Backend suites, lint and build pass: `cd backend && npm test && npm run test:e2e && npm run lint && npm run build`
+- [x] 4.4 Frontend suite, lint and build pass: `cd frontend && npm test && npm run lint && npm run build`
 
 #### Manual
 
-- [ ] 4.5 Smoke 1 (durability): with account A on the dev app (local backend and frontend, the real hosted database), generate a plan, review it, click Save, sign out, sign back in, open the plan from My plans; all 8 weeks and the exercise images show, and the plan matches what was reviewed before saving
-- [ ] 4.6 Smoke 2 (ownership in the UI): sign in as a second account B and open A's `/plans/<A's id>` directly; the page shows "This saved plan could not be found." and A's plan is absent from B's My plans
-- [ ] 4.7 Smoke 3 (ownership over the API): with B's bearer token (copied from the browser's network tab) send `GET`, `PATCH` (with a title) and `DELETE` for A's plan id to the local API, and the same three for a well-formed unknown UUID; each pair answers the same status and body (404), and afterwards A's plan still opens unchanged with its original title
-- [ ] 4.8 Record the observations in the Smoke result note
+- [x] 4.5 Smoke 1 (durability): with account A on the dev app (local backend and frontend, the real hosted database), generate a plan, review it, click Save, sign out, sign back in, open the plan from My plans; all 8 weeks and the exercise images show, and the plan matches what was reviewed before saving
+- [x] 4.6 Smoke 2 (ownership in the UI): sign in as a second account B and open A's `/plans/<A's id>` directly; the page shows "This saved plan could not be found." and A's plan is absent from B's My plans
+- [x] 4.7 Smoke 3 (ownership over the API): with B's bearer token (copied from the browser's network tab) send `GET`, `PATCH` (with a title) and `DELETE` for A's plan id to the local API, and the same three for a well-formed unknown UUID; each pair answers the same status and body (404), and afterwards A's plan still opens unchanged with its original title
+- [x] 4.8 Record the observations in the Smoke result note
