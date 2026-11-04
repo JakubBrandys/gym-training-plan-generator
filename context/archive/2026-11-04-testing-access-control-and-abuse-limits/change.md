@@ -1,10 +1,10 @@
 ---
 change_id: testing-access-control-and-abuse-limits
 title: Testing access control and abuse limits
-status: implemented
+status: archived
 created: 2026-11-04
 updated: 2026-11-04
-archived_at: null
+archived_at: 2026-11-04T19:20:56Z
 ---
 
 ## Notes
