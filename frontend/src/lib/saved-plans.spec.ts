@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiFetch } from './api'
 import {
+  MAX_PLAN_TITLE_LENGTH,
+  deleteSavedPlan,
   fetchSavedPlan,
   listSavedPlans,
+  renameSavedPlan,
   saveGeneratedPlan,
   type SavedPlan,
   type SavedPlanSummary,
@@ -23,6 +26,7 @@ const savedPlan: SavedPlanSummary = {
     weightKg: 80,
     goals: 'Build strength',
   },
+  title: null,
 }
 
 const respondWith = (status: number, body: unknown = {}) =>
@@ -274,5 +278,174 @@ describe('fetchSavedPlan', () => {
     apiFetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
 
     expect(await fetchSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+})
+
+describe('MAX_PLAN_TITLE_LENGTH', () => {
+  it('is 80', () => {
+    expect(MAX_PLAN_TITLE_LENGTH).toBe(80)
+  })
+})
+
+describe('deleteSavedPlan', () => {
+  beforeEach(() => {
+    apiFetchMock.mockReset()
+  })
+
+  it('sends DELETE to the encoded saved-plan path', async () => {
+    apiFetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+
+    await deleteSavedPlan('plan/1 x')
+
+    expect(apiFetchMock).toHaveBeenCalledTimes(1)
+    const [path, init] = apiFetchMock.mock.calls[0]
+    expect(path).toBe('/saved-plans/plan%2F1%20x')
+    expect(init?.method).toBe('DELETE')
+    expect(init?.body).toBeUndefined()
+  })
+
+  it('maps 204 to ok without reading a body', async () => {
+    apiFetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'ok' })
+  })
+
+  it('maps 401 to unauthorized', async () => {
+    respondWith(401)
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'unauthorized', status: 401 })
+  })
+
+  it('maps 403 to blocked', async () => {
+    respondWith(403)
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'blocked', status: 403 })
+  })
+
+  it('maps 404 to not-found', async () => {
+    respondWith(404)
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'not-found' })
+  })
+
+  it.each([400, 500, 503])('maps %i to error', async (status) => {
+    respondWith(status)
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+
+  it('maps a thrown fetch to error', async () => {
+    apiFetchMock.mockRejectedValue(new TypeError('network down'))
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+
+  it('passes an abort signal to apiFetch', async () => {
+    apiFetchMock.mockResolvedValue(new Response(null, { status: 204 }))
+
+    await deleteSavedPlan('plan-1')
+
+    expect(apiFetchMock.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
+
+  it('maps a request timeout to error', async () => {
+    apiFetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
+
+    expect(await deleteSavedPlan('plan-1')).toEqual({ kind: 'error' })
+  })
+})
+
+describe('renameSavedPlan', () => {
+  const renamed: SavedPlanSummary = { ...savedPlan, title: 'Spring cut' }
+
+  beforeEach(() => {
+    apiFetchMock.mockReset()
+  })
+
+  it('sends PATCH with the title as JSON to the encoded saved-plan path', async () => {
+    respondWith(200, renamed)
+
+    await renameSavedPlan('plan/1 x', 'Spring cut')
+
+    expect(apiFetchMock).toHaveBeenCalledTimes(1)
+    const [path, init] = apiFetchMock.mock.calls[0]
+    expect(path).toBe('/saved-plans/plan%2F1%20x')
+    expect(init?.method).toBe('PATCH')
+    expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json')
+    expect(JSON.parse(String(init?.body))).toEqual({ title: 'Spring cut' })
+  })
+
+  it('sends a null title to clear the name', async () => {
+    respondWith(200, savedPlan)
+
+    await renameSavedPlan('plan-1', null)
+
+    expect(JSON.parse(String(apiFetchMock.mock.calls[0][1]?.body))).toEqual({ title: null })
+  })
+
+  it('maps 200 to ok with the updated summary', async () => {
+    respondWith(200, renamed)
+
+    expect(await renameSavedPlan('plan-1', 'Spring cut')).toEqual({ kind: 'ok', plan: renamed })
+  })
+
+  it('maps 401 to unauthorized', async () => {
+    respondWith(401)
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'unauthorized', status: 401 })
+  })
+
+  it('maps 403 to blocked', async () => {
+    respondWith(403)
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'blocked', status: 403 })
+  })
+
+  it('maps 404 to not-found', async () => {
+    respondWith(404)
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'not-found' })
+  })
+
+  it.each([400, 500, 503])('maps %i to error', async (status) => {
+    respondWith(status)
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'error' })
+  })
+
+  it('maps a thrown fetch to error', async () => {
+    apiFetchMock.mockRejectedValue(new TypeError('network down'))
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'error' })
+  })
+
+  it('maps an unreadable success body to error', async () => {
+    apiFetchMock.mockResolvedValue(new Response('not json', { status: 200 }))
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'error' })
+  })
+
+  it.each([{}, null])('maps a success body without an id (%j) to error', async (body) => {
+    respondWith(200, body)
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'error' })
+  })
+
+  it('passes an abort signal to apiFetch', async () => {
+    respondWith(200, renamed)
+
+    await renameSavedPlan('plan-1', 'x')
+
+    expect(apiFetchMock.mock.calls[0][1]).toEqual(
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+  })
+
+  it('maps a request timeout to error', async () => {
+    apiFetchMock.mockRejectedValue(new DOMException('timed out', 'TimeoutError'))
+
+    expect(await renameSavedPlan('plan-1', 'x')).toEqual({ kind: 'error' })
   })
 })

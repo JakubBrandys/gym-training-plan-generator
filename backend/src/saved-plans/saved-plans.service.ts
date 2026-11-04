@@ -15,6 +15,7 @@ export interface SavedPlanSummary {
   id: string;
   createdAt: Date;
   form: PlanForm;
+  title: string | null;
 }
 
 export interface SavedPlanView extends SavedPlanSummary {
@@ -25,18 +26,25 @@ interface SummaryRow {
   id: string;
   createdAt: Date;
   form: Prisma.JsonValue;
+  title: string | null;
 }
 
 interface ViewRow extends SummaryRow {
   plan: Prisma.JsonValue;
 }
 
-const SUMMARY_SELECT = { id: true, createdAt: true, form: true } as const;
+const SUMMARY_SELECT = {
+  id: true,
+  createdAt: true,
+  form: true,
+  title: true,
+} as const;
 
 const toSummary = (row: SummaryRow): SavedPlanSummary => ({
   id: row.id,
   createdAt: row.createdAt,
   form: row.form as unknown as PlanForm,
+  title: row.title,
 });
 
 const toView = (row: ViewRow): SavedPlanView => ({
@@ -114,6 +122,37 @@ export class SavedPlansService {
       throw new NotFoundException();
     }
     return toView(row);
+  }
+
+  async delete(ownerId: string, id: string): Promise<void> {
+    const { count } = await this.prisma.savedPlan.deleteMany({
+      where: { id, ownerId },
+    });
+    if (count === 0) {
+      throw new NotFoundException();
+    }
+  }
+
+  async rename(
+    ownerId: string,
+    id: string,
+    title: string | null,
+  ): Promise<SavedPlanSummary> {
+    const { count } = await this.prisma.savedPlan.updateMany({
+      where: { id, ownerId },
+      data: { title },
+    });
+    if (count === 0) {
+      throw new NotFoundException();
+    }
+    const row = await this.prisma.savedPlan.findFirst({
+      where: { id, ownerId },
+      select: SUMMARY_SELECT,
+    });
+    if (!row) {
+      throw new NotFoundException();
+    }
+    return toSummary(row);
   }
 
   private findBySourceJob(

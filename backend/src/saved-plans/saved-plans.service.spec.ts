@@ -50,6 +50,7 @@ const makeRow = (overrides: Record<string, unknown> = {}) => ({
   id: SAVED_ID,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   form,
+  title: null,
   ...overrides,
 });
 
@@ -66,6 +67,8 @@ describe('SavedPlansService', () => {
   const create = vi.fn();
   const findMany = vi.fn();
   const findFirst = vi.fn();
+  const deleteMany = vi.fn();
+  const updateMany = vi.fn();
 
   const completedJobId = (ownerId = OWNER_ID): string => {
     const job = store.create(ownerId, form);
@@ -74,7 +77,14 @@ describe('SavedPlansService', () => {
   };
 
   beforeEach(async () => {
-    for (const fn of [findUnique, create, findMany, findFirst]) {
+    for (const fn of [
+      findUnique,
+      create,
+      findMany,
+      findFirst,
+      deleteMany,
+      updateMany,
+    ]) {
       fn.mockReset();
     }
 
@@ -84,7 +94,16 @@ describe('SavedPlansService', () => {
         PlanJobStore,
         {
           provide: PrismaService,
-          useValue: { savedPlan: { findUnique, create, findMany, findFirst } },
+          useValue: {
+            savedPlan: {
+              findUnique,
+              create,
+              findMany,
+              findFirst,
+              deleteMany,
+              updateMany,
+            },
+          },
         },
       ],
     }).compile();
@@ -103,7 +122,7 @@ describe('SavedPlansService', () => {
 
       expect(create).toHaveBeenCalledWith({
         data: { ownerId: OWNER_ID, sourceJobId: jobId, form, plan },
-        select: { id: true, createdAt: true, form: true },
+        select: { id: true, createdAt: true, form: true, title: true },
       });
     });
 
@@ -118,7 +137,7 @@ describe('SavedPlansService', () => {
         where: {
           ownerId_sourceJobId: { ownerId: OWNER_ID, sourceJobId: jobId },
         },
-        select: { id: true, createdAt: true, form: true },
+        select: { id: true, createdAt: true, form: true, title: true },
       });
     });
 
@@ -288,7 +307,7 @@ describe('SavedPlansService', () => {
 
       expect(findMany).toHaveBeenCalledWith({
         where: { ownerId: OWNER_ID },
-        select: { id: true, createdAt: true, form: true },
+        select: { id: true, createdAt: true, form: true, title: true },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       });
     });
@@ -313,6 +332,78 @@ describe('SavedPlansService', () => {
 
       await expect(
         service.get(OTHER_OWNER_ID, SAVED_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes the row scoped by owner and id', async () => {
+      deleteMany.mockResolvedValue({ count: 1 });
+
+      await expect(service.delete(OWNER_ID, SAVED_ID)).resolves.toBeUndefined();
+
+      expect(deleteMany).toHaveBeenCalledWith({
+        where: { id: SAVED_ID, ownerId: OWNER_ID },
+      });
+    });
+
+    it('throws NotFoundException when nothing was deleted', async () => {
+      deleteMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.delete(OTHER_OWNER_ID, SAVED_ID),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('rename', () => {
+    it('updates the title scoped by owner and id then re-reads the summary', async () => {
+      updateMany.mockResolvedValue({ count: 1 });
+      findFirst.mockResolvedValue(makeRow({ title: 'Cut' }));
+
+      await expect(service.rename(OWNER_ID, SAVED_ID, 'Cut')).resolves.toEqual(
+        makeRow({ title: 'Cut' }),
+      );
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: SAVED_ID, ownerId: OWNER_ID },
+        data: { title: 'Cut' },
+      });
+      expect(findFirst).toHaveBeenCalledWith({
+        where: { id: SAVED_ID, ownerId: OWNER_ID },
+        select: { id: true, createdAt: true, form: true, title: true },
+      });
+    });
+
+    it('clears the title with null', async () => {
+      updateMany.mockResolvedValue({ count: 1 });
+      findFirst.mockResolvedValue(makeRow({ title: null }));
+
+      await expect(service.rename(OWNER_ID, SAVED_ID, null)).resolves.toEqual(
+        makeRow({ title: null }),
+      );
+
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: SAVED_ID, ownerId: OWNER_ID },
+        data: { title: null },
+      });
+    });
+
+    it('throws NotFoundException when no row matches the owner and id', async () => {
+      updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.rename(OTHER_OWNER_ID, SAVED_ID, 'Cut'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(findFirst).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when the row vanishes before the re-read', async () => {
+      updateMany.mockResolvedValue({ count: 1 });
+      findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.rename(OWNER_ID, SAVED_ID, 'Cut'),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });

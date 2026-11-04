@@ -1,10 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { z } from 'zod';
@@ -20,6 +23,26 @@ import {
 export const saveBodySchema = z.object({ jobId: z.uuid() });
 
 type SaveBody = z.infer<typeof saveBodySchema>;
+
+export const MAX_PLAN_TITLE_LENGTH = 80;
+
+export const renameBodySchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .max(MAX_PLAN_TITLE_LENGTH)
+    .refine((value) => !value.includes('\u0000'), {
+      message: 'title must not contain NUL characters',
+    })
+    .transform((value) => (value.length === 0 ? null : value))
+    .nullable(),
+});
+
+type RenameBody = z.infer<typeof renameBodySchema>;
+
+const planIdPipe = new ParseUUIDPipe({
+  errorHttpStatusCode: HttpStatus.NOT_FOUND,
+});
 
 @Controller('saved-plans')
 export class SavedPlansController {
@@ -41,12 +64,26 @@ export class SavedPlansController {
   @Get(':id')
   get(
     @CurrentUser() user: RequestUser,
-    @Param(
-      'id',
-      new ParseUUIDPipe({ errorHttpStatusCode: HttpStatus.NOT_FOUND }),
-    )
-    id: string,
+    @Param('id', planIdPipe) id: string,
   ): Promise<SavedPlanView> {
     return this.service.get(user.id, id);
+  }
+
+  @Patch(':id')
+  rename(
+    @CurrentUser() user: RequestUser,
+    @Param('id', planIdPipe) id: string,
+    @Body(new ZodValidationPipe(renameBodySchema)) body: RenameBody,
+  ): Promise<SavedPlanSummary> {
+    return this.service.rename(user.id, id, body.title);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  delete(
+    @CurrentUser() user: RequestUser,
+    @Param('id', planIdPipe) id: string,
+  ): Promise<void> {
+    return this.service.delete(user.id, id);
   }
 }

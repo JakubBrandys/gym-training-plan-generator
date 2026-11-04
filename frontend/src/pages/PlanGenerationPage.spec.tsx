@@ -53,6 +53,7 @@ const savedPlan = {
     weightKg: 80,
     goals: 'Build strength',
   },
+  title: null,
 }
 
 const emitState = (state: WatchState) =>
