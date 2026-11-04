@@ -391,21 +391,21 @@ None. No schema, API or persisted-shape change; the guard only reads the generat
 
 #### Automated
 
-- [x] 1.1 Pipeline spec passes with the new cases: `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts`
-- [x] 1.2 Backend unit suite passes: `cd backend && npm test`
-- [x] 1.3 Backend lint passes: `cd backend && npm run lint`
-- [x] 1.4 Backend build passes: `cd backend && npm run build`
-- [x] 1.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 1.1 Pipeline spec passes with the new cases: `cd backend && npx vitest run src/plan-generation/plan-pipeline.service.spec.ts` — bcca45d
+- [x] 1.2 Backend unit suite passes: `cd backend && npm test` — bcca45d
+- [x] 1.3 Backend lint passes: `cd backend && npm run lint` — bcca45d
+- [x] 1.4 Backend build passes: `cd backend && npm run build` — bcca45d
+- [x] 1.5 Each deliberate-break check listed above turns the named tests red and is restored — bcca45d
 
 ### Phase 2: Watch-loop outcome tests (frontend, Risk #1)
 
 #### Automated
 
-- [ ] 2.1 Watch spec passes: `cd frontend && npx vitest run src/lib/plan-generation-watch.spec.tsx`
-- [ ] 2.2 Frontend suite passes: `cd frontend && npm test`
-- [ ] 2.3 Frontend lint passes: `cd frontend && npm run lint`
-- [ ] 2.4 Frontend build passes: `cd frontend && npm run build`
-- [ ] 2.5 Each deliberate-break check listed above turns the named tests red and is restored
+- [x] 2.1 Watch spec passes: `cd frontend && npx vitest run src/lib/plan-generation-watch.spec.tsx`
+- [x] 2.2 Frontend suite passes: `cd frontend && npm test`
+- [x] 2.3 Frontend lint passes: `cd frontend && npm run lint`
+- [x] 2.4 Frontend build passes: `cd frontend && npm run build`
+- [x] 2.5 Each deliberate-break check listed above turns the named tests red and is restored
 
 ### Phase 3: Completed-plan shape guard (frontend, Risk #2 last mile)
 
