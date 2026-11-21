@@ -131,6 +131,7 @@ that build.
 | lint + typecheck (both packages) | local + CI | not scheduled (no CI gates for now) | syntactic and type drift |
 | unit + integration (both packages) | local + CI | not scheduled (no CI gates for now) | logic regressions in the risks covered by Phases 1–3 |
 | backend HTTP e2e | local + CI | not scheduled (no CI gates for now) | broken ownership, gating and persistence paths |
+| agent hooks: oxlint and related unit tests after every edit, then lint, unit, backend e2e and typecheck of the changed packages before the agent ends its turn | local, Claude Code (`.claude/hooks/`, wired in `.claude/settings.json`) | in place; proven by `node --test .claude/hooks/agent-hooks.test.mjs`, which the end-of-turn hook reruns when the hooks change | agent-written lint, type and test regressions before the agent reports done (edits made outside the agent are not covered) |
 | manual deploy smoke (restart mid-generation) | between merge and production | recommended after §3 Phase 1 | restart behaviour no automated test reproduces cheaply |
 | on-demand pipeline eval | local, before merging prompt or pipeline changes | recommended after §3 Phase 4 | quality drift from prompt changes |
 
