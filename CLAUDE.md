@@ -7,7 +7,7 @@ Gym Training Plan Generator: an AI-assisted 8-week training-plan app with a Nest
 ### Hard rules
 
 - Two independent npm projects live here, `backend/` and `frontend/` — no workspace, no shared root scripts. Always `cd` into the target package before running `npm run <script>`. The root `package.json` is an unrelated placeholder stub; its `test` script only prints an error and exits 1.
-- Never modify, move, or delete anything under `context/` — it's the bootstrap chain's metadata trail (PRD, tech-stack decisions, scaffold verification logs), not application code.
+- Never modify `context/foundation/prd.md`, `shape-notes.md`, `tech-stack*.md` or `context/changes/bootstrap-verification/` — they are the bootstrap chain's metadata trail. The rest of `context/` (`changes/`, `archive/`, `roadmap.md`, `test-plan.md`, `lessons.md`) is managed by the 10x skills and may be edited when a skill or the user asks.
 - The course-chain content below this section is managed by the 10x-cli tool and gets replaced on lesson sync — don't add project rules inside the `BEGIN/END @przeprogramowani/10x-cli` marker block.
 
 ### Project Structure & Module Organization
