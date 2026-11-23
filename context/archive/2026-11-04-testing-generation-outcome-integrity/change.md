@@ -1,10 +1,10 @@
 ---
 change_id: testing-generation-outcome-integrity
 title: Testing generation outcome integrity
-status: implemented
+status: archived
 created: 2026-11-04
-updated: 2026-11-04
-archived_at: null
+updated: 2026-11-23
+archived_at: 2026-11-23T15:03:59Z
 ---
 
 ## Notes
