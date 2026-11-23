@@ -7,6 +7,8 @@ const EXERCISES_PER_SESSION = 4
 const CHUNK_SIZE = 240
 const CHUNK_DELAY_MS = 5
 const TOKEN_PATTERN = /E2E-[A-Za-z0-9]+/
+const HOLD_PREFIX = 'E2E-hold'
+const RELEASE_PATH = /^\/e2e\/release\/(E2E-[A-Za-z0-9]+)$/
 
 const readBody = (request) =>
   new Promise((resolve, reject) => {
@@ -49,6 +51,22 @@ const send = (response, type, data) => {
 }
 
 const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+
+const releasedTokens = new Set()
+const waitingForRelease = new Map()
+
+const isHeld = (token) => token.startsWith(HOLD_PREFIX) && !releasedTokens.has(token)
+
+const waitForRelease = (token) =>
+  new Promise((resolve) => {
+    waitingForRelease.set(token, [...(waitingForRelease.get(token) ?? []), resolve])
+  })
+
+const release = (token) => {
+  releasedTokens.add(token)
+  for (const resolve of waitingForRelease.get(token) ?? []) resolve()
+  waitingForRelease.delete(token)
+}
 
 const streamPlan = async (response, model, text) => {
   response.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' })
@@ -95,6 +113,14 @@ const server = createServer(async (request, response) => {
     response.end('ok')
     return
   }
+  const releaseMatch = request.method === 'POST' ? request.url?.match(RELEASE_PATH) : null
+  if (releaseMatch) {
+    release(releaseMatch[1])
+    console.log(`[openai-mock] released ${releaseMatch[1]}`)
+    response.writeHead(204)
+    response.end()
+    return
+  }
   if (request.method !== 'POST' || !request.url?.endsWith('/responses')) {
     console.log(`[openai-mock] rejected ${request.method} ${request.url}`)
     rejectUnknown(response, 503, `The e2e mock does not serve ${request.method} ${request.url}`)
@@ -116,6 +142,10 @@ const server = createServer(async (request, response) => {
   }
   const token = raw.match(TOKEN_PATTERN)?.[0] ?? 'E2E-none'
   console.log(`[openai-mock] POST ${request.url} model=${body.model} token=${token} slugs=${slugs.length}`)
+  if (isHeld(token)) {
+    console.log(`[openai-mock] holding ${token} until released`)
+    await waitForRelease(token)
+  }
   await streamPlan(response, body.model ?? 'e2e-mock', JSON.stringify(buildPlan(slugs, token)))
 })
 
