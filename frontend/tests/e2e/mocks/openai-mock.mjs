@@ -8,6 +8,8 @@ const CHUNK_SIZE = 240
 const CHUNK_DELAY_MS = 5
 const TOKEN_PATTERN = /E2E-[A-Za-z0-9]+/
 const HOLD_PREFIX = 'E2E-hold'
+const SHORT_PREFIX = 'E2E-short'
+const SHORT_WEEK_COUNT = 7
 const RELEASE_PATH = /^\/e2e\/release\/(E2E-[A-Za-z0-9]+)$/
 
 const readBody = (request) =>
@@ -29,8 +31,8 @@ const findSlugs = (node) => {
   return null
 }
 
-const buildPlan = (slugs, token) => ({
-  weeks: Array.from({ length: WEEK_COUNT }, (_, weekIndex) => ({
+const buildPlan = (slugs, token, weekCount = WEEK_COUNT) => ({
+  weeks: Array.from({ length: weekCount }, (_, weekIndex) => ({
     week: weekIndex + 1,
     goal: `Week ${weekIndex + 1} goal ${token}`,
     sessions: Array.from({ length: SESSIONS_PER_WEEK }, (_, sessionIndex) => ({
@@ -146,7 +148,7 @@ const server = createServer(async (request, response) => {
     console.log(`[openai-mock] holding ${token} until released`)
     await waitForRelease(token)
   }
-  await streamPlan(response, body.model ?? 'e2e-mock', JSON.stringify(buildPlan(slugs, token)))
+  await streamPlan(response, body.model ?? 'e2e-mock', JSON.stringify(buildPlan(slugs, token, token.startsWith(SHORT_PREFIX) ? SHORT_WEEK_COUNT : WEEK_COUNT)))
 })
 
 server.listen(PORT, () => {
