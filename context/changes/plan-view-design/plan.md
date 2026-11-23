@@ -347,7 +347,7 @@ Only the selected week is rendered, so only its images are requested through the
 #### Manual
 
 - [x] 1.4 `tokens.md` records `--surface` for both themes and every contrast ratio at least 4.5:1 — b4c3df7
-- [ ] 1.5 The app looks unchanged, because `--surface` is not used yet
+- [x] 1.5 The app looks unchanged, because `--surface` is not used yet — b4c3df7 (superseded: all phases landed in one commit, so this intermediate state no longer exists; the final state is covered by the later checks)
 
 ### Phase 2: Plan components
 
@@ -359,7 +359,7 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Manual
 
-- [ ] 2.4 Sign-in, Home and the plan pages look unchanged, because the new components are not mounted yet
+- [x] 2.4 Sign-in, Home and the plan pages look unchanged, because the new components are not mounted yet — b4c3df7 (superseded: all phases landed in one commit, so this intermediate state no longer exists; the final state is covered by the later checks)
 
 ### Phase 3: PlanView rewrite and pages
 

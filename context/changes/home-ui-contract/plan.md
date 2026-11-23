@@ -336,7 +336,7 @@ None expected. The kitchen sink is excluded from the production bundle and check
 #### Manual
 
 - [x] 1.5 `tokens.md` lists the new tokens and all four contrast ratios, each at least 4.5:1 — 69fc23b
-- [ ] 1.6 Sign-in, My plans and Registered users look unchanged in light and dark apart from the button label colour
+- [x] 1.6 Sign-in, My plans and Registered users look unchanged in light and dark apart from the button label colour — 69fc23b (superseded: all phases landed in one commit, so this intermediate state no longer exists; the final state is covered by the later checks and Home, My plans and Registered users changed again in app-shell-layout)
 
 ### Phase 2: Button components
 
@@ -356,9 +356,9 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Manual
 
-- [ ] 3.4 Signed in, `/` shows "Create a training plan" as the filled primary button, "My plans" and "Sign out" as secondary, and "Registered users" only for an ADMIN
+- [x] 3.4 Signed in, `/` shows "Create a training plan" as the filled primary button, "My plans" and "Sign out" as secondary, and "Registered users" only for an ADMIN — 69fc23b (satisfied elsewhere: My plans, Sign out and the admin-only Users link moved into the shell header in app-shell-layout, where the primary action, the secondary Sign out and the admin-only link were checked)
 - [x] 3.5 With network throttling, going from loading to ready causes no vertical layout shift — 69fc23b
-- [ ] 3.6 A forced `/me` failure shows the alert and Retry, and Retry recovers when the API is back
+- [x] 3.6 A forced `/me` failure shows the alert and Retry, and Retry recovers when the API is back — 69fc23b (re-implemented in the shell header in f44837d: an alert "Profile unavailable" with a Retry that reloads the profile, checked in the browser)
 - [x] 3.7 Sign out shows `Signing out…` disabled, then lands on `/sign-in` — 69fc23b
 - [x] 3.8 In dark mode all Home button labels are readable — 69fc23b
 

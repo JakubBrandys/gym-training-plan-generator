@@ -357,7 +357,7 @@ Make the shell survive the next session: extend the guard to the new files and t
 #### Manual
 
 - [x] 2.4 `tokens.md` records `--content-width` and `--narrow-width` with value, role and source — 1167b12
-- [ ] 2.5 Sign-in, Home and the other pages look unchanged, because the shell is not mounted yet
+- [x] 2.5 Sign-in, Home and the other pages look unchanged, because the shell is not mounted yet — 1167b12 (superseded: all phases landed in one commit, so this intermediate state no longer exists; the final state is covered by the later checks)
 
 ### Phase 3: Wire routes, Home and pages
 
