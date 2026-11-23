@@ -1,10 +1,10 @@
 ---
 change_id: plan-view-design
 title: Plan view redesign with week switcher, session cards and compact rows
-status: impl_reviewed
+status: archived
 created: 2026-11-02
-updated: 2026-11-02
-archived_at: null
+updated: 2026-11-23
+archived_at: 2026-11-23T15:03:59Z
 ---
 
 ## Notes
