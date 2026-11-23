@@ -374,7 +374,7 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 #### Manual
 
 - [x] 2.6 The kitchen sink shows every new state listed above, in light and dark, at desktop width and at 375 px, with no overflow or clipped text — 5066027
-- [ ] 2.7 The danger button hover, focus ring and disabled look are clear in both themes
+- [x] 2.7 The danger button hover, focus ring and disabled look are clear in both themes — 5066027
 
 ### Phase 3: Saved plan page — rename and delete
 
