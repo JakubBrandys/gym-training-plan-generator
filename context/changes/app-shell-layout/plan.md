@@ -356,7 +356,7 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Manual
 
-- [ ] 2.4 `tokens.md` records `--content-width` and `--narrow-width` with value, role and source
+- [x] 2.4 `tokens.md` records `--content-width` and `--narrow-width` with value, role and source — 1167b12
 - [ ] 2.5 Sign-in, Home and the other pages look unchanged, because the shell is not mounted yet
 
 ### Phase 3: Wire routes, Home and pages
@@ -370,11 +370,11 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Manual
 
-- [ ] 3.5 Signed in, every gated page shows the header (brand, Create plan, My plans, Users for an ADMIN only, `email · role`, Sign out) and the footer text
-- [ ] 3.6 Exactly one nav link is active on `/plans`, `/plans/<id>`, `/plans/new`, `/plans/generate/<job>` and `/admin/users`, and none on `/`
-- [ ] 3.7 Sign out from a page other than Home shows `Signing out…` and then lands on `/sign-in`
-- [ ] 3.8 Sign-in and sign-up show the narrow centred layout with unchanged forms
-- [ ] 3.9 At 375 px the header wraps to two rows and scrolls away; from 40rem up it sticks
+- [x] 3.5 Signed in, every gated page shows the header (brand, Create plan, My plans, Users for an ADMIN only, `email · role`, Sign out) and the footer text — 1167b12
+- [x] 3.6 Exactly one nav link is active on `/plans`, `/plans/<id>`, `/plans/new`, `/plans/generate/<job>` and `/admin/users`, and none on `/` — 1167b12
+- [x] 3.7 Sign out from a page other than Home shows `Signing out…` and then lands on `/sign-in` — 1167b12
+- [x] 3.8 Sign-in and sign-up show the narrow centred layout with unchanged forms — 1167b12
+- [x] 3.9 At 375 px the header wraps to two rows and scrolls away; from 40rem up it sticks — 1167b12
 
 ### Phase 4: States and visual gate
 
@@ -385,10 +385,10 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Manual
 
-- [ ] 4.3 `/dev/kitchen-sink` under `npm run dev` shows the header states, each active-link case, the footer, the full frame and Home, and marks empty N/A with a reason
+- [x] 4.3 `/dev/kitchen-sink` under `npm run dev` shows the header states, each active-link case, the footer, the full frame and Home, and marks empty N/A with a reason — 1167b12
 - [ ] 4.4 Hover and keyboard focus are visible on the brand, every nav link and Sign out, driven by tokens, in light and dark
-- [ ] 4.5 The four screenshots are saved and show no horizontal overflow at 375 px, a sticky header only from 40rem up, and readable labels in dark mode
-- [ ] 4.6 Every control has an accessible name, and each active-link case has exactly one `aria-current="page"`
+- [x] 4.5 The four screenshots are saved and show no horizontal overflow at 375 px, a sticky header only from 40rem up, and readable labels in dark mode — 1167b12
+- [x] 4.6 Every control has an accessible name, and each active-link case has exactly one `aria-current="page"` — 1167b12
 
 ### Phase 5: Guard and rule
 
@@ -400,5 +400,5 @@ Make the shell survive the next session: extend the guard to the new files and t
 
 #### Manual
 
-- [ ] 5.4 Temporarily adding `color: #123456` to `AppHeader.tsx` makes the guard spec fail, and it passes again after reverting
-- [ ] 5.5 The `CLAUDE.md` UI block mentions the shell, the profile hook and the kitchen-sink coverage, and sits outside the CLI marker block
+- [x] 5.4 Temporarily adding `color: #123456` to `AppHeader.tsx` makes the guard spec fail, and it passes again after reverting — 1167b12
+- [x] 5.5 The `CLAUDE.md` UI block mentions the shell, the profile hook and the kitchen-sink coverage, and sits outside the CLI marker block — 1167b12

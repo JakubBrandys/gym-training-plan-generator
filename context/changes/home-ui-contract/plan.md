@@ -335,7 +335,7 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Manual
 
-- [ ] 1.5 `tokens.md` lists the new tokens and all four contrast ratios, each at least 4.5:1
+- [x] 1.5 `tokens.md` lists the new tokens and all four contrast ratios, each at least 4.5:1 — 69fc23b
 - [ ] 1.6 Sign-in, My plans and Registered users look unchanged in light and dark apart from the button label colour
 
 ### Phase 2: Button components
@@ -359,8 +359,8 @@ None expected. The kitchen sink is excluded from the production bundle and check
 - [ ] 3.4 Signed in, `/` shows "Create a training plan" as the filled primary button, "My plans" and "Sign out" as secondary, and "Registered users" only for an ADMIN
 - [ ] 3.5 With network throttling, going from loading to ready causes no vertical layout shift
 - [ ] 3.6 A forced `/me` failure shows the alert and Retry, and Retry recovers when the API is back
-- [ ] 3.7 Sign out shows `Signing out…` disabled, then lands on `/sign-in`
-- [ ] 3.8 In dark mode all Home button labels are readable
+- [x] 3.7 Sign out shows `Signing out…` disabled, then lands on `/sign-in` — 69fc23b
+- [x] 3.8 In dark mode all Home button labels are readable — 69fc23b
 
 ### Phase 4: States and visual gate
 
@@ -371,10 +371,10 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Manual
 
-- [ ] 4.3 `/dev/kitchen-sink` under `npm run dev` shows default, loading, error, pending and disabled states, and marks empty N/A with a reason
-- [ ] 4.4 Hover and keyboard focus are visible on every control, driven by tokens, in light and dark
-- [ ] 4.5 The four screenshots are saved and show no overflow at 375 px and readable labels in dark mode
-- [ ] 4.6 Every control has an accessible name (checked in the Playwright snapshot)
+- [x] 4.3 `/dev/kitchen-sink` under `npm run dev` shows default, loading, error, pending and disabled states, and marks empty N/A with a reason — 69fc23b
+- [x] 4.4 Hover and keyboard focus are visible on every control, driven by tokens, in light and dark — 69fc23b
+- [x] 4.5 The four screenshots are saved and show no overflow at 375 px and readable labels in dark mode — 69fc23b
+- [x] 4.6 Every control has an accessible name (checked in the Playwright snapshot) — 69fc23b
 
 ### Phase 5: Guard and rule
 
@@ -386,5 +386,5 @@ None expected. The kitchen sink is excluded from the production bundle and check
 
 #### Manual
 
-- [ ] 5.4 Temporarily adding `color: #123456` to `HomeView.tsx` makes the guard spec fail, and it passes again after reverting
-- [ ] 5.5 The `CLAUDE.md` UI block reads correctly and sits outside the CLI marker block
+- [x] 5.4 Temporarily adding `color: #123456` to `HomeView.tsx` makes the guard spec fail, and it passes again after reverting — 69fc23b
+- [x] 5.5 The `CLAUDE.md` UI block reads correctly and sits outside the CLI marker block — 69fc23b

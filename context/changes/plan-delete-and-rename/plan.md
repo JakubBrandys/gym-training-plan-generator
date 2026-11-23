@@ -357,9 +357,9 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Manual
 
-- [ ] 1.7 With your go-ahead, the migration is applied to the hosted database (`cd backend && npm run prisma:migrate:deploy`) and existing saved plans still list, now with `title: null`
-- [ ] 1.8 Against the running API, PATCH sets and clears a title, DELETE answers 204 and then 404, and another user's plan answers 404 for both
-- [ ] 1.9 A preflight (`OPTIONS` with `Origin: http://localhost:5173` and `Access-Control-Request-Method: DELETE`, then `PATCH`) allows both methods
+- [x] 1.7 With your go-ahead, the migration is applied to the hosted database (`cd backend && npm run prisma:migrate:deploy`) and existing saved plans still list, now with `title: null` — 5066027
+- [x] 1.8 Against the running API, PATCH sets and clears a title, DELETE answers 204 and then 404, and another user's plan answers 404 for both — 5066027
+- [x] 1.9 A preflight (`OPTIONS` with `Origin: http://localhost:5173` and `Access-Control-Request-Method: DELETE`, then `PATCH`) allows both methods — 5066027
 
 ### Phase 2: Frontend foundation — client, title line, danger variant, delete and rename pieces
 
@@ -373,7 +373,7 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Manual
 
-- [ ] 2.6 The kitchen sink shows every new state listed above, in light and dark, at desktop width and at 375 px, with no overflow or clipped text
+- [x] 2.6 The kitchen sink shows every new state listed above, in light and dark, at desktop width and at 375 px, with no overflow or clipped text — 5066027
 - [ ] 2.7 The danger button hover, focus ring and disabled look are clear in both themes
 
 ### Phase 3: Saved plan page — rename and delete
@@ -387,11 +387,11 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Manual
 
-- [ ] 3.5 Against the real API, renaming sets, changes and clears the title (including a whitespace-only value and an 80-character value), and the title appears as the bold first line of the summary card
-- [ ] 3.6 Delete → Cancel keeps the plan; Delete → Confirm lands on My plans without that plan, and Back does not return to the deleted plan
-- [ ] 3.7 Keyboard only: focus moves as specified (Cancel when confirming, back to Delete or Rename afterwards, the input when renaming)
-- [ ] 3.8 Deleting the plan in a second tab first, then confirming in the first, lands on My plans without an error
-- [ ] 3.9 The page looks right at 375 px and at desktop width, in light and dark
+- [x] 3.5 Against the real API, renaming sets, changes and clears the title (including a whitespace-only value and an 80-character value), and the title appears as the bold first line of the summary card — 5066027
+- [x] 3.6 Delete → Cancel keeps the plan; Delete → Confirm lands on My plans without that plan, and Back does not return to the deleted plan — 5066027
+- [x] 3.7 Keyboard only: focus moves as specified (Cancel when confirming, back to Delete or Rename afterwards, the input when renaming) — 5066027
+- [x] 3.8 Deleting the plan in a second tab first, then confirming in the first, lands on My plans without an error — 5066027
+- [x] 3.9 The page looks right at 375 px and at desktop width, in light and dark — 5066027
 
 ### Phase 4: My plans list — delete beside each item
 
@@ -404,8 +404,8 @@ The migration is additive and nullable, so old rows read as `title: null` with n
 
 #### Manual
 
-- [ ] 4.5 Deleting from the list removes the item, and deleting the last one shows the empty state
-- [ ] 4.6 A plan with a title shows it as the bold first line of its list item; a plan without one looks as before
-- [ ] 4.7 With the backend stopped, confirming a delete shows the error and keeps the item; after the backend is back, the same delete works
-- [ ] 4.8 While one item is pending, the other items' Delete buttons are disabled
-- [ ] 4.9 The list looks right at 375 px and at desktop width, in light and dark, with a very long title wrapping inside the item
+- [x] 4.5 Deleting from the list removes the item, and deleting the last one shows the empty state — 5066027
+- [x] 4.6 A plan with a title shows it as the bold first line of its list item; a plan without one looks as before — 5066027
+- [x] 4.7 With the backend stopped, confirming a delete shows the error and keeps the item; after the backend is back, the same delete works — 5066027
+- [x] 4.8 While one item is pending, the other items' Delete buttons are disabled — 5066027
+- [x] 4.9 The list looks right at 375 px and at desktop width, in light and dark, with a very long title wrapping inside the item — 5066027

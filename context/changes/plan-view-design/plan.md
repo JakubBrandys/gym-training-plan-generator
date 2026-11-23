@@ -346,7 +346,7 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Manual
 
-- [ ] 1.4 `tokens.md` records `--surface` for both themes and every contrast ratio at least 4.5:1
+- [x] 1.4 `tokens.md` records `--surface` for both themes and every contrast ratio at least 4.5:1 — b4c3df7
 - [ ] 1.5 The app looks unchanged, because `--surface` is not used yet
 
 ### Phase 2: Plan components
@@ -371,12 +371,12 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Manual
 
-- [ ] 3.4 Signed in, a saved plan shows the summary card with its details, the week switcher and one week of session cards
-- [ ] 3.5 Switching weeks updates the content, the URL hash and `aria-current`, and Back leaves the plan instead of stepping through weeks
-- [ ] 3.6 `/plans/<id>#week-3` opens week 3 and survives a reload, and an invalid hash shows week 1
-- [ ] 3.7 A generated plan on the generation page shows the derived-stats summary without goals, with Save above the plan and working
-- [ ] 3.8 At 375 px the rows are compact, the switcher scrolls sideways and the page has no horizontal overflow
-- [ ] 3.9 In dark mode the cards, chips and thumbnails are legible
+- [x] 3.4 Signed in, a saved plan shows the summary card with its details, the week switcher and one week of session cards — b4c3df7
+- [x] 3.5 Switching weeks updates the content, the URL hash and `aria-current`, and Back leaves the plan instead of stepping through weeks — b4c3df7
+- [x] 3.6 `/plans/<id>#week-3` opens week 3 and survives a reload, and an invalid hash shows week 1 — b4c3df7
+- [x] 3.7 A generated plan on the generation page shows the derived-stats summary without goals, with Save above the plan and working — b4c3df7
+- [x] 3.8 At 375 px the rows are compact, the switcher scrolls sideways and the page has no horizontal overflow — b4c3df7
+- [x] 3.9 In dark mode the cards, chips and thumbnails are legible — b4c3df7
 
 ### Phase 4: States and visual gate
 
@@ -387,10 +387,10 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Manual
 
-- [ ] 4.3 `/dev/kitchen-sink` under `npm run dev` shows the plan cases (week 1, last week, with and without details, edge plan, no images, failed image) and marks empty N/A with a reason
-- [ ] 4.4 Hover and keyboard focus are visible on every week link and pager link, driven by tokens, in light and dark
-- [ ] 4.5 The four screenshots are saved; a typical week (4–5 sessions of 6 exercises) is at most about 3,000 px tall at 1280 px, exercise rows are at most about 80 px tall, and there is no horizontal overflow at 375 px
-- [ ] 4.6 Every control has an accessible name, and each case has exactly one `aria-current="page"` in the switcher
+- [x] 4.3 `/dev/kitchen-sink` under `npm run dev` shows the plan cases (week 1, last week, with and without details, edge plan, no images, failed image) and marks empty N/A with a reason — b4c3df7
+- [x] 4.4 Hover and keyboard focus are visible on every week link and pager link, driven by tokens, in light and dark — b4c3df7
+- [x] 4.5 The four screenshots are saved; a typical week (4–5 sessions of 6 exercises) is at most about 3,000 px tall at 1280 px, exercise rows are at most about 80 px tall, and there is no horizontal overflow at 375 px — b4c3df7
+- [x] 4.6 Every control has an accessible name, and each case has exactly one `aria-current="page"` in the switcher — b4c3df7
 
 ### Phase 5: Guard and rule
 
@@ -402,5 +402,5 @@ Only the selected week is rendered, so only its images are requested through the
 
 #### Manual
 
-- [ ] 5.4 Temporarily adding `color: #123456` to `PlanSummary.tsx` makes the guard spec fail, and it passes again after reverting
-- [ ] 5.5 The `CLAUDE.md` UI block mentions the plan components, the week hash, the stats helper and the router requirement, and sits outside the CLI marker block
+- [x] 5.4 Temporarily adding `color: #123456` to `PlanSummary.tsx` makes the guard spec fail, and it passes again after reverting — b4c3df7
+- [x] 5.5 The `CLAUDE.md` UI block mentions the plan components, the week hash, the stats helper and the router requirement, and sits outside the CLI marker block — b4c3df7
