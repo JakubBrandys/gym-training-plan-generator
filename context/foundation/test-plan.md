@@ -106,7 +106,7 @@ date so future readers can see which lines need re-verification.
 | unit + component (frontend) | Vitest with Testing Library and jsdom | vitest ^4.1.12, @testing-library/react ^16.3.3, jsdom ^30.1.3 | Two projects: node for `*.spec.ts`, jsdom for `*.spec.tsx`. Run: `cd frontend && npm test`. |
 | lint | oxlint | ^1.58.0 backend, ^1.81.0 frontend | Backend runs type-aware. Run: `npm run lint` in each package. |
 | API / model mocking | none as a library | n/a | Model calls go through an injectable client faked in specs; persistence in e2e specs uses in-test fakes. Whether that is enough is Phase 1 and 2 research. |
-| browser e2e | none yet | n/a | No Playwright configuration. Not planned unless Phase 2 research shows no cheaper layer covers risk #3. |
+| browser e2e | Playwright Test | @playwright/test 1.65.1 | Specs in `frontend/tests/e2e/`; commands, ports and the auth setup are recorded in `context/foundation/test-stack.md`. Run: `cd frontend && npx playwright test`. The backend runs against the real database and Supabase; only the model is replaced, by a local mock server (`frontend/tests/e2e/mocks/openai-mock.mjs`, reached through `OPENAI_BASE_URL`). Covers risk #1 (seed: a vanished job ends in a start-again state) and risk #3 (a saved plan reloads intact through the real jsonb column, now and in a fresh session). |
 | accessibility | none yet | n/a | No rollout phase targets it. |
 | AI-native: pipeline eval | plain Vitest runner (`backend/eval/`, no eval library) with an LLM judge through the `ai` package, over a fixed input set — checked: 2026-11-04 | n/a | When NOT to use: for anything a deterministic validator can assert; as a CI gate (cost, minutes per run, non-determinism); on changes that do not touch prompts or the pipeline. |
 
@@ -131,6 +131,7 @@ that build.
 | lint + typecheck (both packages) | local + CI | not scheduled (no CI gates for now) | syntactic and type drift |
 | unit + integration (both packages) | local + CI | not scheduled (no CI gates for now) | logic regressions in the risks covered by Phases 1–3 |
 | backend HTTP e2e | local + CI | not scheduled (no CI gates for now) | broken ownership, gating and persistence paths |
+| browser e2e (frontend) | local only | not scheduled (no CI gates for now); one generation test per user at a time, because the backend allows one active job per user | a vanished generation job left on endless progress (#1); a saved plan that does not reload intact through the real database (#3) |
 | agent hooks: oxlint and related unit tests after every edit, then lint, unit, backend e2e and typecheck of the changed packages before the agent ends its turn | local, Claude Code (`.claude/hooks/`, wired in `.claude/settings.json`) | in place; proven by `node --test .claude/hooks/agent-hooks.test.mjs`, which the end-of-turn hook reruns when the hooks change | agent-written lint, type and test regressions before the agent reports done (edits made outside the agent are not covered) |
 | manual deploy smoke (restart mid-generation) | between merge and production | recommended after §3 Phase 1 | restart behaviour no automated test reproduces cheaply |
 | on-demand pipeline eval | local, before merging prompt or pipeline changes | recommended after §3 Phase 4 | quality drift from prompt changes |
