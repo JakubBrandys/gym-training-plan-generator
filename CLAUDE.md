@@ -27,11 +27,11 @@ Both packages use oxlint as the sole linter (no ESLint). `backend/` runs TypeScr
 
 ### Testing Guidelines
 
-`backend/` uses Vitest; run a single file with `npx vitest run <path>` from `backend/`. `frontend/` uses Vitest 4 with Testing Library (`*.spec.ts` run in the node environment, `*.spec.tsx` under jsdom, per `@frontend/vite.config.ts`); before writing a test, read the cookbook in `@context/foundation/test-plan.md` (§6).
+`backend/` uses Vitest; run a single file with `npx vitest run <path>` from `backend/`. `frontend/` uses Vitest 4 with Testing Library (`*.spec.ts` run in the node environment, `*.spec.tsx` under jsdom, per `@frontend/vite.config.ts`); before writing a test, read the cookbook in `@context/foundation/test-plan.md` (§6). Browser e2e (Playwright) lives in `frontend/tests/e2e/`: run `cd frontend && npx playwright test` (it builds and starts a model mock, the app on 4173 and the backend on 3100 itself; ports and auth setup are in `@context/foundation/test-stack.md`).
 
 ### Security & Configuration Tips
 
-No `.env` files exist in either package yet. `backend/.gitignore` already excludes `.env*` — add secrets there, never commit them. `frontend/.gitignore` has no env-file pattern yet if one is added later.
+Each package has a git-ignored `.env` and a committed `.env.example` listing the variable names. Both `.gitignore` files exclude `.env` — put secrets only there, never commit them, and do not read `.env*` files. The browser e2e suite reads `E2E_USERNAME` and `E2E_PASSWORD` (a throwaway account) from `frontend/.env`; `playwright/.auth/` and `test-results/` are git-ignored too.
 
 ### UI contract
 
