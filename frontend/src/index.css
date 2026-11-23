@@ -189,10 +189,31 @@ button:disabled {
   padding: 0.75rem 1rem;
 }
 
+.app-header-id {
+  box-sizing: border-box;
+  width: min(20rem, 100%);
+  min-width: 0;
+}
+
 .app-header-brand {
   color: var(--text);
   font-weight: 700;
   text-decoration: none;
+}
+
+.app-header-brand:hover {
+  color: var(--accent);
+}
+
+.app-header-identity {
+  overflow: hidden;
+  min-height: 1.25rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-header-nav {
@@ -204,6 +225,10 @@ button:disabled {
 .app-header-nav a {
   color: var(--text);
   text-decoration: none;
+}
+
+.app-header-nav-spacer {
+  visibility: hidden;
 }
 
 .app-header-nav a:hover {

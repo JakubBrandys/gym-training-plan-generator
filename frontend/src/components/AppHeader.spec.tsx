@@ -67,6 +67,38 @@ describe('AppHeader', () => {
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
   })
 
+  it('keeps an identity line in the header in every profile state so the height does not change', () => {
+    const states: ProfileState[] = [{ status: 'loading' }, { status: 'error' }, member]
+
+    for (const profile of states) {
+      const { container, unmount } = renderHeader({ profile })
+
+      expect(container.querySelectorAll('.app-header-identity')).toHaveLength(1)
+      unmount()
+    }
+  })
+
+  it('reserves the width of the Users link as a hidden spacer unless the profile is an admin', () => {
+    const states: ProfileState[] = [{ status: 'loading' }, { status: 'error' }, member]
+
+    for (const profile of states) {
+      const { container, unmount } = renderHeader({ profile })
+
+      expect(container.querySelectorAll('.app-header-nav-spacer[aria-hidden="true"]')).toHaveLength(1)
+      expect(screen.queryByRole('link', { name: 'Users' })).toBeNull()
+      unmount()
+    }
+
+    const { container } = renderHeader({ profile: admin })
+    expect(container.querySelectorAll('.app-header-nav-spacer')).toHaveLength(0)
+  })
+
+  it('exposes the full address and role as the identity title once the profile is ready', () => {
+    const { container } = renderHeader({ profile: member })
+
+    expect(container.querySelector('.app-header-identity')?.getAttribute('title')).toBe('member@example.com · MEMBER')
+  })
+
   it('shows the email and the role of a member and no Users link', () => {
     renderHeader({ profile: member })
 
