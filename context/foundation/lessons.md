@@ -22,3 +22,24 @@
 - **Problem**: Saved rows are read with an unchecked cast (as unknown as PlanForm / PlanResult) and carry no version. A later change to PlanForm or PlanResult would serve old rows unchanged ("Experience: undefined", a PlanView crash), breaking the guardrail that a saved plan is never lost or corrupted.
 - **Rule**: Treat PlanForm and PlanResult as persisted contracts: change them additively only (new optional fields, existing values keep their meaning); a breaking change needs a version column or a data migration plus a read guard in the same change.
 - **Applies to**: plan, plan-review, implement, impl-review
+
+## A new browser context in Playwright Test inherits the signed-in state
+
+- **Context**: frontend/tests/e2e specs that need a signed-out or second user — `browser.newContext()` in Playwright Test, first seen in the saved-plan round-trip spec.
+- **Problem**: `browser.newContext()` copies `storageState` and `baseURL` from the config's `use`, so the "fresh session" was still signed in and the sign-in page redirected to `/`; the test failed for the wrong reason.
+- **Rule**: Pass an explicit `storageState: { cookies: [], origins: [] }` for a signed-out context, and sign in through the UI for a different user; never assume a new context is clean.
+- **Applies to**: implement, impl-review
+
+## Match accessible names exactly in e2e locators
+
+- **Context**: frontend/tests/e2e specs using `getByLabel` / `getByRole({ name })` on pages with many controls (saved-plan list with Rename and Delete buttons).
+- **Problem**: A string name is a case-insensitive substring match, so `getByLabel('Plan title')` also matched the Rename buttons whose label contained "plan title" and the assertion hit the wrong element.
+- **Rule**: Use `{ exact: true }` whenever another element's accessible name can contain the same text; resolve a strict-mode violation by tightening the locator, not by `.first()`.
+- **Applies to**: implement, impl-review
+
+## Wait for a list to finish loading before asserting absence or counting items
+
+- **Context**: frontend/tests/e2e specs and cleanup helpers that look at the saved-plans list (or any list that shows "Loading…" first).
+- **Problem**: `toBeHidden` on an item passes vacuously while the list is still loading, and a cleanup helper that counted 0 items during "Loading…" returned early and leaked plans into the account.
+- **Rule**: Wait for the heading and for the loading text to be hidden before asserting that something is gone or counting rows; make every cleanup assert its own result.
+- **Applies to**: implement, impl-review
