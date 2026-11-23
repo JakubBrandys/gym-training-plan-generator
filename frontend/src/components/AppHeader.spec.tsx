@@ -19,6 +19,7 @@ type RenderOptions = {
   pathname?: string
   signingOut?: boolean
   onSignOut?: () => void
+  onRetry?: () => void
 }
 
 const renderHeader = ({
@@ -26,6 +27,7 @@ const renderHeader = ({
   pathname = '/',
   signingOut = false,
   onSignOut = () => {},
+  onRetry = () => {},
 }: RenderOptions = {}) =>
   render(
     <MemoryRouter initialEntries={[pathname]}>
@@ -34,6 +36,7 @@ const renderHeader = ({
         pathname={pathname}
         signingOut={signingOut}
         onSignOut={onSignOut}
+        onRetry={onRetry}
       />
     </MemoryRouter>,
   )
@@ -112,6 +115,24 @@ describe('AppHeader', () => {
 
     expect(screen.getByRole('link', { name: 'Users' }).getAttribute('href')).toBe('/admin/users')
     expect(screen.getByText('ADMIN')).toBeTruthy()
+  })
+
+  it('announces an unavailable profile with a Retry that calls onRetry, only when the profile failed', () => {
+    const onRetry = vi.fn()
+    const { unmount } = renderHeader({ profile: { status: 'error' }, onRetry })
+
+    expect(screen.getByRole('alert').textContent).toBe('Profile unavailable')
+    fireEvent.click(screen.getByRole('button', { name: 'Retry loading profile' }))
+    expect(onRetry).toHaveBeenCalledTimes(1)
+    unmount()
+
+    for (const profile of [{ status: 'loading' } as ProfileState, member]) {
+      const rendered = renderHeader({ profile })
+
+      expect(screen.queryByRole('alert')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Retry loading profile' })).toBeNull()
+      rendered.unmount()
+    }
   })
 
   it('keeps the navigation and Sign out when the profile failed to load', () => {

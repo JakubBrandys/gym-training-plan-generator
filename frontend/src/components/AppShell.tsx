@@ -8,7 +8,7 @@ import { AppHeader } from './AppHeader'
 
 const ShellFrame = () => {
   const { signOut } = useAuth()
-  const { state } = useProfile()
+  const { state, reload } = useProfile()
   const { pathname } = useLocation()
   const [signingOut, setSigningOut] = useState(false)
 
@@ -28,6 +28,7 @@ const ShellFrame = () => {
         pathname={pathname}
         signingOut={signingOut}
         onSignOut={() => void handleSignOut()}
+        onRetry={reload}
       />
       <Outlet />
       <AppFooter />

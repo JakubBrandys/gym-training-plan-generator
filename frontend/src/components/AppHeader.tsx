@@ -8,9 +8,10 @@ type AppHeaderProps = {
   pathname: string
   signingOut: boolean
   onSignOut: () => void
+  onRetry: () => void
 }
 
-export const AppHeader = ({ profile, pathname, signingOut, onSignOut }: AppHeaderProps) => {
+export const AppHeader = ({ profile, pathname, signingOut, onSignOut, onRetry }: AppHeaderProps) => {
   const isAdmin = profile.status === 'ready' && profile.profile.role === 'ADMIN'
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin)
   const reserved = NAV_ITEMS.filter((item) => item.adminOnly && !isAdmin)
@@ -25,8 +26,18 @@ export const AppHeader = ({ profile, pathname, signingOut, onSignOut }: AppHeade
           </Link>
           <p className="app-header-identity" title={identity ?? undefined}>
             {profile.status === 'ready' && (
-              <>
+              <span className="app-header-identity-text">
                 <span>{profile.profile.email}</span> · <span>{profile.profile.role}</span>
+              </span>
+            )}
+            {profile.status === 'error' && (
+              <>
+                <span className="app-header-identity-text" role="alert">
+                  Profile unavailable
+                </span>
+                <Button variant="link" aria-label="Retry loading profile" onClick={onRetry}>
+                  Retry
+                </Button>
               </>
             )}
           </p>

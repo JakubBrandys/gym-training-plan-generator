@@ -124,5 +124,20 @@ describe('AppShell', () => {
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
     expect(screen.queryByText('someone@example.com')).toBeNull()
     expect(signOut).not.toHaveBeenCalled()
+    expect((await screen.findByRole('alert')).textContent).toBe('Profile unavailable')
+  })
+
+  it('retries the profile request from the header and shows the identity once it succeeds', async () => {
+    apiFetchMock.mockRejectedValueOnce(new TypeError('network down'))
+    respondWithMe('MEMBER')
+    renderShell()
+
+    const retry = await screen.findByRole('button', { name: 'Retry loading profile' })
+    fireEvent.click(retry)
+
+    expect(await screen.findByText('someone@example.com')).toBeTruthy()
+    expect(apiFetchMock).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Retry loading profile' })).toBeNull()
   })
 })

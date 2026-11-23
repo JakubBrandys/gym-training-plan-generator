@@ -90,7 +90,7 @@ type HeaderCaseProps = {
 
 const HeaderCase = ({ title, profile, pathname = '/plans', signingOut = false }: HeaderCaseProps) => (
   <Case title={title}>
-    <AppHeader profile={profile} pathname={pathname} signingOut={signingOut} onSignOut={noop} />
+    <AppHeader profile={profile} pathname={pathname} signingOut={signingOut} onSignOut={noop} onRetry={noop} />
   </Case>
 )
 
@@ -101,7 +101,7 @@ export const KitchenSinkPage = () => (
     </Case>
     <Case title="Plan: saved page, week 1 (summary with details)">
       <div className="app-shell kitchen-sink-frame">
-        <AppHeader profile={member} pathname="/plans/abc" signingOut={false} onSignOut={noop} />
+        <AppHeader profile={member} pathname="/plans/abc" signingOut={false} onSignOut={noop} onRetry={noop} />
         <main className="saved-plan">
           <h1>Saved plan</h1>
           <PlanViewContent
@@ -115,7 +115,7 @@ export const KitchenSinkPage = () => (
     </Case>
     <Case title="Plan: saved page with a title, week 1">
       <div className="app-shell kitchen-sink-frame">
-        <AppHeader profile={member} pathname="/plans/abc" signingOut={false} onSignOut={noop} />
+        <AppHeader profile={member} pathname="/plans/abc" signingOut={false} onSignOut={noop} onRetry={noop} />
         <main className="saved-plan">
           <h1>Saved plan</h1>
           <PlanViewContent
@@ -131,7 +131,7 @@ export const KitchenSinkPage = () => (
     </Case>
     <Case title="Plan: generation page, last week (summary without details, Save above)">
       <div className="app-shell kitchen-sink-frame">
-        <AppHeader profile={member} pathname="/plans/generate/job-1" signingOut={false} onSignOut={noop} />
+        <AppHeader profile={member} pathname="/plans/generate/job-1" signingOut={false} onSignOut={noop} onRetry={noop} />
         <main className="plan-generation">
           <h1>Your training plan</h1>
           <div>
@@ -156,7 +156,7 @@ export const KitchenSinkPage = () => (
     </Case>
     <Case title="Shell: full frame (member)">
       <div className="app-shell kitchen-sink-frame">
-        <AppHeader profile={member} pathname="/" signingOut={false} onSignOut={noop} />
+        <AppHeader profile={member} pathname="/" signingOut={false} onSignOut={noop} onRetry={noop} />
         <HomePage />
         <AppFooter />
       </div>
@@ -182,6 +182,14 @@ export const KitchenSinkPage = () => (
         <Button disabled>Primary disabled</Button>
         <Button variant="secondary" disabled>
           Secondary disabled
+        </Button>
+      </div>
+    </Case>
+    <Case title="Buttons: link (default, hover to see the darker accent, disabled)">
+      <div className="kitchen-sink-buttons">
+        <Button variant="link">Retry</Button>
+        <Button variant="link" disabled>
+          Retry disabled
         </Button>
       </div>
     </Case>
