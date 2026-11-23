@@ -1,10 +1,10 @@
 ---
 change_id: app-shell-layout
 title: App shell with header, main content and footer
-status: implementing
+status: archived
 created: 2026-11-02
-updated: 2026-11-02
-archived_at: null
+updated: 2026-11-23
+archived_at: 2026-11-23T15:03:59Z
 ---
 
 ## Notes
