@@ -55,6 +55,8 @@ const deletePlan = async (page: Page, planPath: string, token: string) => {
   await page.getByRole('button', { name: /^Delete plan from/ }).click()
   await page.getByRole('button', { name: /^Confirm deleting plan/ }).click()
   await expect(page).toHaveURL(/\/plans$/)
+  await expect(page.getByRole('heading', { name: 'My plans', level: 1 })).toBeVisible()
+  await expect(page.getByText('Loading…')).toBeHidden()
   await expect(page.getByText(`Build strength ${token}`)).toBeHidden()
 }
 
