@@ -18,3 +18,5 @@ node_modules/
 
 # Playwright MCP session output
 .playwright-mcp/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
