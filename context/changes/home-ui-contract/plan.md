@@ -357,7 +357,7 @@ None expected. The kitchen sink is excluded from the production bundle and check
 #### Manual
 
 - [ ] 3.4 Signed in, `/` shows "Create a training plan" as the filled primary button, "My plans" and "Sign out" as secondary, and "Registered users" only for an ADMIN
-- [ ] 3.5 With network throttling, going from loading to ready causes no vertical layout shift
+- [x] 3.5 With network throttling, going from loading to ready causes no vertical layout shift — 69fc23b
 - [ ] 3.6 A forced `/me` failure shows the alert and Retry, and Retry recovers when the API is back
 - [x] 3.7 Sign out shows `Signing out…` disabled, then lands on `/sign-in` — 69fc23b
 - [x] 3.8 In dark mode all Home button labels are readable — 69fc23b

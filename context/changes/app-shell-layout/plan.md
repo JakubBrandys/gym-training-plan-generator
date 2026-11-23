@@ -386,7 +386,7 @@ Make the shell survive the next session: extend the guard to the new files and t
 #### Manual
 
 - [x] 4.3 `/dev/kitchen-sink` under `npm run dev` shows the header states, each active-link case, the footer, the full frame and Home, and marks empty N/A with a reason — 1167b12
-- [ ] 4.4 Hover and keyboard focus are visible on the brand, every nav link and Sign out, driven by tokens, in light and dark
+- [x] 4.4 Hover and keyboard focus are visible on the brand, every nav link and Sign out, driven by tokens, in light and dark — 1167b12
 - [x] 4.5 The four screenshots are saved and show no horizontal overflow at 375 px, a sticky header only from 40rem up, and readable labels in dark mode — 1167b12
 - [x] 4.6 Every control has an accessible name, and each active-link case has exactly one `aria-current="page"` — 1167b12
 
